@@ -1,0 +1,27 @@
+{
+  "name": "venc2",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A browser-based utility to downscale and transcode videos.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "tamaina <tamaina@hotmail.co.jp>",
+  "license": "MIT",
+  "packageManager": "pnpm@8.6.12",
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "esbuild": "^0.18.20",
+    "typescript": "^5.1.6"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production node build.js && tsc --project tsconfig.build.json",
+    "dev": "node build.js watch",
+    "test": "cd tests/vite-project && pnpm run dev"
+  },
+  "repository": "https://github.com/misskey-dev/browser-image-resizer.git",
+  "dependencies": {
+    "mp4box": "^0.5.2"
+  }
+}

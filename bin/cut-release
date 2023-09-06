@@ -1,0 +1,9 @@
+#!/bin/bash
+set -eux -o pipefail
+
+# Usage: bin/cut-release <npm_version_type>
+# npm_version_type: major, minor, patch
+# Assumes you have proper access to NPM repo and GitHub repo
+npm version $1
+npm publish
+git push --tags
