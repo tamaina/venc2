@@ -60,7 +60,7 @@ export interface MP4Info {
 
 export type MP4ArrayBuffer = ArrayBuffer & { fileStart: number }
 
-export interface MP4File {
+export interface MP4File extends ISOFile {
 	onMoovStart?: () => void
 	onReady?: (info: MP4Info) => void
 	onError?: (e: string) => void
@@ -74,7 +74,7 @@ export interface MP4File {
 	setExtractionOptions(id: number, user: any, options: ExtractionOptions): void
 }
 
-export function createFile(): MP4File
+export function createFile(keepMdatData?: boolean, stream?: DataStream): MP4File
 
 export interface Sample {
 	number: number

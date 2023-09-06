@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getMp4Info } from '../../../src/get-info';
+import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, /*drawFrames*/ } from '../../../src/decode';
+import { read } from 'fs';
 
 //import TheWorker from './workers/worker?worker';
 
@@ -22,7 +23,26 @@ worker.onerror = e => console.error(e);
 
 async function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
-    console.log(await getMp4Info(file));
+    console.log(file);
+    console.log(await getMP4Info(file));
+
+    const canvasCtx = canvas.value?.getContext('2d');
+    if (!canvasCtx) return;
+
+    const dem = generateDemuxToVideoTransformer();
+    //file.stream().pipeThrough(dem).pipeTo(await drawFrames(file, canvas.value!));
+
+    const dec = await generateVideoDecodeTransformer(file);
+    const s = file.stream().pipeThrough(dem).pipeThrough(dec).pipeTo(new WritableStream({
+      start() {},
+      write(frame) {
+        console.log('frame', frame);
+        canvas.value!.width = frame.displayWidth;
+        canvas.value!.height = frame.displayHeight;
+        canvasCtx.drawImage(frame, 0, 0);
+      },
+      close() {},
+    }));
   }
 }
 </script>
@@ -39,6 +59,7 @@ async function execMain() {
   </div>
 
   <main>
+    <canvas ref="canvas" width="2048" height="2048"></canvas>
   </main>
 </div>
 </template>
@@ -81,6 +102,10 @@ main {
   flex-wrap: wrap;
   flex-direction: row;
   justify-content: center;
+
+  > * {
+    width: 100%;
+  }
 }
 
 .image {
