@@ -1,9 +1,9 @@
-import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from 'mp4box';
+import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, createFile } from 'mp4box';
 
 const DEV = import.meta.env.DEV;
 
 // VideoDecoderが持つキューの最大数
-const DECODE_QUEUE_MAX = 100;
+const DECODE_QUEUE_MAX = 200;
 
 // デコードのTransformStreamのhighWaterMark
 const DECODE_HWM = 10;
@@ -40,7 +40,7 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 			data.interval = 0;
 		}
 	}
-	return new TransformStream<Uint8Array, Sample>({
+	return new TransformStream<Uint8Array, EncodedVideoChunk>({
 		start(controller) {
 			mp4boxfile = createFile();
 
@@ -70,7 +70,13 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				if (!samples || samples.length === 0) return;
 				if (DEV) console.log('demux: onSamples: desiredSize', controller.desiredSize);
 				for (const sample of samples) {
-					controller.enqueue(sample);
+					controller.enqueue(new EncodedVideoChunk({
+						type: sample.is_sync ? 'key' : 'delta',
+						timestamp: 1e6 * sample.cts / sample.timescale,
+						duration: 1e6 * sample.duration / sample.timescale,
+						data: sample.data,
+					}));
+					if (DEV) console.log('demux: onSamples: sample', sample);
 					data.processedSample = sample.number;
 
 					if (sample.number + 1 === data.totalSamples) {
@@ -146,6 +152,7 @@ export type VideoInfo = {
 	info: MP4Info,
 	videoInfo: MP4VideoTrack,
 	audioInfo?: MP4AudioTrack,
+	description: Uint8Array,
 };
 
 // https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L64
@@ -195,6 +202,20 @@ export function getMP4Info(file: File) {
 
 			result.info = info;
             result.videoInfo = info.videoTracks[0];
+			const trak = mp4boxfile.getTrackById(result.videoInfo.id);
+			if (!trak) {
+				return reject('No video track found');
+			}
+			for (const entry of (trak as any).mdia.minf.stbl.stsd.entries) {
+				try {
+					result.description = getDescriptionBuffer(entry);
+				} catch (e) {
+					if (DEV) console.error('getMP4Info: getDescriptionBuffer error', e);
+				}
+			}
+			if (!result.description) {
+				return reject('No description found');
+			}
 			if (info.audioTracks.length > 0) {
 				result.audioInfo = info.audioTracks[0];
 			}
@@ -215,12 +236,6 @@ export function getMP4Info(file: File) {
  */
 export async function generateVideoDecodeTransformer(file: File) {
 	const info = await getMP4Info(file);
-	const confBase = {
-		codec: info.videoInfo.codec.startsWith('vp08') ? 'vp8' : info.videoInfo.codec,
-		codedHeight: info.videoInfo.track_height,
-		codedWidth: info.videoInfo.track_width,
-		hardwareAcceleration: 'prefer-hardware',
-	} as VideoDecoderConfig;
 
 	let samplecnt = 0;
 	let framecnt = 0;
@@ -240,7 +255,7 @@ export async function generateVideoDecodeTransformer(file: File) {
 	};
 	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
 
-	return new TransformStream<Sample, VideoFrame>({
+	return new TransformStream<EncodedVideoChunk, VideoFrame>({
 		start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
@@ -259,44 +274,35 @@ export async function generateVideoDecodeTransformer(file: File) {
 					controller.error(e);
 				}
 			});
-		},
-		transform(sample, controller) {
-			samplecnt++;
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
-			if (decoder.state === 'unconfigured') {
-				const conf = {
-					...confBase,
-					description: getDescriptionBuffer(sample.description),
-				};
-				if (DEV) VideoDecoder.isConfigSupported(conf).then(
-					(result) => console.log('decode: isConfigSupported (ok)', result),
-					(result) => console.log('decode: isConfigSupported (ng)', result, conf),
-				);
-				decoder.configure(conf);
-			}
+			decoder.configure({
+				codec: info.videoInfo.codec.startsWith('vp08') ? 'vp8' : info.videoInfo.codec,
+				codedHeight: info.videoInfo.track_height,
+				codedWidth: info.videoInfo.track_width,
+				hardwareAcceleration: 'prefer-hardware',
+				description: info.description,
+			})
+		},
+		transform(vchunk, controller) {
+			samplecnt++;
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
-			decoder.decode(new EncodedVideoChunk({
-				type: sample.is_sync ? 'key' : 'delta',
-				timestamp: 1e6 * sample.cts / sample.timescale,
-				duration: 1e6 * sample.duration / sample.timescale,
-				data: sample.data,
-			}));
-			if (DEV) console.log('decode: recieving sample', samplecnt, framecnt, decoder.decodeQueueSize);
+			decoder.decode(vchunk);
+			if (DEV) console.log('decode: recieving vchunk', samplecnt, framecnt, decoder.decodeQueueSize);
 
 			if (allowWriteEval()) {
-				if (DEV) console.log('decode: recieving sample: resolve immediate');
+				if (DEV) console.log('decode: recieving vchunk: resolve immediate');
 				emitResolve();
 				return Promise.resolve();
 			};
-			if (DEV) console.log('decode: recieving sample: wait for allowWrite');
+			if (DEV) console.log('decode: recieving vchunk: wait for allowWrite');
 			return new Promise((resolve) => {
 				allowWriteResolve = resolve;
 			});
 		},
 		flush(controller) {
-			if (DEV) console.log('decode: sample flush');
+			if (DEV) console.log('decode: vchunk flush');
 			return decoder.flush();
 		},
 	}, {

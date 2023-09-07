@@ -40,6 +40,7 @@ async function execMain() {
     const s = file.stream().pipeThrough(dem, preventer).pipeThrough(dec, preventer).pipeTo(new WritableStream({
       start() {},
       write(frame) {
+        console.log(frame.timestamp, frame);
         if (!resized) {
           canvas.value!.width = frame.displayWidth;
           canvas.value!.height = frame.displayHeight;
@@ -47,6 +48,11 @@ async function execMain() {
         }
         canvasCtx.drawImage(frame, 0, 0);
         frame.close();
+        return new Promise((resolve, reject) => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
       },
       close() {
         console.log('writable close');
