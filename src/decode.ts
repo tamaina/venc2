@@ -162,7 +162,7 @@ export function getDescriptionBuffer(entry: any) {
 export function getMP4Info(file: File) {
 	const result = {} as Partial<VideoInfo>;
 
-    return new Promise<VideoInfo>(async (resolve, reject) => {
+    return new Promise<VideoInfo>((resolve, reject) => {
         const mp4boxfile = createFile();
 
 		/**
@@ -170,19 +170,19 @@ export function getMP4Info(file: File) {
 		 */
 		const reader = file.stream().getReader();
 		let seek = 0;
-		function push() {
-			reader.read().then(({ done, value }) => {
-				if (done) {
-					return;
-				}
-				if (value) {
-					const buff = value.buffer as MP4ArrayBuffer;
-					buff.fileStart = seek;
-					mp4boxfile.appendBuffer(buff);
-					seek += value.byteLength;
-				}
-				push();
-			});
+		async function push(): Promise<void> {
+			const { done, value } = await reader.read();
+
+			if (done) {
+				return;
+			}
+			if (value) {
+				const buff = value.buffer as MP4ArrayBuffer;
+				buff.fileStart = seek;
+				mp4boxfile.appendBuffer(buff);
+				seek += value.byteLength;
+			}
+			return push();
 		}
 
         mp4boxfile.onError = (e) => {
