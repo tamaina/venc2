@@ -16,22 +16,20 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				const track = info.tracks.find((track) => track.id === getTrackId(info));
 
 				if (track) {
-					mp4boxfile.setExtractionOptions(track.id, null, { nbSamples: 300 });
+					mp4boxfile.setExtractionOptions(track.id, null, { nbSamples: 1 });
 					mp4boxfile.start();
 				}
-
 				mp4boxfile.flush();
 			};
 
 			mp4boxfile.onSamples = (id, user, samples) => {
+				console.log('onSamples', id, user, samples, seek);
 				for (const sample of samples) {
 					controller.enqueue(sample);
-					//console.log('enqueue', sample, controller.desiredSize);
 				}
 			};
 		},
 		transform(chunk, controller) {
-			//console.log('filechunk', chunk, chunk.byteLength, seek);
 			if (chunk) {
 				const buff = chunk.buffer as MP4ArrayBuffer;
 				buff.fileStart = seek;
@@ -59,7 +57,6 @@ export type DecodeResult = {
 // https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L64
 export function getDescriptionBuffer(entry: any) {
 	const box = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C;
-	//console.log(box);
 	if (box) {
 	  const stream = new DataStream(undefined, 0, DataStream.BIG_ENDIAN);
 	  box.write(stream);
@@ -73,7 +70,6 @@ export function getMP4Info(file: File) {
 
     return new Promise<DecodeResult>(async (resolve, reject) => {
         const mp4boxfile = createFile();
-		//console.log(mp4boxfile);
 
 		/**
 		 * readerを用いる
@@ -121,6 +117,11 @@ export function getMP4Info(file: File) {
     });
 }
 
+/**
+ * Returns a transform stream that decodes video frames from a mp4 file stream (Blob.stream).
+ * @param file Source file (mp4)
+ * @returns TransformStream<Sample, VideoFrame> please use `preventClose: true` when using pipeThrough
+ */
 export async function generateVideoDecodeTransformer(file: File) {
 	const info = await getMP4Info(file);
 	const confBase = {
@@ -130,68 +131,32 @@ export async function generateVideoDecodeTransformer(file: File) {
 		hardwareAcceleration: 'prefer-hardware',
 	} as VideoDecoderConfig;
 
+	let samplecnt = 0;
+	let framecnt = 0;
 	let decoder: VideoDecoder;
+
 	return new TransformStream<Sample, VideoFrame>({
 		start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
-					controller.enqueue(frame);
+					if (frame) {
+						controller.enqueue(frame);
+						framecnt++;
+						console.log('frame', framecnt, samplecnt);
+					}
+
 				},
 				error: (e) => {
+					console.error('decoder error', e);
 					controller.error(e);
 				}
 			});
 		},
 		transform(sample, controller) {
-			console.log('sample', sample);
 			if (!sample) return;
 
-			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
-			if (decoder.state === 'unconfigured') {
-				decoder.configure({
-					...confBase,
-					description: getDescriptionBuffer(sample.description),
-				});
-				console.log('decoder configured', confBase, getDescriptionBuffer(sample.description));
-			}
-
-			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
-			decoder.decode(new EncodedVideoChunk({
-				type: sample.is_sync ? 'key' : 'delta',
-				timestamp: 1e6 * sample.cts / sample.timescale,
-				duration: 1e6 * sample.duration / sample.timescale,
-				data: sample.data,
-			}));
-		},
-	});
-}
-
-/**
-export async function drawFrames(file: File, canvas: HTMLCanvasElement) {
-	const info = await getMP4Info(file);
-	const confBase = {
-		codec: info.videoInfo.codec.startsWith('vp08') ? 'vp8' : info.videoInfo.codec,
-		codedHeight: info.videoInfo.track_height,
-		codedWidth: info.videoInfo.track_width,
-		hardwareAcceleration: 'prefer-hardware',
-	} as VideoDecoderConfig;
-
-	let decoder: VideoDecoder;
-	return new WritableStream<Sample>({
-		start(controller) {
-			decoder = new VideoDecoder({
-				output: (frame) => {
-					const ctx = canvas.getContext('2d');
-					if (ctx) ctx.drawImage(frame, 0, 0);
-				},
-				error: (e) => {
-					controller.error(e);
-				}
-			});
-		},
-		write(sample, controller) {
-			console.log('sample', sample);
-			if (!sample) return;
+			samplecnt++;
+			console.log('sample', samplecnt);
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
 			if (decoder.state === 'unconfigured') {
@@ -209,6 +174,8 @@ export async function drawFrames(file: File, canvas: HTMLCanvasElement) {
 				data: sample.data,
 			}));
 		},
+		flush(controller) {
+			decoder.flush();
+		},
 	});
 }
- */

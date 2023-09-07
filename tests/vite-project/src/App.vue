@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, /*drawFrames*/ } from '../../../src/decode';
-import { read } from 'fs';
+import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer } from '../../../src/decode';
 
 //import TheWorker from './workers/worker?worker';
 
@@ -29,17 +28,25 @@ async function execMain() {
     const canvasCtx = canvas.value?.getContext('2d');
     if (!canvasCtx) return;
 
+    const preventer = {
+      preventCancel: true,
+      preventClose: true,
+      preventAbort: true,
+    };
     const dem = generateDemuxToVideoTransformer();
     //file.stream().pipeThrough(dem).pipeTo(await drawFrames(file, canvas.value!));
-
     const dec = await generateVideoDecodeTransformer(file);
-    const s = file.stream().pipeThrough(dem).pipeThrough(dec).pipeTo(new WritableStream({
+    let resized = false;
+    const s = file.stream().pipeThrough(dem, preventer).pipeThrough(dec, preventer).pipeTo(new WritableStream({
       start() {},
       write(frame) {
-        console.log('frame', frame);
-        canvas.value!.width = frame.displayWidth;
-        canvas.value!.height = frame.displayHeight;
+        if (!resized) {
+          canvas.value!.width = frame.displayWidth;
+          canvas.value!.height = frame.displayHeight;
+          resized = true;
+        }
         canvasCtx.drawImage(frame, 0, 0);
+        frame.close();
       },
       close() {},
     }));

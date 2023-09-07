@@ -18,10 +18,12 @@
   "scripts": {
     "build": "NODE_ENV=production node build.js && tsc --project tsconfig.build.json",
     "dev": "node build.js watch",
-    "test": "cd tests/vite-project && pnpm run dev"
+    "test": "cd tests/vite-project && pnpm run dev",
+    "preview": "cd tests/vite-project && pnpm run build && pnpm run preview"
   },
   "repository": "https://github.com/misskey-dev/browser-image-resizer.git",
   "dependencies": {
-    "mp4box": "^0.5.2"
+    "mp4box": "^0.5.2",
+    "vite": "5.0.0-beta.0"
   }
 }
