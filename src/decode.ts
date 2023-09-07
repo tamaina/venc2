@@ -165,30 +165,25 @@ export function getMP4Info(file: File) {
     return new Promise<VideoInfo>((resolve, reject) => {
         const mp4boxfile = createFile();
 
-		/**
-		 * readerを用いる
-		 */
-		const reader = file.stream().getReader();
 		let seek = 0;
-		async function push(): Promise<void> {
-			const { done, value } = await reader.read();
-
-			if (done) {
-				return;
-			}
-			if (value) {
-				const buff = value.buffer as MP4ArrayBuffer;
+		const writable = new WritableStream<Uint8Array>({
+			start() {},
+			write(chunk) {
+				const buff = chunk.buffer as MP4ArrayBuffer;
 				buff.fileStart = seek;
 				mp4boxfile.appendBuffer(buff);
-				seek += value.byteLength;
-			}
-			return push();
-		}
+				seek += chunk.byteLength;
+			},
+			close() {},
+		});	
+
+		const stream = file.stream();
+		stream.pipeTo(writable);
 
         mp4boxfile.onError = (e) => {
             reject(e);
 			mp4boxfile.flush();
-			reader.cancel();
+			stream.cancel();
         };
 
         mp4boxfile.onReady = (info) => {
@@ -204,10 +199,8 @@ export function getMP4Info(file: File) {
 
 			resolve(result as VideoInfo);
 			mp4boxfile.flush();
-			reader.cancel();
+			stream.cancel();
         };
-
-		push();
     });
 }
 
@@ -268,10 +261,15 @@ export async function generateVideoDecodeTransformer(file: File) {
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
 			if (decoder.state === 'unconfigured') {
-				decoder.configure({
+				const conf = {
 					...confBase,
 					description: getDescriptionBuffer(sample.description),
-				});
+				};
+				if (DEV) VideoDecoder.isConfigSupported(conf).then(
+					(result) => console.log('decode: isConfigSupported (ok)', result),
+					(result) => console.log('decode: isConfigSupported (ng)', result, conf),
+				);
+				decoder.configure(conf);
 			}
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
