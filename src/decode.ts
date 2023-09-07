@@ -3,6 +3,11 @@ import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4VideoTr
 export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => number | undefined) => {
 	let seek = 0;
 	let mp4boxfile: MP4File;
+	const data = {
+		totalSamples: 0,
+		processedSample: 0,
+		interval: 0,
+	};
 	return new TransformStream<Uint8Array, Sample>({
 		start(controller) {
 			mp4boxfile = createFile();
@@ -16,16 +21,26 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				const track = info.tracks.find((track) => track.id === getTrackId(info));
 
 				if (track) {
+					data.totalSamples = track.nb_samples;
 					mp4boxfile.setExtractionOptions(track.id, null, { nbSamples: 1 });
 					mp4boxfile.start();
+					data.interval = (globalThis.setInterval as Window['setInterval'])(() => {
+						if (data.processedSample > 100) {
+							mp4boxfile.releaseUsedSamples(track.id, data.processedSample - 5);
+						}
+					}, 1000);
 				}
-				mp4boxfile.flush();
 			};
 
 			mp4boxfile.onSamples = (id, user, samples) => {
-				console.log('onSamples', id, user, samples, seek);
+				if (!samples || samples.length === 0) return;
 				for (const sample of samples) {
 					controller.enqueue(sample);
+					data.processedSample = sample.number;
+					if (sample.number + 1 === data.totalSamples) {
+						controller.terminate();
+						globalThis.clearInterval(data.interval);
+					}
 				}
 			};
 		},
@@ -37,6 +52,11 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				seek += chunk.byteLength;
 			}
 		},
+		flush(controller) {
+			mp4boxfile.flush();
+		},
+	}, {
+		highWaterMark: 1,
 	});
 }
 
@@ -142,9 +162,10 @@ export async function generateVideoDecodeTransformer(file: File) {
 					if (frame) {
 						controller.enqueue(frame);
 						framecnt++;
-						console.log('frame', framecnt, samplecnt);
 					}
-
+					if (samplecnt === framecnt) {
+						controller.terminate();
+					}
 				},
 				error: (e) => {
 					console.error('decoder error', e);
@@ -153,10 +174,7 @@ export async function generateVideoDecodeTransformer(file: File) {
 			});
 		},
 		transform(sample, controller) {
-			if (!sample) return;
-
 			samplecnt++;
-			console.log('sample', samplecnt);
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
 			if (decoder.state === 'unconfigured') {
@@ -166,6 +184,7 @@ export async function generateVideoDecodeTransformer(file: File) {
 				});
 			}
 
+			if (samplecnt > 20000) return;
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
 			decoder.decode(new EncodedVideoChunk({
 				type: sample.is_sync ? 'key' : 'delta',
@@ -173,9 +192,10 @@ export async function generateVideoDecodeTransformer(file: File) {
 				duration: 1e6 * sample.duration / sample.timescale,
 				data: sample.data,
 			}));
+			console.log('qs', decoder.decodeQueueSize);
 		},
 		flush(controller) {
-			decoder.flush();
+			return decoder.flush();
 		},
 	});
 }
