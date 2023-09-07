@@ -165,25 +165,27 @@ export function getMP4Info(file: File) {
     return new Promise<VideoInfo>((resolve, reject) => {
         const mp4boxfile = createFile();
 
+		const reader = file.stream().getReader();
 		let seek = 0;
-		const writable = new WritableStream<Uint8Array>({
-			start() {},
-			write(chunk) {
-				const buff = chunk.buffer as MP4ArrayBuffer;
+		async function push(): Promise<void> {
+			const { done, value } = await reader.read();
+
+			if (done) {
+				return;
+			}
+			if (value) {
+				const buff = value.buffer as MP4ArrayBuffer;
 				buff.fileStart = seek;
 				mp4boxfile.appendBuffer(buff);
-				seek += chunk.byteLength;
-			},
-			close() {},
-		});	
-
-		const stream = file.stream();
-		stream.pipeTo(writable);
+				seek += value.byteLength;
+			}
+			return push();
+		}
 
         mp4boxfile.onError = (e) => {
             reject(e);
 			mp4boxfile.flush();
-			stream.cancel();
+			reader.cancel();
         };
 
         mp4boxfile.onReady = (info) => {
@@ -199,8 +201,10 @@ export function getMP4Info(file: File) {
 
 			resolve(result as VideoInfo);
 			mp4boxfile.flush();
-			stream.cancel();
+			reader.cancel();
         };
+
+		push();
     });
 }
 
