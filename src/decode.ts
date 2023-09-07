@@ -1,48 +1,95 @@
-import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4VideoTrack, Sample, createFile } from 'mp4box';
+import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from 'mp4box';
 
+const DEV = import.meta.env.DEV;
+
+// VideoDecoderが持つキューの最大数
+const DECODE_QUEUE_MAX = 100;
+
+// デコードのTransformStreamのhighWaterMark
+const DECODE_HWM = 10;
+
+/**
+ * ファイルのstreamをmp4boxで読み込んでSampleに加工するTransformStreamを生成する
+ * （メモリの節約のためにtransformをPromiseで遅延させたりしているが、progressiveでなければ効果がない）
+ */
 export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => number | undefined) => {
 	let seek = 0;
 	let mp4boxfile: MP4File;
+	let track: MP4Track;
 	const data = {
+		track: undefined as MP4Track | undefined,
+
 		totalSamples: 0,
 		processedSample: 0,
+
+		/**
+		 * controller.desiredSizeを1msおきに監視するsetIntervalのID
+		 */
 		interval: 0,
+
+		/**
+		 * transformで返されているPromiseのresolve
+		 * これを実行することでデータ受信を再開する
+		 */
+		resolve: null as (() => void) | null,
 	};
+	const clearInterval = () => {
+		if (DEV) console.log('demux: clearInterval', data.interval);
+		if (data.interval) {
+			globalThis.clearInterval(data.interval);
+			data.interval = 0;
+		}
+	}
 	return new TransformStream<Uint8Array, Sample>({
 		start(controller) {
 			mp4boxfile = createFile();
 
 			mp4boxfile.onError = (e) => {
 				controller.error(e);
+				console.error('demux: mp4box error', e);
 				mp4boxfile.flush();
+				clearInterval();
 			};
 
 			mp4boxfile.onReady = (info) => {
-				const track = info.tracks.find((track) => track.id === getTrackId(info));
+				const _track = info.tracks.find((track) => track.id === getTrackId(info));
 
-				if (track) {
+				if (_track) {
+					track = _track;
 					data.totalSamples = track.nb_samples;
 					mp4boxfile.setExtractionOptions(track.id, null, { nbSamples: 1 });
 					mp4boxfile.start();
-					data.interval = (globalThis.setInterval as Window['setInterval'])(() => {
-						if (data.processedSample > 100) {
-							mp4boxfile.releaseUsedSamples(track.id, data.processedSample - 5);
-						}
-					}, 1000);
+				} else {
+					controller.error('demux: track not found');
+					mp4boxfile.flush();
+					clearInterval();
 				}
 			};
 
 			mp4boxfile.onSamples = (id, user, samples) => {
 				if (!samples || samples.length === 0) return;
+				if (DEV) console.log('demux: onSamples: desiredSize', controller.desiredSize);
 				for (const sample of samples) {
 					controller.enqueue(sample);
 					data.processedSample = sample.number;
+
 					if (sample.number + 1 === data.totalSamples) {
+						// totalSamplesとsample.number+1が一致する = 最後のサンプルを処理した
+						// なのでクリーンアップを行う
 						controller.terminate();
-						globalThis.clearInterval(data.interval);
+						mp4boxfile.flush();
+						clearInterval();
 					}
 				}
 			};
+
+			data.interval = (globalThis.setInterval as Window['setInterval'])(() => {
+				if (data.resolve && (controller.desiredSize ?? 0) >= 0) {
+					if (DEV) console.log('demux: recieving chunk resolve!!');
+					data.resolve();
+					data.resolve = null;
+				}
+			}, 1);
 		},
 		transform(chunk, controller) {
 			if (chunk) {
@@ -50,10 +97,37 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				buff.fileStart = seek;
 				mp4boxfile.appendBuffer(buff);
 				seek += chunk.byteLength;
+				if (DEV) console.log('demux: recieving chunk', chunk.byteLength, seek, controller.desiredSize);
+
+				if (data.processedSample > 100) {
+					// チャンクをappendBufferしたら古い内容を順次開放する
+
+					// desiredSize（負のみ・nullは0）
+					// 負の場合、その絶対値分のサンプルはブラウザが管理している　この分のサンプルは開放してはならない
+					// 正の場合processedSampleに足すと不必要に開放するのもだめ
+					const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
+
+					// 一応の安全マージンでHWMの5倍は保持しておく
+					const hwmFiveTimes = DECODE_HWM * 5;
+
+					const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
+					if (DEV) console.log('demux: recieving chunk: release used samples', sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
+					mp4boxfile.releaseUsedSamples(track.id, sampleNumber);
+				}
 			}
+
+			// readyになるまでは問答無用で読み込む
+			if (data.totalSamples === 0) return;
+
+			return new Promise((resolve) => {
+				if (data.resolve) data.resolve();
+				data.resolve = resolve;
+			});
 		},
 		flush(controller) {
-			mp4boxfile.flush();
+			// 呼ばれたのを見たことがないが一応書いておく
+			if (DEV) console.log('demux: file flush');
+			clearInterval();
 		},
 	}, {
 		highWaterMark: 1,
@@ -68,7 +142,7 @@ export const generateDemuxToAudioTransformer = () => {
 	return generateDemuxTransformerBase((info) => info.audioTracks[0]?.id);
 };
 
-export type DecodeResult = {
+export type VideoInfo = {
 	info: MP4Info,
 	videoInfo: MP4VideoTrack,
 	audioInfo?: MP4AudioTrack,
@@ -86,9 +160,9 @@ export function getDescriptionBuffer(entry: any) {
 }
 
 export function getMP4Info(file: File) {
-	const result = {} as Partial<DecodeResult>;
+	const result = {} as Partial<VideoInfo>;
 
-    return new Promise<DecodeResult>(async (resolve, reject) => {
+    return new Promise<VideoInfo>(async (resolve, reject) => {
         const mp4boxfile = createFile();
 
 		/**
@@ -128,7 +202,7 @@ export function getMP4Info(file: File) {
 				result.audioInfo = info.audioTracks[0];
 			}
 
-			resolve(result as DecodeResult);
+			resolve(result as VideoInfo);
 			mp4boxfile.flush();
 			reader.cancel();
         };
@@ -155,20 +229,36 @@ export async function generateVideoDecodeTransformer(file: File) {
 	let framecnt = 0;
 	let decoder: VideoDecoder;
 
+	/**
+	 * transformで返されているPromiseのresolve
+	 * これを実行することでデータ受信を再開する
+	 */
+	let allowWriteResolve: (() => void) | null = null;
+	const emitResolve = () => {
+		if (DEV) console.log('decode: emit resolve', allowWriteResolve);
+		if (allowWriteResolve) {
+			allowWriteResolve();
+			allowWriteResolve = null;
+		}
+	};
+	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
+
 	return new TransformStream<Sample, VideoFrame>({
 		start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
 					if (frame) {
-						controller.enqueue(frame);
 						framecnt++;
+						if (DEV) console.log('decode: enqueue frame', framecnt);
+						controller.enqueue(frame);
 					}
+					if (allowWriteEval()) emitResolve();
 					if (samplecnt === framecnt) {
 						controller.terminate();
 					}
 				},
 				error: (e) => {
-					console.error('decoder error', e);
+					console.error('decode: decoder error', e);
 					controller.error(e);
 				}
 			});
@@ -184,7 +274,6 @@ export async function generateVideoDecodeTransformer(file: File) {
 				});
 			}
 
-			if (samplecnt > 20000) return;
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
 			decoder.decode(new EncodedVideoChunk({
 				type: sample.is_sync ? 'key' : 'delta',
@@ -192,10 +281,23 @@ export async function generateVideoDecodeTransformer(file: File) {
 				duration: 1e6 * sample.duration / sample.timescale,
 				data: sample.data,
 			}));
-			console.log('qs', decoder.decodeQueueSize);
+			if (DEV) console.log('decode: recieving sample', samplecnt, framecnt, decoder.decodeQueueSize);
+
+			if (allowWriteEval()) {
+				if (DEV) console.log('decode: recieving sample: resolve immediate');
+				emitResolve();
+				return Promise.resolve();
+			};
+			if (DEV) console.log('decode: recieving sample: wait for allowWrite');
+			return new Promise((resolve) => {
+				allowWriteResolve = resolve;
+			});
 		},
 		flush(controller) {
+			if (DEV) console.log('decode: sample flush');
 			return decoder.flush();
 		},
+	}, {
+		highWaterMark: DECODE_HWM,
 	});
 }

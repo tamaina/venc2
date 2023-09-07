@@ -48,8 +48,10 @@ async function execMain() {
         canvasCtx.drawImage(frame, 0, 0);
         frame.close();
       },
-      close() {},
-    }));
+      close() {
+        console.log('writable close');
+      },
+    })).catch(e => console.error(e));
   }
 }
 </script>
