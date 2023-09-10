@@ -421,8 +421,8 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 						cache.delete(timestamp);
 					}
 				}
-				console.error('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), Math.min(...cache.keys()));
 				expectedNextTimestamp = Math.min(...cache.keys());
+				console.error('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
 			}
 			send(controller, frame);
 		},
