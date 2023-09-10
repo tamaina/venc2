@@ -413,6 +413,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 				// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
 				// 最小のtimestampを探してexpectedNextTimestampとする
 				// （14にしているのは、Chromeだと15以上にすると動かなくなるため）
+				// 最初のtimestampが0でない場合もこの処理が必要
 				console.error('sort: recieving frame: cache is too large', frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
 				for (const timestamp of cache.keys()) {
 					if (timestamp < expectedNextTimestamp) {
