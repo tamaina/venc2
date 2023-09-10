@@ -3,10 +3,10 @@ import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, 
 const DEV = import.meta.env.DEV;
 
 // VideoDecoderが持つキューの最大数
-const DECODE_QUEUE_MAX = 200;
+const DECODE_QUEUE_MAX = 32;
 
 // デコードのTransformStreamのhighWaterMark
-const DECODE_HWM = 10;
+const DECODE_HWM = 16;
 
 /**
  * ファイルのstreamをmp4boxで読み込んでSampleに加工するTransformStreamを生成する
