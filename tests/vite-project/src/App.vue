@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer } from '../../../src/decode';
+import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateVideoSortTransformer } from '../../../src/decode';
 
 //import TheWorker from './workers/worker?worker';
 
@@ -23,7 +23,8 @@ worker.onerror = e => console.error(e);
 async function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
     console.log(file);
-    console.log(await getMP4Info(file));
+    const info = await getMP4Info(file);
+    console.log(info);
 
     const canvasCtx = canvas.value?.getContext('2d');
     if (!canvasCtx) return;
@@ -35,9 +36,10 @@ async function execMain() {
     };
     const dem = generateDemuxToVideoTransformer();
     //file.stream().pipeThrough(dem).pipeTo(await drawFrames(file, canvas.value!));
-    const dec = await generateVideoDecodeTransformer(file);
+    const dec = await generateVideoDecodeTransformer(info.videoInfo, info.description);
+    const sor = generateVideoSortTransformer(info.videoInfo);
     let resized = false;
-    const s = file.stream().pipeThrough(dem, preventer).pipeThrough(dec, preventer).pipeTo(new WritableStream({
+    const s = file.stream().pipeThrough(dem, preventer).pipeThrough(dec, preventer).pipeThrough(sor, preventer).pipeTo(new WritableStream({
       start() {},
       write(frame) {
         console.log(frame.timestamp, frame);

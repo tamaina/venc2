@@ -70,18 +70,21 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				if (!samples || samples.length === 0) return;
 				if (DEV) console.log('demux: onSamples: desiredSize', controller.desiredSize);
 				for (const sample of samples) {
+					const timestamp = 1e6 * sample.cts / sample.timescale;
+					const duration = 1e6 * sample.duration / sample.timescale;
 					controller.enqueue(new EncodedVideoChunk({
 						type: sample.is_sync ? 'key' : 'delta',
-						timestamp: 1e6 * sample.cts / sample.timescale,
-						duration: 1e6 * sample.duration / sample.timescale,
+						timestamp,
+						duration,
 						data: sample.data,
 					}));
-					if (DEV) console.log('demux: onSamples: sample', sample);
+					if (DEV) console.log('demux: onSamples: sample', sample.number, sample.cts, timestamp, sample.duration, duration, sample.timescale, sample.is_sync);
 					data.processedSample = sample.number;
 
 					if (sample.number + 1 === data.totalSamples) {
 						// totalSamplesとsample.number+1が一致する = 最後のサンプルを処理した
 						// なのでクリーンアップを行う
+						if (DEV) console.log('demux: onSamples: last sample', sample.number);
 						controller.terminate();
 						mp4boxfile.flush();
 						clearInterval();
@@ -234,11 +237,10 @@ export function getMP4Info(file: File) {
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrame> please use `preventClose: true` when using pipeThrough
  */
-export async function generateVideoDecodeTransformer(file: File) {
-	const info = await getMP4Info(file);
-
+export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource) {
 	let samplecnt = 0;
 	let framecnt = 0;
+	const totalcnt = videoInfo.nb_samples;
 	let decoder: VideoDecoder;
 
 	/**
@@ -261,11 +263,12 @@ export async function generateVideoDecodeTransformer(file: File) {
 				output: (frame) => {
 					if (frame) {
 						framecnt++;
-						if (DEV) console.log('decode: enqueue frame', frame.timestamp, framecnt);
+						if (DEV) console.log('decode: enqueue frame', frame.timestamp, framecnt, totalcnt);
 						controller.enqueue(frame);
 					}
 					if (allowWriteEval()) emitResolve();
-					if (samplecnt === framecnt) {
+					if (totalcnt === framecnt) {
+						if (DEV) console.log('decode: enqueue frame: last frame', totalcnt, framecnt);
 						controller.terminate();
 					}
 				},
@@ -277,11 +280,11 @@ export async function generateVideoDecodeTransformer(file: File) {
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
 			decoder.configure({
-				codec: info.videoInfo.codec.startsWith('vp08') ? 'vp8' : info.videoInfo.codec,
-				codedHeight: info.videoInfo.track_height,
-				codedWidth: info.videoInfo.track_width,
+				codec: videoInfo.codec.startsWith('vp08') ? 'vp8' : videoInfo.codec,
+				codedHeight: videoInfo.track_height,
+				codedWidth: videoInfo.track_width,
 				hardwareAcceleration: 'prefer-hardware',
-				description: info.description,
+				description,
 			})
 		},
 		transform(vchunk, controller) {
@@ -291,11 +294,18 @@ export async function generateVideoDecodeTransformer(file: File) {
 			decoder.decode(vchunk);
 			if (DEV) console.log('decode: recieving vchunk', samplecnt, framecnt, decoder.decodeQueueSize);
 
+			// safety
+			emitResolve();
+
+			if (totalcnt === samplecnt) {
+				if (DEV) console.log('decode: recieving vchunk: last chunk', totalcnt, samplecnt);
+				decoder.flush();
+				return Promise.resolve();
+			}
 			if (allowWriteEval()) {
 				if (DEV) console.log('decode: recieving vchunk: resolve immediate');
-				emitResolve();
 				return Promise.resolve();
-			};
+			}
 			if (DEV) console.log('decode: recieving vchunk: wait for allowWrite');
 			return new Promise((resolve) => {
 				allowWriteResolve = resolve;
@@ -307,5 +317,113 @@ export async function generateVideoDecodeTransformer(file: File) {
 		},
 	}, {
 		highWaterMark: DECODE_HWM,
+	});
+}
+
+const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
+/**
+ * Returns a transform stream that sorts videoframes by timestamp and duration.
+ * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
+ */
+export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
+	let expectedNextTimestamp = 0;
+	const cache = new Map<number, VideoFrame>();
+	let recievedcnt = 0;
+	let enqueuecnt = 0;
+	const totalcnt = videoInfo.nb_samples;
+
+	function send(controller: TransformStreamDefaultController<VideoFrame>, incoming: VideoFrame, _buffer?: Set<VideoFrame>) {
+		if (DEV) console.log('sort: send: trying to send', expectedNextTimestamp, incoming, cache.keys());
+
+		// 前のフレームをenqueueしてしまうと次の処理でframeがcloseされてしまう可能性があるため、
+		// バッファに入れておいてまとめてexpectedNextTimestampに当てはまるフレームが来るまでenqueueする
+		const buffer = _buffer ?? new Set<VideoFrame>();
+
+		cache.set(incoming.timestamp, incoming);
+
+		for (const margin of TIMESTAMP_MARGINS) {
+			const timestamp = expectedNextTimestamp + margin;
+			if (incoming?.timestamp === timestamp) {
+				buffer.add(incoming);
+				cache.delete(incoming.timestamp);
+				expectedNextTimestamp = timestamp + (incoming.duration ?? 0);
+				break;
+			}
+			if (cache.size && cache.has(timestamp)) {
+				const frame = cache.get(timestamp)!;
+				buffer.add(frame);
+				cache.delete(timestamp);
+
+				if (frame?.duration) {
+					expectedNextTimestamp = timestamp + frame.duration;
+					send(controller, frame, buffer);
+					return;
+				}
+			}
+		}
+
+		if (buffer.size > 0) {
+			if (DEV) console.log('sort: send: enqueue buffer', buffer, buffer.size);
+			for (const frame of buffer) {
+				controller.enqueue(frame);
+				cache.delete(frame.timestamp);
+				enqueuecnt++;
+				if (DEV) console.log('sort: send: enqueue buffer: sending frame', frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+			}
+			return;
+		} else {
+			if (DEV) console.log('sort: send: no frame to enqueue');
+		}
+	}
+
+	return new TransformStream<VideoFrame, VideoFrame>({
+		start() {},
+		transform(frame, controller) {
+			recievedcnt++
+			if (DEV) console.log('sort: recieving frame', frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+
+			if (frame.timestamp < expectedNextTimestamp) {
+				console.error('sort: recieving frame: drop frame', frame.timestamp, expectedNextTimestamp);
+				frame.close();
+				return;
+			}
+
+			if (recievedcnt === totalcnt) {
+				// 最後のフレームを受信した場合片付ける
+				if (DEV) console.log('sort: recieving frame: last frame', frame.timestamp, cache);
+				for (const timestamp of Array.from(cache.keys()).filter(x => x >= expectedNextTimestamp).sort((a, b) => a - b)) {
+					// キャッシュを全てenqueueする
+					if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
+					controller.enqueue(cache.get(timestamp)!);
+					cache.delete(timestamp);
+				}
+				if (frame.timestamp >= expectedNextTimestamp) {
+					if (DEV) console.log('sort: recieving frame: enqueue last frame', frame.timestamp);
+					controller.enqueue(frame);
+				} else {
+					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
+				}
+				controller.terminate();
+				return;
+			}
+
+			if (cache.size >= 15) {
+				// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
+				// 最小のtimestampを探してexpectedNextTimestampとする
+				console.error('sort: recieving frame: cache is too large', frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
+				for (const timestamp of cache.keys()) {
+					if (timestamp < expectedNextTimestamp) {
+						cache.get(timestamp)?.close();
+						cache.delete(timestamp);
+					}
+				}
+				console.error('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), Math.min(...cache.keys()));
+				expectedNextTimestamp = Math.min(...cache.keys());
+			}
+			send(controller, frame);
+		},
+		flush(controller) {
+			if (DEV) console.log('sort: frame flush');
+		},
 	});
 }
