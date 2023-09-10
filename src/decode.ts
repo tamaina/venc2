@@ -324,6 +324,8 @@ const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
  * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
+ * 
+ * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
  */
 export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 	let expectedNextTimestamp = 0;
@@ -407,9 +409,10 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 				return;
 			}
 
-			if (cache.size >= 15) {
+			if (cache.size >= 14) {
 				// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
 				// 最小のtimestampを探してexpectedNextTimestampとする
+				// （14にしているのは、Chromeだと15以上にすると動かなくなるため）
 				console.error('sort: recieving frame: cache is too large', frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
 				for (const timestamp of cache.keys()) {
 					if (timestamp < expectedNextTimestamp) {
