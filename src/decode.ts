@@ -261,7 +261,7 @@ export async function generateVideoDecodeTransformer(file: File) {
 				output: (frame) => {
 					if (frame) {
 						framecnt++;
-						if (DEV) console.log('decode: enqueue frame', framecnt);
+						if (DEV) console.log('decode: enqueue frame', frame.timestamp, framecnt);
 						controller.enqueue(frame);
 					}
 					if (allowWriteEval()) emitResolve();
