@@ -51,7 +51,7 @@ async function execMain() {
       .pipeTo(new WritableStream({
         start() {},
         write(frame) {
-          console.log('write', frame.timestamp, frame);
+          if (DEV) console.log('write', frame.timestamp, frame);
           if (!resized) {
             canvas.value!.width = frame.displayWidth;
             canvas.value!.height = frame.displayHeight;
