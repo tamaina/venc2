@@ -10,8 +10,8 @@ devDependencies:
     specifier: ^18.16.3
     version: 18.16.3
   '@vitejs/plugin-vue':
-    specifier: ^2.3.1
-    version: 2.3.4(vite@4.4.9)(vue@3.2.47)
+    specifier: ^4.3.4
+    version: 4.3.4(vite@4.4.9)(vue@3.2.47)
   typescript:
     specifier: ^4.5.4
     version: 4.9.5
@@ -249,11 +249,11 @@ packages:
     resolution: {integrity: sha512-OPs5WnnT1xkCBiuQrZA4+YAV4HEJejmHneyraIaxsbev5yCEr6KMwINNFP9wQeFIw8FWcoTqF3vQsa5CDaI+8Q==}
     dev: true
 
-  /@vitejs/plugin-vue@2.3.4(vite@4.4.9)(vue@3.2.47):
-    resolution: {integrity: sha512-IfFNbtkbIm36O9KB8QodlwwYvTEsJb4Lll4c2IwB3VHc2gie2mSPtSzL0eYay7X2jd/2WX02FjSGTWR6OPr/zg==}
-    engines: {node: '>=12.0.0'}
+  /@vitejs/plugin-vue@4.3.4(vite@4.4.9)(vue@3.2.47):
+    resolution: {integrity: sha512-ciXNIHKPriERBisHFBvnTbfKa6r9SAesOYXeGDzgegcvy9Q4xdScSHAmKbNT0M3O0S9LKhIf5/G+UYG4NnnzYw==}
+    engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: ^2.5.10
+      vite: ^4.0.0
       vue: ^3.2.25
     dependencies:
       vite: 4.4.9(@types/node@18.16.3)

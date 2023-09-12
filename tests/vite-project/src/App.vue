@@ -47,7 +47,7 @@ async function execMain() {
       .pipeThrough(dem, preventer)
       .pipeThrough(dec, preventer)
       .pipeThrough(sor, preventer)
-      .pipeThrough(res, preventer)
+      .pipeThrough(res)
       .pipeTo(new WritableStream({
         start() {},
         write(frame) {
