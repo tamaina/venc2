@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@misskey-dev/browser-image-resizer':
+    specifier: 2.2.1-misskey.9
+    version: 2.2.1-misskey.9
   mp4box:
     specifier: ^0.5.2
     version: 0.5.2
@@ -197,6 +200,10 @@ packages:
     os: [win32]
     requiresBuild: true
     optional: true
+
+  /@misskey-dev/browser-image-resizer@2.2.1-misskey.9:
+    resolution: {integrity: sha512-5gbRJ57fX5+DOJFaYn9a0pFcSNCfju6WEEHB1VV/ATwXPZycz2y519PDk0EiG2z+MLqLHx3OhTJIptFS5Ks3lg==}
+    dev: false
 
   /esbuild@0.18.20:
     resolution: {integrity: sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA==}

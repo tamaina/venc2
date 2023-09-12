@@ -137,6 +137,7 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 			// 呼ばれたのを見たことがないが一応書いておく
 			if (DEV) console.log('demux: file flush');
 			clearInterval();
+			controller.terminate();
 		},
 	}, {
 		highWaterMark: 1,
@@ -313,121 +314,10 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 		},
 		flush(controller) {
 			if (DEV) console.log('decode: vchunk flush');
+			controller.terminate();
 			return decoder.flush();
 		},
 	}, {
 		highWaterMark: DECODE_HWM,
-	});
-}
-
-const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
-/**
- * Returns a transform stream that sorts videoframes by timestamp and duration.
- * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
- * 
- * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
- */
-export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
-	let expectedNextTimestamp = 0;
-	const cache = new Map<number, VideoFrame>();
-	let recievedcnt = 0;
-	let enqueuecnt = 0;
-	const totalcnt = videoInfo.nb_samples;
-
-	function send(controller: TransformStreamDefaultController<VideoFrame>, incoming: VideoFrame, _buffer?: Set<VideoFrame>) {
-		if (DEV) console.log('sort: send: trying to send', expectedNextTimestamp, incoming, cache.keys());
-
-		// 前のフレームをenqueueしてしまうと次の処理でframeがcloseされてしまう可能性があるため、
-		// バッファに入れておいてまとめてexpectedNextTimestampに当てはまるフレームが来るまでenqueueする
-		const buffer = _buffer ?? new Set<VideoFrame>();
-
-		cache.set(incoming.timestamp, incoming);
-
-		for (const margin of TIMESTAMP_MARGINS) {
-			const timestamp = expectedNextTimestamp + margin;
-			if (incoming?.timestamp === timestamp) {
-				buffer.add(incoming);
-				cache.delete(incoming.timestamp);
-				expectedNextTimestamp = timestamp + (incoming.duration ?? 0);
-				break;
-			}
-			if (cache.size && cache.has(timestamp)) {
-				const frame = cache.get(timestamp)!;
-				buffer.add(frame);
-				cache.delete(timestamp);
-
-				if (frame?.duration) {
-					expectedNextTimestamp = timestamp + frame.duration;
-					send(controller, frame, buffer);
-					return;
-				}
-			}
-		}
-
-		if (buffer.size > 0) {
-			if (DEV) console.log('sort: send: enqueue buffer', buffer, buffer.size);
-			for (const frame of buffer) {
-				controller.enqueue(frame);
-				cache.delete(frame.timestamp);
-				enqueuecnt++;
-				if (DEV) console.log('sort: send: enqueue buffer: sending frame', frame.timestamp, recievedcnt, enqueuecnt, cache.size);
-			}
-			return;
-		} else {
-			if (DEV) console.log('sort: send: no frame to enqueue');
-		}
-	}
-
-	return new TransformStream<VideoFrame, VideoFrame>({
-		start() {},
-		transform(frame, controller) {
-			recievedcnt++
-			if (DEV) console.log('sort: recieving frame', frame.timestamp, recievedcnt, enqueuecnt, cache.size);
-
-			if (frame.timestamp < expectedNextTimestamp) {
-				console.error('sort: recieving frame: drop frame', frame.timestamp, expectedNextTimestamp);
-				frame.close();
-				return;
-			}
-
-			if (recievedcnt === totalcnt) {
-				// 最後のフレームを受信した場合片付ける
-				if (DEV) console.log('sort: recieving frame: last frame', frame.timestamp, cache);
-				for (const timestamp of Array.from(cache.keys()).filter(x => x >= expectedNextTimestamp).sort((a, b) => a - b)) {
-					// キャッシュを全てenqueueする
-					if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
-					controller.enqueue(cache.get(timestamp)!);
-					cache.delete(timestamp);
-				}
-				if (frame.timestamp >= expectedNextTimestamp) {
-					if (DEV) console.log('sort: recieving frame: enqueue last frame', frame.timestamp);
-					controller.enqueue(frame);
-				} else {
-					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
-				}
-				controller.terminate();
-				return;
-			}
-
-			if (cache.size >= 14) {
-				// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
-				// 最小のtimestampを探してexpectedNextTimestampとする
-				// （14にしているのは、Chromeだと15以上にすると動かなくなるため）
-				// 最初のtimestampが0でない場合もこの処理が必要
-				console.error('sort: recieving frame: cache is too large', frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
-				for (const timestamp of cache.keys()) {
-					if (timestamp < expectedNextTimestamp) {
-						cache.get(timestamp)?.close();
-						cache.delete(timestamp);
-					}
-				}
-				expectedNextTimestamp = Math.min(...cache.keys());
-				console.error('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
-			}
-			send(controller, frame);
-		},
-		flush(controller) {
-			if (DEV) console.log('sort: frame flush');
-		},
 	});
 }
