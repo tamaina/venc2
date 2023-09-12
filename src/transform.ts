@@ -1,10 +1,13 @@
 import { BrowserImageResizerConfigWithOffscreenCanvasOutput, readAndCompressImage } from "@misskey-dev/browser-image-resizer";
+import { MP4VideoTrack } from "mp4box";
 
 const DEV = import.meta.env.DEV;
 
 const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
+ * **Set preventClose: true** when using the stream with pipeThrough.
+ * 
  * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
  * 
  * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
@@ -115,6 +118,13 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 	});
 }
 
+/**
+ * Returns a transform stream that resizes videoframes by `@misskey-dev/browser-image-resizer`.
+ * **Set preventClose: false** when using the stream with pipeThrough.
+ * 
+ * @param config Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>
+ * @returns TransformStream<VideoFrame, VideoFrame>
+ */
 export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>) {
     let framecnt = 0;
     return new TransformStream<VideoFrame, VideoFrame>({

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer } from '../../../src/decode';
+import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from '../../../src/decode';
 import { generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
 
 const DEV = import.meta.env.DEV;
@@ -37,17 +37,14 @@ async function execMain() {
       preventClose: true,
       preventAbort: true,
     };
-    const dem = generateDemuxToVideoTransformer();
-    //file.stream().pipeThrough(dem).pipeTo(await drawFrames(file, canvas.value!));
-    const dec = await generateVideoDecodeTransformer(info.videoInfo, info.description);
-    const sor = generateVideoSortTransformer(info.videoInfo);
-    const res = generateResizeTransformer({ maxWidth: 1280, maxHeight: 1280 })
+
     let resized = false;
     const s = file.stream()
-      .pipeThrough(dem, preventer)
-      .pipeThrough(dec, preventer)
-      .pipeThrough(sor, preventer)
-      .pipeThrough(res)
+      .pipeThrough(generateDemuxToVideoTransformer(), preventer)
+      .pipeThrough(generateSampleToEncodedVideoChunkTransformer())
+      .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description), preventer)
+      .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
+      .pipeThrough(generateResizeTransformer({ maxWidth: 1280, maxHeight: 1280 }))
       .pipeTo(new WritableStream({
         start() {},
         write(frame) {
