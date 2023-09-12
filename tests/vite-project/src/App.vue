@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { createFile, DataStream } from 'mp4box';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from '../../../src/decode';
-import { generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
+import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
 import { generateVideoEncoderTransformStream, writeEncodedVideoChunksToMP4File } from '../../../src/encode';
 
 const DEV = import.meta.env.DEV;
@@ -13,6 +13,7 @@ const DEV = import.meta.env.DEV;
 const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
 const canvas = ref<HTMLCanvasElement>();
+const video = ref<HTMLVideoElement>();
 
 const size = ref(sizeInput.value?.valueAsNumber || 2048);
 
@@ -42,7 +43,11 @@ async function execMain() {
     };
 
     const resizeConfig = { maxWidth: 1280, maxHeight: 1280 };
-    const outputSize = calculateSize(info.videoInfo.video, resizeConfig);
+    const _outputSize = calculateSize(info.videoInfo.video, resizeConfig);
+    const outputSize = {
+      width: floorWithSignificance(_outputSize.width, 2),
+      height: floorWithSignificance(_outputSize.height, 2),
+    };
     const encoderConfig = {
         codec: 'avc1.4d0034',
         ...outputSize,
@@ -57,11 +62,32 @@ async function execMain() {
       .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
       .pipeThrough(generateResizeTransformer(resizeConfig))
       .pipeThrough(generateVideoEncoderTransformStream(encoderConfig), preventer)
-      .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig));
+      .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo));
 
     console.log('file', dstFile);
+    const msr = new MediaSource();
+    const buf = dstFile.getBuffer();
+    msr.addEventListener('sourceopen', () => {
+      const sb = msr.addSourceBuffer('video/mp4; codecs="avc1.4d0034"');
+      sb.addEventListener('updateend', () => {
+        if (DEV) console.log('updateend');
+        if (sb.updating) return;
+        if (DEV) console.log('endOfStream');
+        msr.endOfStream();
+      });
+      if (DEV) console.log('sourceopen');
+      if (DEV) console.log('buf', buf);
+      sb.appendBuffer(buf);
+    });
+  
+    if (video.value) {
+      video.value.src = URL.createObjectURL(msr);
+    }
+
+    const info2 = await getMP4Info(new File([buf], 'test.mp4', { type: 'video/mp4' }));
+    console.log('info2', info2);
     //const ds = new DataStream();
-    dstFile.save('test.mp4');
+    ;
     /**
     const ro = sb
       .pipeTo(new WritableStream({
@@ -104,6 +130,7 @@ async function execMain() {
   </div>
 
   <main>
+    <video ref="video" type="video/mp4" controls></video>
     <canvas ref="canvas" width="2048" height="2048"></canvas>
   </main>
 </div>

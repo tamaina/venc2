@@ -118,14 +118,20 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 	});
 }
 
+export function floorWithSignificance(value: number, significance: number) {
+    return Math.floor(value / significance) * significance;
+}
+
 /**
  * Returns a transform stream that resizes videoframes by `@misskey-dev/browser-image-resizer`.
  * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @param config Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>
+ * @param forcedSize { width: number, height: number } Size to force resize to (crop).
  * @returns TransformStream<VideoFrame, VideoFrame>
+ * 
  */
-export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>) {
+export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, forcedSize?: { width: number; height: number }) {
     let framecnt = 0;
     return new TransformStream<VideoFrame, VideoFrame>({
         start() {},
@@ -140,6 +146,13 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
                 mimeType: null,
             });
             srcFrame.close();
+            if (forcedSize) {
+                if (DEV) {
+                    console.log('resize: forcedSize', { width: canvas.width, height: canvas.height }, forcedSize);
+                }
+                canvas.width = forcedSize.width;
+                canvas.height = forcedSize.height;
+            }
             const dstFrame = new VideoFrame(canvas, {
                 timestamp: srcFrame.timestamp,
             });

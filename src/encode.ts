@@ -1,6 +1,9 @@
-import { BoxParser, MP4File } from "mp4box";
+import { BoxParser, MP4File, MP4VideoTrack } from "mp4box";
 
 const DEV = import.meta.env.DEV;
+
+// VideoEncoderが持つキューの最大数
+const ENCODE_QUEUE_MAX = 32;
 
 type VideoEncoderOutputEncodedVideoChunk = {
     type: 'encodedVideoChunk',
@@ -18,8 +21,23 @@ export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | Vide
  */
 export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) {
     let encoder: VideoEncoder;
-    let recievedcnt = 0;
+    let framecnt = 0;
     let enqueuecnt = 0;
+
+	/**
+	 * transformで返されているPromiseのresolve
+	 * これを実行することでデータ受信を再開する
+	 */
+	let allowWriteResolve: (() => void) | null = null;
+	const emitResolve = () => {
+		if (DEV) console.log('decode: emit resolve', allowWriteResolve);
+		if (allowWriteResolve) {
+			allowWriteResolve();
+			allowWriteResolve = null;
+		}
+	};
+	const allowWriteEval = () => framecnt <= enqueuecnt + ENCODE_QUEUE_MAX;
+
     return new TransformStream<VideoFrame, VideoEncoderOutputChunk>({
         start(controller) {
             encoder = new VideoEncoder({
@@ -32,10 +50,12 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
                     if (DEV) console.log('encode: encoded', chunk);
 
-                    if (recievedcnt === enqueuecnt) {
-                        if (DEV) console.log('encode: encoded: done', recievedcnt, enqueuecnt);
+                    if (framecnt === enqueuecnt) {
+                        if (DEV) console.log('encode: encoded: done', framecnt, enqueuecnt);
+                        encoder.flush();
                         controller.terminate();
                     }
+					if (allowWriteEval()) emitResolve();
                 },
                 error: (error) => {
                     console.error('encoder error', error);
@@ -44,12 +64,25 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
             });
             encoder.configure(config);
         },
-        async transform(frame, controller) {
-            recievedcnt++;
-            if (DEV) console.log('encode: frame', recievedcnt, frame);
+        transform(frame, controller) {
+            framecnt++;
+            if (DEV) console.log('encode: frame', framecnt, frame);
             encoder.encode(frame);
+
+			// safety
+			emitResolve();
+
+			if (allowWriteEval()) {
+				if (DEV) console.log('encode: recieving vchunk: resolve immediate');
+				return Promise.resolve();
+			}
+			if (DEV) console.log('encode: recieving vchunk: wait for allowWrite');
+			return new Promise((resolve) => {
+				allowWriteResolve = resolve;
+            });
         },
         flush(controller) {
+            if (DEV) console.log('encode: flush', framecnt, enqueuecnt);
             encoder.flush();
             controller.terminate();
         },
@@ -58,11 +91,12 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
 
 const TIMESCALE = 90000;
 
-export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig) {
+export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     let trackId: number;
     let trak: BoxParser.trakBox;
     let samplecnt = 0;
+    const scaleScale = TIMESCALE / srcInfo.timescale;
     return new WritableStream<VideoEncoderOutputChunk>({
         start() {
         },
@@ -70,6 +104,9 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
             if (data.type === 'metadata' && !trak) {
                 trackId = file.addTrack({
                     timescale: TIMESCALE,
+                    duration: Math.round(srcInfo.duration * scaleScale),
+                    media_duration: Math.round(srcInfo.movie_duration * scaleScale),
+                    language: srcInfo.language,
                     width: encoderConfig.width,
                     height: encoderConfig.height,
                     ...(encoderConfig.codec.startsWith('avc') ? {
