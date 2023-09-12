@@ -3,6 +3,8 @@ import { ref, watch } from 'vue';
 import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer } from '../../../src/decode';
 import { generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
 
+const DEV = import.meta.env.DEV;
+
 //import TheWorker from './workers/worker?worker';
 
 const sizeInput = ref<HTMLInputElement>();
@@ -64,7 +66,7 @@ async function execMain() {
           });
         },
         close() {
-          console.log('writable close');
+          if (DEV) console.log('writable close');
         },
       }))
       .then(() => console.log('stream end'))
