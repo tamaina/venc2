@@ -23,7 +23,7 @@
   },
   "repository": "https://github.com/misskey-dev/browser-image-resizer.git",
   "dependencies": {
-    "@misskey-dev/browser-image-resizer": "2.2.1-misskey.9",
+    "@misskey-dev/browser-image-resizer": "2.2.1-misskey.10",
     "mp4box": "^0.5.2",
     "vite": "5.0.0-beta.0"
   }

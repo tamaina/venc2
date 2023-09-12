@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { createFile, DataStream } from 'mp4box';
+import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from '../../../src/decode';
 import { generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
+import { generateVideoEncoderTransformStream, writeEncodedVideoChunksToMP4File } from '../../../src/encode';
 
 const DEV = import.meta.env.DEV;
 
@@ -38,36 +41,53 @@ async function execMain() {
       preventAbort: true,
     };
 
+    const resizeConfig = { maxWidth: 1280, maxHeight: 1280 };
+    const outputSize = calculateSize(info.videoInfo.video, resizeConfig);
+    const encoderConfig = {
+        codec: 'avc1.4d0034',
+        ...outputSize,
+      };
+
     let resized = false;
-    const s = file.stream()
+    const dstFile = createFile();
+    const s = await file.stream()
       .pipeThrough(generateDemuxToVideoTransformer(), preventer)
       .pipeThrough(generateSampleToEncodedVideoChunkTransformer())
       .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description), preventer)
       .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
-      .pipeThrough(generateResizeTransformer({ maxWidth: 1280, maxHeight: 1280 }))
+      .pipeThrough(generateResizeTransformer(resizeConfig))
+      .pipeThrough(generateVideoEncoderTransformStream(encoderConfig), preventer)
+      .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig));
+
+    console.log('file', dstFile);
+    //const ds = new DataStream();
+    dstFile.save('test.mp4');
+    /**
+    const ro = sb
       .pipeTo(new WritableStream({
-        start() {},
-        write(frame) {
-          if (DEV) console.log('write', frame.timestamp, frame);
-          if (!resized) {
-            canvas.value!.width = frame.displayWidth;
-            canvas.value!.height = frame.displayHeight;
-            resized = true;
-          }
-          canvasCtx.drawImage(frame, 0, 0);
-          frame.close();
-          return new Promise((resolve, reject) => {
-            requestAnimationFrame(() => {
-              resolve();
+          start() {},
+          write(frame) {
+            if (DEV) console.log('write', frame.timestamp, frame);
+            if (!resized) {
+              canvas.value!.width = frame.displayWidth;
+              canvas.value!.height = frame.displayHeight;
+              resized = true;
+            }
+            canvasCtx.drawImage(frame, 0, 0);
+            frame.close();
+            return new Promise((resolve, reject) => {
+              requestAnimationFrame(() => {
+                resolve();
+              });
             });
-          });
-        },
-        close() {
-          if (DEV) console.log('writable close');
-        },
-      }))
-      .then(() => console.log('stream end'))
-      .catch(e => console.error('stream error', e));
+          },
+          close() {
+            if (DEV) console.log('writable close');
+          },
+        }))
+        .then(() => console.log('chk stream end'))
+        .catch(e => console.error('chk stream error', e));
+         */
   }
 }
 </script>

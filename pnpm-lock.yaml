@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@misskey-dev/browser-image-resizer':
-    specifier: 2.2.1-misskey.9
-    version: 2.2.1-misskey.9
+    specifier: 2.2.1-misskey.10
+    version: 2.2.1-misskey.10
   mp4box:
     specifier: ^0.5.2
     version: 0.5.2
@@ -201,8 +201,8 @@ packages:
     requiresBuild: true
     optional: true
 
-  /@misskey-dev/browser-image-resizer@2.2.1-misskey.9:
-    resolution: {integrity: sha512-5gbRJ57fX5+DOJFaYn9a0pFcSNCfju6WEEHB1VV/ATwXPZycz2y519PDk0EiG2z+MLqLHx3OhTJIptFS5Ks3lg==}
+  /@misskey-dev/browser-image-resizer@2.2.1-misskey.10:
+    resolution: {integrity: sha512-Spjiwa8brffhz4FiYrZ8VoPRyPPRzcdaIzLVb8oMnD9YGU3uzcX/CcZ08okFhrUR/N6IlQM86r5dNH/yY5Uyjg==}
     dev: false
 
   /esbuild@0.18.20:
