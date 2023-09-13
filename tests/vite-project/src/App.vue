@@ -2,9 +2,9 @@
 import { ref, watch } from 'vue';
 import { createFile, DataStream } from 'mp4box';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
-import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from '../../../src/decode';
+import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer, generateDemuxToAudioTransformer } from '../../../src/decode';
 import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
-import { generateVideoEncoderTransformStream, writeEncodedVideoChunksToMP4File } from '../../../src/encode';
+import { generateVideoEncoderTransformStream, writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from '../../../src/encode';
 
 const DEV = import.meta.env.DEV;
 
@@ -14,6 +14,8 @@ const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
 const canvas = ref<HTMLCanvasElement>();
 const video = ref<HTMLVideoElement>();
+const a = ref<HTMLAnchorElement>();
+const progress = ref<HTMLProgressElement>();
 
 const size = ref(sizeInput.value?.valueAsNumber || 2048);
 
@@ -32,6 +34,10 @@ async function execMain() {
     console.log(file);
     const info = await getMP4Info(file);
     console.log(info);
+    if (progress.value) {
+      progress.value.max = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
+      progress.value.value = 0;
+    }
 
     const canvasCtx = canvas.value?.getContext('2d');
     if (!canvasCtx) return;
@@ -49,37 +55,69 @@ async function execMain() {
       height: floorWithSignificance(_outputSize.height, 2),
     };
     const encoderConfig = {
-        codec: 'avc1.4d0034',
-        ...outputSize,
-      };
+      codec: 'avc1.4d0034',
+      ...outputSize,
+    };
 
     let resized = false;
     const dstFile = createFile();
-    const s = await file.stream()
+
+    await file.stream()
       .pipeThrough(generateDemuxToVideoTransformer(), preventer)
       .pipeThrough(generateSampleToEncodedVideoChunkTransformer())
       .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description), preventer)
       .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
       .pipeThrough(generateResizeTransformer(resizeConfig))
       .pipeThrough(generateVideoEncoderTransformStream(encoderConfig), preventer)
+      .pipeThrough(new TransformStream({
+        start() {},
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+          if (progress.value) {
+            progress.value.value += 1;
+          }
+        },
+        flush() {},
+      }))
       .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo));
 
+    if (info.audioInfo) {
+      await file.stream()
+        .pipeThrough(generateDemuxToAudioTransformer(), preventer)
+        .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo));
+    }
+    if (progress.value) {
+      progress.value.value = progress.value.max;
+    }
+
+    if (dstFile.moov) {
+      const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
+      (dstFile.moov as any).mvhd?.set('creation_time', (info.info.created.getTime() - _1904) / 1000);
+      (dstFile.moov as any).mvhd?.set('modification_time', (Date.now() - _1904) / 1000);
+    }
     console.log('file', dstFile);
     const msr = new MediaSource();
     const buf = dstFile.getBuffer();
+    console.log('result: resized!', file.size, buf.byteLength);
+    
+    if (a.value) {
+      a.value.href = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
+      a.value.download = 'test.mp4';
+    }
+
     msr.addEventListener('sourceopen', () => {
       const sb = msr.addSourceBuffer('video/mp4; codecs="avc1.4d0034"');
       sb.addEventListener('updateend', () => {
         if (DEV) console.log('updateend');
         if (sb.updating) return;
-        if (DEV) console.log('endOfStream');
+        if (DEV) console.log('endOfStream', msr.readyState);
         msr.endOfStream();
       });
       if (DEV) console.log('sourceopen');
       if (DEV) console.log('buf', buf);
       sb.appendBuffer(buf);
     });
-  
+
     if (video.value) {
       video.value.src = URL.createObjectURL(msr);
     }
@@ -130,6 +168,10 @@ async function execMain() {
   </div>
 
   <main>
+    <progress ref="progress"></progress>
+    <div>
+      <a ref="a">Download</a>
+    </div>
     <video ref="video" type="video/mp4" controls></video>
     <canvas ref="canvas" width="2048" height="2048"></canvas>
   </main>
@@ -185,5 +227,9 @@ main {
   flex-direction: column;
   align-items: center;
   margin: 10px;
+}
+
+a {
+  color: #41b883;
 }
 </style>

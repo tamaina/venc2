@@ -140,13 +140,23 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 }
 
 /**
- * Returns a transform stream that demuxes video frames from a mp4 file stream (Blob.stream).
+ * Returns a transform stream that demuxes video samples from a mp4 file stream (Blob.stream).
  * **Set preventClose: true** when using the stream with pipeThrough.
  * 
  * @returns TransformStream<Uint8Array, Sample>
  */
 export const generateDemuxToVideoTransformer = () => {
 	return generateDemuxTransformerBase((info) => info.videoTracks[0]?.id);
+};
+
+/**
+ * Returns a transform stream that demuxes audio samples from a mp4 file stream (Blob.stream).
+ * **Set preventClose: true** when using the stream with pipeThrough.
+ * 
+ * @returns TransformStream<Uint8Array, Sample>
+ */
+export const generateDemuxToAudioTransformer = () => {
+	return generateDemuxTransformerBase((info) => info.audioTracks[0]?.id);
 };
 
 /**
@@ -180,6 +190,7 @@ export type VideoInfo = {
 	videoInfo: MP4VideoTrack,
 	audioInfo?: MP4AudioTrack,
 	description: Uint8Array,
+	file: MP4File,
 };
 
 // https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L64
@@ -203,6 +214,7 @@ export function getMP4Info(file: File) {
 
     return new Promise<VideoInfo>((resolve, reject) => {
         const mp4boxfile = createFile();
+		result.file = mp4boxfile;
 
 		const reader = file.stream().getReader();
 		let seek = 0;

@@ -1,4 +1,4 @@
-import { BoxParser, MP4File, MP4VideoTrack } from "mp4box";
+import { BoxParser, MP4AudioTrack, MP4File, MP4VideoTrack, Sample } from "mp4box";
 
 const DEV = import.meta.env.DEV;
 
@@ -48,7 +48,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
                         if (DEV) console.log('encode: encoded: metadata', config);
                     }
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
-                    if (DEV) console.log('encode: encoded', chunk);
+                    if (DEV) console.log('encode: encoded', chunk, encoder.encodeQueueSize);
 
                     if (framecnt === enqueuecnt) {
                         if (DEV) console.log('encode: encoded: done', framecnt, enqueuecnt);
@@ -66,7 +66,8 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
         },
         transform(frame, controller) {
             framecnt++;
-            if (DEV) console.log('encode: frame', framecnt, frame);
+            if (DEV) console.log('encode: frame', framecnt, frame, encoder.encodeQueueSize);
+
             encoder.encode(frame);
 
 			// safety
@@ -77,6 +78,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
 				return Promise.resolve();
 			}
 			if (DEV) console.log('encode: recieving vchunk: wait for allowWrite');
+
 			return new Promise((resolve) => {
 				allowWriteResolve = resolve;
             });
@@ -115,8 +117,7 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                         hevcDecoderConfigRecord: data.data.decoderConfig?.description,
                     } : {}),
                 });
-                trak = file.getTrackById(trackId)!;
-                if (DEV) console.log('write: addTrack', trackId, trak);
+                if (DEV) console.log('write: addTrack', trackId);
                 return;
             } else {
                 samplecnt++;
@@ -133,6 +134,53 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
         },
         close() {
             if (DEV) console.log('write: close', file);
+        },
+    });
+}
+
+export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack) {
+    // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
+    console.log('ntid', (file as any).moov?.mvhd?.next_track_id);
+    const trackId = file.addTrack({
+        type: srcInfo.codec.split('.')[0],
+        hdlr: 'soun',
+        timescale: srcInfo.timescale,
+
+        //duration: srcInfo.duration,
+        //media_duration: srcInfo.duration,
+        language: srcInfo.language,
+        width: 0,
+        height: 0,
+
+        channel_count: srcInfo.audio.channel_count,
+        samplerate: srcInfo.audio.sample_rate,
+        samplesize: srcInfo.audio.sample_size,
+    });
+
+    if (DEV) console.log('write audio: addTrack', trackId);
+    let samplecnt = 0;
+    return new WritableStream<Sample>({
+        start() {
+        },
+        write(sample) {
+                samplecnt++;
+                const res = file.addSample(trackId, sample.data, {
+                    //sample_description_index: sample.description_index,
+                    duration: sample.duration,
+                    cts: sample.cts,
+                    //dts: sample.dts,
+                    is_sync: sample.is_sync,
+                    is_leading: sample.is_leading,
+                    depends_on: sample.depends_on,
+                    is_depended_on: sample.is_depended_on,
+                    has_redundancy: sample.has_redundancy,
+                    degradation_priority: sample.degradation_priority,
+                    subsamples: sample.subsamples,
+                });
+                console.log('write audio: addSample', samplecnt, sample, res);
+        },
+        close() {
+            if (DEV) console.log('write audio: close', file);
         },
     });
 }
