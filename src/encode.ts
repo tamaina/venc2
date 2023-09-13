@@ -1,4 +1,4 @@
-import { BoxParser, MP4AudioTrack, MP4File, MP4VideoTrack, Sample } from "mp4box";
+import { BoxParser, MP4AudioTrack, MP4File, MP4VideoTrack, Sample } from "@webav/mp4box.js";
 
 const DEV = import.meta.env.DEV;
 
@@ -98,13 +98,29 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
     let trackId: number;
     let trak: BoxParser.trakBox;
     let samplecnt = 0;
+    let prevChunk: EncodedVideoChunk;
+    let currentChunk: EncodedVideoChunk;
     const scaleScale = TIMESCALE / srcInfo.timescale;
+
+    function addSample() {
+        const b = new ArrayBuffer(prevChunk.byteLength);
+        prevChunk.copyTo(b);
+        const sample = file.addSample(trackId, b, {
+            cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
+            dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
+            duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6),
+            is_sync: prevChunk.type === 'key',
+        });
+        return sample;
+    }
+
     return new WritableStream<VideoEncoderOutputChunk>({
         start() {
         },
         write(data) {
             if (data.type === 'metadata' && !trak) {
                 trackId = file.addTrack({
+                    name: 'VideoHandle',
                     timescale: TIMESCALE,
                     duration: Math.round(srcInfo.duration * scaleScale),
                     media_duration: Math.round(srcInfo.movie_duration * scaleScale),
@@ -117,22 +133,29 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                         hevcDecoderConfigRecord: data.data.decoderConfig?.description,
                     } : {}),
                 });
-                if (DEV) console.log('write: addTrack', trackId);
+                trak = file.getTrackById(trackId)!;
+                if ((trak as any).tkhd) {
+                    (trak as any).tkhd.set('matrix', (srcInfo as any).matrix)
+                }
+                if (DEV) console.log('write: addTrack', trackId, trak);
                 return;
             } else {
                 samplecnt++;
-                const chunk = data.data as EncodedVideoChunk;
-                const b = new ArrayBuffer(chunk.byteLength);
-                chunk.copyTo(b);
-                const sample = file.addSample(trackId, b, {
-                    cts: Math.round(chunk.timestamp * TIMESCALE / 1e6),
-                    is_sync: chunk.type === 'key',
-                });
-                console.log('write: addSample', samplecnt, chunk, Math.round(chunk.timestamp * TIMESCALE / 1e6), chunk.type === 'key', sample);
+                if (!prevChunk) {
+                    prevChunk = data.data as EncodedVideoChunk;
+                    return;
+                }
+
+                currentChunk = data.data as EncodedVideoChunk;
+                const sample = addSample();
+                prevChunk = currentChunk;
+                console.log('write: addSample', samplecnt, prevChunk, Math.round(prevChunk.timestamp * TIMESCALE / 1e6), Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6), prevChunk.type === 'key', sample);
             }
 
         },
         close() {
+            addSample();
+            file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
             if (DEV) console.log('write: close', file);
         },
     });
@@ -144,6 +167,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
     const trackId = file.addTrack({
         type: srcInfo.codec.split('.')[0],
         hdlr: 'soun',
+        name: 'SoundHandle',
         timescale: srcInfo.timescale,
 
         //duration: srcInfo.duration,
@@ -168,7 +192,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
                     //sample_description_index: sample.description_index,
                     duration: sample.duration,
                     cts: sample.cts,
-                    //dts: sample.dts,
+                    dts: sample.dts,
                     is_sync: sample.is_sync,
                     is_leading: sample.is_leading,
                     depends_on: sample.depends_on,
@@ -180,6 +204,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
                 console.log('write audio: addSample', samplecnt, sample, res);
         },
         close() {
+            file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
             if (DEV) console.log('write audio: close', file);
         },
     });

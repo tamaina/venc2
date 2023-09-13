@@ -1,7 +1,7 @@
 // https://github.com/gpac/mp4box.js/issues/233
 // https://github.com/kixelated/moq-js/blob/9a8053db72eaabe77d6d325a7de9375c6c0d4719/types/mp4box.d.ts
 
-declare module "mp4box" {
+declare module "@webav/mp4box.js" {
 
 export interface MP4MediaTrack {
 	id: number
@@ -215,6 +215,7 @@ export interface TrackOptions {
 	media_duration?: number
 	language?: string
 	hdlr?: string
+	name?: string
 
 	// video
 	avcDecoderConfigRecord?: any

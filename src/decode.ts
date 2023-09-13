@@ -1,4 +1,4 @@
-import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from 'mp4box';
+import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
 
 const DEV = import.meta.env.DEV;
 
@@ -73,7 +73,7 @@ export const generateDemuxTransformerBase = (getTrackId: (info: MP4Info) => numb
 				if (DEV) console.log('demux: onSamples: desiredSize', controller.desiredSize);
 				for (const sample of samples) {
 					controller.enqueue(sample);
-					if (DEV) console.log('demux: onSamples: sample', sample.number, sample.cts, sample.duration, sample.timescale, sample.is_sync);
+					if (DEV) console.log('demux: onSamples: sample', sample.number, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
 					data.processedSample = sample.number;
 
 					if (sample.number + 1 === data.totalSamples) {

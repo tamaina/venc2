@@ -1,5 +1,5 @@
 import { BrowserImageResizerConfigWithOffscreenCanvasOutput, readAndCompressImage } from "@misskey-dev/browser-image-resizer";
-import { MP4VideoTrack } from "mp4box";
+import { MP4VideoTrack } from "@webav/mp4box.js";
 
 const DEV = import.meta.env.DEV;
 

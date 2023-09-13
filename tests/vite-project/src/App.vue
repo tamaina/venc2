@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { createFile, DataStream } from 'mp4box';
+import { createFile, DataStream } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer, generateDemuxToAudioTransformer } from '../../../src/decode';
 import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
@@ -34,6 +34,7 @@ async function execMain() {
     console.log(file);
     const info = await getMP4Info(file);
     console.log(info);
+
     if (progress.value) {
       progress.value.max = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
       progress.value.value = 0;
@@ -95,11 +96,14 @@ async function execMain() {
       (dstFile.moov as any).mvhd?.set('creation_time', (info.info.created.getTime() - _1904) / 1000);
       (dstFile.moov as any).mvhd?.set('modification_time', (Date.now() - _1904) / 1000);
     }
-    console.log('file', dstFile);
+    dstFile.initializeSegmentation();
+    console.log('file', dstFile, dstFile.getCodecs());
     const msr = new MediaSource();
     const buf = dstFile.getBuffer();
     console.log('result: resized!', file.size, buf.byteLength);
-    
+
+    const info2 = await getMP4Info(new File([buf], 'test.mp4', { type: 'video/mp4' }));
+
     if (a.value) {
       a.value.href = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
       a.value.download = 'test.mp4';
@@ -122,36 +126,7 @@ async function execMain() {
       video.value.src = URL.createObjectURL(msr);
     }
 
-    const info2 = await getMP4Info(new File([buf], 'test.mp4', { type: 'video/mp4' }));
     console.log('info2', info2);
-    //const ds = new DataStream();
-    ;
-    /**
-    const ro = sb
-      .pipeTo(new WritableStream({
-          start() {},
-          write(frame) {
-            if (DEV) console.log('write', frame.timestamp, frame);
-            if (!resized) {
-              canvas.value!.width = frame.displayWidth;
-              canvas.value!.height = frame.displayHeight;
-              resized = true;
-            }
-            canvasCtx.drawImage(frame, 0, 0);
-            frame.close();
-            return new Promise((resolve, reject) => {
-              requestAnimationFrame(() => {
-                resolve();
-              });
-            });
-          },
-          close() {
-            if (DEV) console.log('writable close');
-          },
-        }))
-        .then(() => console.log('chk stream end'))
-        .catch(e => console.error('chk stream error', e));
-         */
   }
 }
 </script>

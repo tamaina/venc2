@@ -8,9 +8,9 @@ dependencies:
   '@misskey-dev/browser-image-resizer':
     specifier: 2.2.1-misskey.10
     version: 2.2.1-misskey.10
-  mp4box:
-    specifier: ^0.5.2
-    version: 0.5.2
+  '@webav/mp4box.js':
+    specifier: 0.5.3-fenghen
+    version: 0.5.3-fenghen
   vite:
     specifier: 5.0.0-beta.0
     version: 5.0.0-beta.0
@@ -205,6 +205,10 @@ packages:
     resolution: {integrity: sha512-Spjiwa8brffhz4FiYrZ8VoPRyPPRzcdaIzLVb8oMnD9YGU3uzcX/CcZ08okFhrUR/N6IlQM86r5dNH/yY5Uyjg==}
     dev: false
 
+  /@webav/mp4box.js@0.5.3-fenghen:
+    resolution: {integrity: sha512-jAN15I3Po1Z6Ns02iknb6KGbird9rd1h9TGldzbwsar+88ZlHd+oVjOQnFavBdNDc5vmULUnldcWGDdKc02npw==}
+    dev: false
+
   /esbuild@0.18.20:
     resolution: {integrity: sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA==}
     engines: {node: '>=12'}
@@ -241,10 +245,6 @@ packages:
     requiresBuild: true
     dev: false
     optional: true
-
-  /mp4box@0.5.2:
-    resolution: {integrity: sha512-zRmGlvxy+YdW3Dmt+TR4xPHynbxwXtAQDTN/Fo9N3LMxaUlB2C5KmZpzYyGKy4c7k4Jf3RCR0A2pm9SZELOLXw==}
-    dev: false
 
   /nanoid@3.3.6:
     resolution: {integrity: sha512-BGcqMMJuToF7i1rt+2PWSNVnWIkGCU78jBG3RxO/bZlnZPK2Cmi2QaffxGO/2RvWi9sL+FAiRiXMgsyxQ1DIDA==}
