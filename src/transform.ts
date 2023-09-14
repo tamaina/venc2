@@ -1,8 +1,6 @@
 import { BrowserImageResizerConfigWithOffscreenCanvasOutput, readAndCompressImage } from "@misskey-dev/browser-image-resizer";
 import { MP4VideoTrack } from "@webav/mp4box.js";
 
-const DEV = import.meta.env.DEV;
-
 const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
@@ -12,7 +10,7 @@ const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
  * 
  * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
  */
-export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
+export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { nbSamples: number }, DEV = false) {
 	let expectedNextTimestamp = 0;
 	const cache = new Map<number, VideoFrame>();
 	let recievedcnt = 0;
@@ -71,6 +69,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 
 			if (frame.timestamp < expectedNextTimestamp) {
 				console.error('sort: recieving frame: drop frame', frame.timestamp, expectedNextTimestamp);
+				data.nbSamples--;
 				frame.close();
 				return;
 			}
@@ -90,6 +89,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 				} else {
 					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
 				}
+				if (DEV) console.log('sort: recieving frame: terminate', totalcnt, data.nbSamples);
 				controller.terminate();
 				return;
 			}
@@ -104,10 +104,11 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack) {
 					if (timestamp < expectedNextTimestamp) {
 						cache.get(timestamp)?.close();
 						cache.delete(timestamp);
+						data.nbSamples--;
 					}
 				}
 				expectedNextTimestamp = Math.min(...cache.keys());
-				console.error('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
+				if (DEV) console.log('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
 			}
 			send(controller, frame);
 		},
@@ -131,7 +132,7 @@ export function floorWithSignificance(value: number, significance: number) {
  * @returns TransformStream<VideoFrame, VideoFrame>
  * 
  */
-export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, forcedSize?: { width: number; height: number }) {
+export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, DEV = false) {
     let framecnt = 0;
     return new TransformStream<VideoFrame, VideoFrame>({
         start() {},
@@ -146,15 +147,9 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
                 mimeType: null,
             });
             srcFrame.close();
-            if (forcedSize) {
-                if (DEV) {
-                    console.log('resize: forcedSize', { width: canvas.width, height: canvas.height }, forcedSize);
-                }
-                canvas.width = forcedSize.width;
-                canvas.height = forcedSize.height;
-            }
             const dstFrame = new VideoFrame(canvas, {
                 timestamp: srcFrame.timestamp,
+				duration: srcFrame.duration ?? undefined,
             });
             if (DEV) {
                 performance.mark('resize end');

@@ -29,7 +29,8 @@
 		],
 		"lib": [
 			"esnext",
-			"dom"
+			"WebWorker",
+			"Webworker.Iterable"
 		],
 		"outDir": "./dist"
 	},

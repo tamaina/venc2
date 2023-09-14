@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { createFile } from '@webav/mp4box.js';
-import { calculateSize } from '@misskey-dev/browser-image-resizer';
-import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from '../../../src/decode';
-import { getMP4Info, generateDemuxTransformer } from '../../../src/demux';
-import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
-import { generateVideoEncoderTransformStream, writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from '../../../src/encode';
+import { getMP4Info } from '../../../src/demux';
+import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
+import TheWorker from '../../../src/workers/worker?worker';
 
 const DEV = import.meta.env.DEV;
 
-//import TheWorker from './workers/worker?worker';
+const worker = new TheWorker();
 
 const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
@@ -30,87 +27,15 @@ worker.onmessage = (event) => {
 worker.onerror = e => console.error(e);
 */
 
-async function execMain() {
-  for (const file of Array.from(input.value?.files ?? [])) {
-    console.log(file);
-    const info = await getMP4Info(file);
-    console.log(info);
-
-    if (progress.value) {
-      progress.value.max = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
-      progress.value.value = 0;
-    }
-
-    const canvasCtx = canvas.value?.getContext('2d');
-    if (!canvasCtx) return;
-
-    const preventer = {
-      preventCancel: true,
-      preventClose: true,
-      preventAbort: true,
-    };
-
-    const resizeConfig = { maxWidth: 1280, maxHeight: 1280 };
-    const _outputSize = calculateSize(info.videoInfo.video, resizeConfig);
-    const outputSize = {
-      width: floorWithSignificance(_outputSize.width, 2),
-      height: floorWithSignificance(_outputSize.height, 2),
-    };
-    const encoderConfig = {
-      codec: 'avc1.4d0034',
-      ...outputSize,
-    };
-
-    let resized = false;
-    const dstFile = createFile();
-
-    function upcnt() {
-      return new TransformStream({
-        start() {},
-        transform(chunk, controller) {
-          controller.enqueue(chunk);
-          if (progress.value) {
-            progress.value.value += 1;
-          }
-        },
-        flush() {},
-      });
-    }
-
-    if (info.audioInfo) {
-      await file.stream()
-        .pipeThrough(generateDemuxTransformer(info.audioInfo.id), preventer)
-        .pipeThrough(upcnt())
-        .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo));
-    }
-
-    await file.stream()
-      .pipeThrough(generateDemuxTransformer(info.videoInfo.id), preventer)
-      .pipeThrough(generateSampleToEncodedVideoChunkTransformer())
-      .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description), preventer)
-      .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
-      .pipeThrough(generateResizeTransformer(resizeConfig))
-      .pipeThrough(generateVideoEncoderTransformStream(encoderConfig), preventer)
-      .pipeThrough(upcnt())
-      .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo));
-
-    if (progress.value) {
-      progress.value.value = progress.value.max;
-    }
-
-    if (dstFile.moov) {
-      const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
-      (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
-      (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
-      (dstFile.moov as any).mvhd?.set('timescale', info.info.timescale);
-      (dstFile.moov as any).mvhd?.set('duration', info.info.duration);
-    }
-    // NEVER execute initializeSegmentation
-    const buf = dstFile.getBuffer();
-    console.log('result: resized!', file.size, buf.byteLength);
-
-    const info2 = await getMP4Info(new File([buf], 'test.mp4', { type: 'video/mp4' }));
-    const newUrl = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));;
+worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
+  if (ev.data.type === 'progress') {
+    progress.value!.max = ev.data.samplesNumber;
+    progress.value!.value = ev.data.samplesCount;
+    return;
+  } else if (ev.data.type === 'result') {
+    const file = new File([ev.data.buffer], 'test.mp4', { type: 'video/mp4' });
+    const info2 = await getMP4Info(file);
+    const newUrl = URL.createObjectURL(file);
     if (a.value) {
       a.value.href = newUrl;
       a.value.download = 'test.mp4';
@@ -123,32 +48,48 @@ async function execMain() {
     console.log('info2', info2);
   }
 }
+
+async function execMain() {
+  for (const file of Array.from(input.value?.files ?? [])) {
+    worker.postMessage({
+      file,
+      encoderConfig: {},
+      resizeConfig: {
+        maxWidth: size.value,
+        maxHeight: size.value,
+      },
+      DEV,
+    } as VencWorkerOrder)
+  }
+}
 </script>
 
 <template>
-<div id="myapp">
-  <div class="control">
-    <input type="file" ref="input" accept="video/*" multiple />
-    <input type="number" min="0" step="1" placeholder="size" value="2048" ref="sizeInput" @change="size = sizeInput?.valueAsNumber || 2048" />
-  </div>
-
-  <div class="do">
-    <button @click="execMain()">Main</button>
-  </div>
-
-  <main>
-    <progress ref="progress"></progress>
-    <div>
-      <a ref="a">Download</a>
+  <div id="myapp">
+    <div class="control">
+      <input type="file" ref="input" accept="video/*" multiple />
+      <input type="number" min="0" step="1" placeholder="size" value="2048" ref="sizeInput"
+        @change="size = sizeInput?.valueAsNumber || 2048" />
     </div>
-    <video ref="video" type="video/mp4" controls></video>
-    <canvas ref="canvas" width="2048" height="2048"></canvas>
-  </main>
-</div>
+
+    <div class="do">
+      <button @click="execMain()">Main</button>
+    </div>
+
+    <main>
+      <progress ref="progress"></progress>
+      <div>
+        <a ref="a">Download</a>
+      </div>
+      <video ref="video" type="video/mp4" controls></video>
+      <canvas ref="canvas" width="2048" height="2048"></canvas>
+    </main>
+  </div>
 </template>
 
 <style>
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   margin: 0;
@@ -186,7 +127,7 @@ main {
   flex-direction: row;
   justify-content: center;
 
-  > * {
+  >* {
     width: 100%;
   }
 }
@@ -202,3 +143,4 @@ a {
   color: #41b883;
 }
 </style>
+../../../src/type

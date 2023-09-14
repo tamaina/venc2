@@ -1,7 +1,5 @@
 import { BoxParser, MP4AudioTrack, MP4File, MP4VideoTrack, Sample } from "@webav/mp4box.js";
 
-const DEV = import.meta.env.DEV;
-
 // VideoEncoderが持つキューの最大数
 const ENCODE_QUEUE_MAX = 32;
 
@@ -19,7 +17,7 @@ export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | Vide
  * Returns a transform stream that encodes videoframes.
  * **Set preventClose: true** when using the stream with pipeThrough.
  */
-export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) {
+export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, data: { nbSamples: number }, DEV = false) {
     let encoder: VideoEncoder;
     let framecnt = 0;
     let enqueuecnt = 0;
@@ -50,8 +48,8 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
                     if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize);
 
-                    if (framecnt === enqueuecnt) {
-                        if (DEV) console.log('encode: encoded: done', framecnt, enqueuecnt);
+                    if (framecnt === data.nbSamples) {
+                        if (DEV) console.log('encode: encoded: done', framecnt, data.nbSamples);
                         encoder.flush();
                         controller.terminate();
                     }
@@ -79,7 +77,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
 			}
 			if (DEV) console.log('encode: recieving vchunk: wait for allowWrite');
 
-			return new Promise((resolve) => {
+			return new Promise<void>((resolve) => {
 				allowWriteResolve = resolve;
             });
         },
@@ -91,15 +89,14 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
     });
 }
 
-const TIMESCALE = 90000;
-
-export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack) {
+export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack, DEV = false) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     let trackId: number;
     let trak: BoxParser.trakBox;
     let samplecnt = 0;
     let prevChunk: EncodedVideoChunk;
     let currentChunk: EncodedVideoChunk | null;
+    const TIMESCALE = srcInfo.timescale || 90000;    
     const scaleScale = TIMESCALE / srcInfo.timescale;
 
     return new WritableStream<VideoEncoderOutputChunk>({
@@ -165,7 +162,7 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
     });
 }
 
-export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack) {
+export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack, DEV = false) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     const trackId = file.addTrack({
         type: srcInfo.codec.split('.')[0],

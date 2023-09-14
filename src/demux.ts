@@ -1,7 +1,5 @@
 import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
 
-const DEV = import.meta.env.DEV;
-
 // デコードのTransformStreamのhighWaterMark
 const DECODE_HWM = 16;
 
@@ -11,7 +9,7 @@ const DECODE_HWM = 16;
  *
  * (For memory saving, transform is delayed with Promise, but it is not effective unless the mp4 is progressive.)
  */
-export const generateDemuxTransformer = (trackId: number) => {
+export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	let seek = 0;
 	let mp4boxfile: MP4File;
 	const data = {
@@ -79,13 +77,13 @@ export const generateDemuxTransformer = (trackId: number) => {
 				}
 			};
 
-			data.interval = (globalThis.setInterval as Window['setInterval'])(() => {
+			data.interval = globalThis.setInterval(() => {
 				if (data.resolve && (controller.desiredSize ?? 0) >= 0) {
 					if (DEV) console.log('demux: recieving chunk resolve!!');
 					data.resolve();
 					data.resolve = null;
 				}
-			}, 1);
+			}, 1) as unknown as number;
 		},
 		transform(chunk, controller) {
 			if (chunk) {
@@ -115,7 +113,7 @@ export const generateDemuxTransformer = (trackId: number) => {
 			// readyになるまでは問答無用で読み込む
 			if (data.totalSamples === 0) return;
 
-			return new Promise((resolve) => {
+			return new Promise<void>((resolve) => {
 				if (data.resolve) data.resolve();
 				data.resolve = resolve;
 			});
@@ -155,7 +153,7 @@ export function getDescriptionBuffer(entry: any) {
  * @param file MP4 File
  * @returns VideoInfo
  */
-export function getMP4Info(file: File) {
+export function getMP4Info(file: Blob, DEV = false) {
 	const result = {} as Partial<VideoInfo>;
 
     return new Promise<VideoInfo>((resolve, reject) => {

@@ -1,7 +1,5 @@
 import { MP4VideoTrack, Sample } from '@webav/mp4box.js';
 
-const DEV = import.meta.env.DEV;
-
 // VideoDecoderが持つキューの最大数
 const DECODE_QUEUE_MAX = 32;
 
@@ -14,16 +12,14 @@ const DECODE_HWM = 16;
  * 
  * @returns TransformStream<Sample, EncodedVideoChunk>
  */
-export const generateSampleToEncodedVideoChunkTransformer = () => {
+export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 	return new TransformStream<Sample, EncodedVideoChunk>({
 		start() {},
 		transform(sample, controller) {
-			const timestamp = 1e6 * sample.cts / sample.timescale;
-			const duration = 1e6 * sample.duration / sample.timescale;
 			controller.enqueue(new EncodedVideoChunk({
 				type: sample.is_sync ? 'key' : 'delta',
-				timestamp,
-				duration,
+				timestamp: 1e6 * sample.cts / sample.timescale,
+				duration: 1e6 * sample.duration / sample.timescale,
 				data: sample.data,
 			}));
 		},
@@ -41,7 +37,7 @@ export const generateSampleToEncodedVideoChunkTransformer = () => {
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrame>
  */
-export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource) {
+export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, DEV = false) {
 	let samplecnt = 0;
 	let framecnt = 0;
 	const totalcnt = videoInfo.nb_samples;
@@ -111,7 +107,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 				return Promise.resolve();
 			}
 			if (DEV) console.log('decode: recieving vchunk: wait for allowWrite');
-			return new Promise((resolve) => {
+			return new Promise<void>((resolve) => {
 				allowWriteResolve = resolve;
 			});
 		},
