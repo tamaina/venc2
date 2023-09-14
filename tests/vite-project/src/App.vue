@@ -100,12 +100,12 @@ async function execMain() {
 
     if (dstFile.moov) {
       const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
-      (dstFile.moov as any).mvhd?.set('creation_time', (info.info.created.getTime() - _1904) / 1000);
-      (dstFile.moov as any).mvhd?.set('modification_time', (Date.now() - _1904) / 1000);
+      (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
+      (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
       (dstFile.moov as any).mvhd?.set('timescale', info.info.timescale);
       (dstFile.moov as any).mvhd?.set('duration', info.info.duration);
     }
-    console.log('file', dstFile, dstFile.getCodecs(), dstFile.initializeSegmentation());
+    // NEVER execute initializeSegmentation
     const buf = dstFile.getBuffer();
     console.log('result: resized!', file.size, buf.byteLength);
 
