@@ -64,8 +64,23 @@ async function execMain() {
     let resized = false;
     const dstFile = createFile();
 
+    function upcnt() {
+      return new TransformStream({
+        start() {},
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+          if (progress.value) {
+            progress.value.value += 1;
+          }
+        },
+        flush() {},
+      });
+    }
+
     if (info.audioInfo) {
-      await file.stream().pipeThrough(generateDemuxTransformer(info.audioInfo.id), preventer)
+      await file.stream()
+        .pipeThrough(generateDemuxTransformer(info.audioInfo.id), preventer)
+        .pipeThrough(upcnt())
         .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo));
     }
 
@@ -76,16 +91,7 @@ async function execMain() {
       .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
       .pipeThrough(generateResizeTransformer(resizeConfig))
       .pipeThrough(generateVideoEncoderTransformStream(encoderConfig), preventer)
-      .pipeThrough(new TransformStream({
-        start() {},
-        transform(chunk, controller) {
-          controller.enqueue(chunk);
-          if (progress.value) {
-            progress.value.value += 1;
-          }
-        },
-        flush() {},
-      }))
+      .pipeThrough(upcnt())
       .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo));
 
     if (progress.value) {
