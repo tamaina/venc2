@@ -5,30 +5,20 @@ const DEV = import.meta.env.DEV;
 // デコードのTransformStreamのhighWaterMark
 const DECODE_HWM = 16;
 
-export type DemuxInfoChunk = {
-	type: 'info',
-	data: MP4Info,
-}
-export type DemuxSampleChunk = {
-	type: 'sample',
-	data: Sample,
-}
-export type DemuxChunk = DemuxInfoChunk | DemuxSampleChunk;
-
 /**
  * Returns a transform stream that sends samples from a mp4 file stream (Blob.stream).
  * **Set preventClose: true** when using the stream with pipeThrough.
  *
  * (For memory saving, transform is delayed with Promise, but it is not effective unless the mp4 is progressive.)
  */
-export const generateDemuxTransformer = () => {
+export const generateDemuxTransformer = (trackId: number) => {
 	let seek = 0;
 	let mp4boxfile: MP4File;
 	const data = {
 		track: undefined as MP4Track | undefined,
 
 		totalSamples: 0,
-		processedSample: new Map<number, number>(),
+		processedSample: 0,
 
 		/**
 		 * controller.desiredSizeを1msおきに監視するsetIntervalのID
@@ -48,7 +38,7 @@ export const generateDemuxTransformer = () => {
 			data.interval = 0;
 		}
 	}
-	return new TransformStream<Uint8Array, DemuxChunk>({
+	return new TransformStream<Uint8Array, Sample>({
 		start(controller) {
 			mp4boxfile = createFile();
 
@@ -60,11 +50,13 @@ export const generateDemuxTransformer = () => {
 			};
 
 			mp4boxfile.onReady = (info) => {
-				controller.enqueue({ type: 'info', data: info });
-				for (const track of info.tracks) {
-					mp4boxfile.setExtractionOptions(track.id, null, { nbSamples: 1 });
-					data.totalSamples += track.nb_samples;
+				mp4boxfile.setExtractionOptions(trackId, null, { nbSamples: 1 });
+				const track = info.tracks.find((track) => track.id === trackId);
+				if (!track) {
+					controller.error('No track found');
+					return;
 				}
+				data.totalSamples = track.nb_samples;
 				if (DEV) console.log('demux: onReady', info, data.totalSamples);
 				mp4boxfile.start();
 			};
@@ -73,15 +65,10 @@ export const generateDemuxTransformer = () => {
 				if (!samples || samples.length === 0) return;
 				if (DEV) console.log('demux: onSamples: desiredSize', controller.desiredSize);
 				for (const sample of samples) {
-					controller.enqueue({ type: 'sample', data: sample });
-					data.processedSample.set(sample.track_id, sample.number);
-					const processed = Array.from(data.processedSample.values())
-						.reduce(
-							(sum, el) => sum + el,
-							Array.from(data.processedSample.keys()).length // because sample.number starts from 0
-						);
-					if (DEV) console.log('demux: onSamples: sample', sample.track_id, sample.number, sample.cts, sample.duration, sample.timescale, sample.is_sync, processed, data.totalSamples, sample);
-					if (processed === data.totalSamples) {
+					controller.enqueue(sample);
+					data.processedSample = sample.number + 1;
+					if (DEV) console.log('demux: onSamples: sample', sample.track_id, sample.number, data.totalSamples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
+					if (data.processedSample === data.totalSamples) {
 						// totalSamplesとsample.number+1が一致する = 最後のサンプルを処理した
 						// なのでクリーンアップを行う
 						if (DEV) console.log('demux: onSamples: last sample', sample.number);
@@ -108,22 +95,20 @@ export const generateDemuxTransformer = () => {
 				seek += chunk.byteLength;
 				if (DEV) console.log('demux: recieving chunk', chunk.byteLength, seek, controller.desiredSize);
 
-				for (const [trackId, processed] of data.processedSample) {
-					if (processed > 100) {
-						// チャンクをappendBufferしたら古い内容を順次開放する
-	
-						// desiredSize（負のみ・nullは0）
-						// 負の場合、その絶対値分のサンプルはブラウザが管理している　この分のサンプルは開放してはならない
-						// 正の場合processedSampleに足すと不必要に開放するのもだめ
-						const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
-	
-						// 一応の安全マージンでHWMの5倍は保持しておく
-						const hwmFiveTimes = DECODE_HWM * 5;
-	
-						const sampleNumber = Math.max(processed + desiredNegative - hwmFiveTimes, 0);
-						if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
-						mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
-					}
+				if (data.processedSample > 100) {
+					// チャンクをappendBufferしたら古い内容を順次開放する
+
+					// desiredSize（負のみ・nullは0）
+					// 負の場合、その絶対値分のサンプルはブラウザが管理している　この分のサンプルは開放してはならない
+					// 正の場合processedSampleに足すと不必要に開放するのもだめ
+					const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
+
+					// 一応の安全マージンでHWMの5倍は保持しておく
+					const hwmFiveTimes = DECODE_HWM * 5;
+
+					const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
+					if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
+					mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
 				}
 			}
 
@@ -143,21 +128,6 @@ export const generateDemuxTransformer = () => {
 		},
 	}, {
 		highWaterMark: 1,
-	});
-}
-
-export function pickTransformer(trackId: number) {
-	return new TransformStream<DemuxChunk, Sample>({
-		start() {},
-		transform(chunk, controller) {
-			if (chunk.type === 'sample' && chunk.data.track_id === trackId) {
-				controller.enqueue(chunk.data);
-			}
-		},
-		flush(controller) {
-			if (DEV) console.log('pick: flush');
-			controller.terminate();
-		},
 	});
 }
 
