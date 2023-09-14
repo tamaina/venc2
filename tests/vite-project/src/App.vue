@@ -99,8 +99,7 @@ async function execMain() {
       (dstFile.moov as any).mvhd?.set('timescale', info.info.timescale);
       (dstFile.moov as any).mvhd?.set('duration', info.info.duration);
     }
-    //dstFile.initializeSegmentation();
-    console.log('file', dstFile, dstFile.getCodecs());
+    console.log('file', dstFile, dstFile.getCodecs(), dstFile.initializeSegmentation());
     const buf = dstFile.getBuffer();
     console.log('result: resized!', file.size, buf.byteLength);
 
