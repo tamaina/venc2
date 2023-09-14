@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 import { createFile } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
-import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer, generateDemuxToAudioTransformer } from '../../../src/decode';
+import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from '../../../src/decode';
+import { getMP4Info, generateDemuxTransformer, pickTransformer } from '../../../src/demux';
 import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
 import { generateVideoEncoderTransformStream, writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from '../../../src/encode';
 
@@ -62,15 +63,17 @@ async function execMain() {
 
     let resized = false;
     const dstFile = createFile();
-
+    const [f1, f2] = file.stream().pipeThrough(generateDemuxTransformer(), preventer).tee();
+    const promises = [];
     if (info.audioInfo) {
-      await file.stream()
-        .pipeThrough(generateDemuxToAudioTransformer(), preventer)
-        .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo));
+      promises.push(f1
+        .pipeThrough(pickTransformer(info.audioInfo.id))
+        .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo))
+      );
     }
 
-    await file.stream()
-      .pipeThrough(generateDemuxToVideoTransformer(), preventer)
+    promises.push(f2
+      .pipeThrough(pickTransformer(info.videoInfo.id))
       .pipeThrough(generateSampleToEncodedVideoChunkTransformer())
       .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description), preventer)
       .pipeThrough(generateVideoSortTransformer(info.videoInfo), preventer)
@@ -86,7 +89,10 @@ async function execMain() {
         },
         flush() {},
       }))
-      .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo));
+      .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo))
+    );
+
+    await Promise.all(promises);
 
     if (progress.value) {
       progress.value.value = progress.value.max;

@@ -19,6 +19,7 @@ export interface MP4MediaTrack {
 	codec: string
 	language: string
 	nb_samples: number
+	type: 'video' | 'audio' | 'subtitles' | 'metadata'
 }
 
 export interface MP4VideoData {
@@ -27,6 +28,7 @@ export interface MP4VideoData {
 }
 
 export interface MP4VideoTrack extends MP4MediaTrack {
+	type: 'video'
 	video: MP4VideoData
 }
 
@@ -37,6 +39,7 @@ export interface MP4AudioData {
 }
 
 export interface MP4AudioTrack extends MP4MediaTrack {
+	type: 'audio'
 	audio: MP4AudioData
 }
 
@@ -52,7 +55,7 @@ export interface MP4Info {
 	brands: string[]
 	created: Date
 	modified: Date
-	tracks: MP4Track[]
+	tracks: (MP4Track | MP4MediaTrack)[]
 	mime: string
 	audioTracks: MP4AudioTrack[]
 	videoTracks: MP4VideoTrack[]

@@ -30,7 +30,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
 	 */
 	let allowWriteResolve: (() => void) | null = null;
 	const emitResolve = () => {
-		if (DEV) console.log('decode: emit resolve', allowWriteResolve);
+		if (DEV) console.log('encode: emit resolve', allowWriteResolve);
 		if (allowWriteResolve) {
 			allowWriteResolve();
 			allowWriteResolve = null;
@@ -48,7 +48,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig) 
                         if (DEV) console.log('encode: encoded: metadata', config);
                     }
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
-                    if (DEV) console.log('encode: encoded', chunk, encoder.encodeQueueSize);
+                    if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize);
 
                     if (framecnt === enqueuecnt) {
                         if (DEV) console.log('encode: encoded: done', framecnt, enqueuecnt);
