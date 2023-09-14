@@ -11,6 +11,7 @@
   "dependencies": {
     "@misskey-dev/browser-image-resizer": "2.2.1-misskey.10",
     "@webav/mp4box.js": "0.5.3-fenghen",
+    "video.js": "^8.5.2",
     "vue": "^3.2.25"
   },
   "devDependencies": {

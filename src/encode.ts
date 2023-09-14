@@ -99,31 +99,20 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
     let trak: BoxParser.trakBox;
     let samplecnt = 0;
     let prevChunk: EncodedVideoChunk;
-    let currentChunk: EncodedVideoChunk;
+    let currentChunk: EncodedVideoChunk | null;
     const scaleScale = TIMESCALE / srcInfo.timescale;
-
-    function addSample() {
-        const b = new ArrayBuffer(prevChunk.byteLength);
-        prevChunk.copyTo(b);
-        const sample = file.addSample(trackId, b, {
-            cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-            dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-            duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6),
-            is_sync: prevChunk.type === 'key',
-        });
-        return sample;
-    }
 
     return new WritableStream<VideoEncoderOutputChunk>({
         start() {
         },
         write(data) {
             if (data.type === 'metadata' && !trak) {
+                const media_duration = Math.round(srcInfo.duration * scaleScale);
                 trackId = file.addTrack({
                     name: 'VideoHandle',
                     timescale: TIMESCALE,
-                    duration: Math.round(srcInfo.duration * scaleScale),
-                    media_duration: Math.round(srcInfo.movie_duration * scaleScale),
+                    duration: media_duration,
+                    media_duration: media_duration,
                     language: srcInfo.language,
                     width: encoderConfig.width,
                     height: encoderConfig.height,
@@ -147,14 +136,29 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 }
 
                 currentChunk = data.data as EncodedVideoChunk;
-                const sample = addSample();
+                const b = new ArrayBuffer(prevChunk.byteLength);
+                prevChunk.copyTo(b);
+                const sample = file.addSample(trackId, b, {
+                    cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
+                    dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
+                    duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6),
+                    is_sync: prevChunk.type === 'key',
+                });
                 prevChunk = currentChunk;
-                console.log('write: addSample', samplecnt, prevChunk, Math.round(prevChunk.timestamp * TIMESCALE / 1e6), Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6), prevChunk.type === 'key', sample);
+                currentChunk = null;
+                if (DEV) console.log('write: addSample', samplecnt - 1, sample);
             }
 
         },
         close() {
-            addSample();
+            const b = new ArrayBuffer(prevChunk.byteLength);
+            prevChunk.copyTo(b);
+            const sample = file.addSample(trackId, b, {
+                cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
+                dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
+                duration: Math.round(((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * TIMESCALE / 1e6),
+            })
+            if (DEV) console.log('write: addSample last', samplecnt, sample);
             file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
             if (DEV) console.log('write: close', file);
         },
@@ -163,15 +167,14 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
 
 export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
-    console.log('ntid', (file as any).moov?.mvhd?.next_track_id);
     const trackId = file.addTrack({
         type: srcInfo.codec.split('.')[0],
         hdlr: 'soun',
         name: 'SoundHandle',
         timescale: srcInfo.timescale,
 
-        //duration: srcInfo.duration,
-        //media_duration: srcInfo.duration,
+        duration: srcInfo.duration,
+        media_duration: srcInfo.duration,
         language: srcInfo.language,
         width: 0,
         height: 0,
@@ -201,7 +204,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
                     degradation_priority: sample.degradation_priority,
                     subsamples: sample.subsamples,
                 });
-                console.log('write audio: addSample', samplecnt, sample, res);
+                if (DEV) console.log('write audio: addSample', samplecnt, sample, res);
         },
         close() {
             file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });

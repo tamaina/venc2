@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { createFile, DataStream } from '@webav/mp4box.js';
+import { ref } from 'vue';
+import { createFile } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxToVideoTransformer, generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer, generateDemuxToAudioTransformer } from '../../../src/decode';
 import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from '../../../src/transform';
@@ -63,6 +63,12 @@ async function execMain() {
     let resized = false;
     const dstFile = createFile();
 
+    if (info.audioInfo) {
+      await file.stream()
+        .pipeThrough(generateDemuxToAudioTransformer(), preventer)
+        .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo));
+    }
+
     await file.stream()
       .pipeThrough(generateDemuxToVideoTransformer(), preventer)
       .pipeThrough(generateSampleToEncodedVideoChunkTransformer())
@@ -82,11 +88,6 @@ async function execMain() {
       }))
       .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo));
 
-    if (info.audioInfo) {
-      await file.stream()
-        .pipeThrough(generateDemuxToAudioTransformer(), preventer)
-        .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo));
-    }
     if (progress.value) {
       progress.value.value = progress.value.max;
     }
@@ -95,35 +96,23 @@ async function execMain() {
       const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
       (dstFile.moov as any).mvhd?.set('creation_time', (info.info.created.getTime() - _1904) / 1000);
       (dstFile.moov as any).mvhd?.set('modification_time', (Date.now() - _1904) / 1000);
+      (dstFile.moov as any).mvhd?.set('timescale', info.info.timescale);
+      (dstFile.moov as any).mvhd?.set('duration', info.info.duration);
     }
-    dstFile.initializeSegmentation();
+    //dstFile.initializeSegmentation();
     console.log('file', dstFile, dstFile.getCodecs());
-    const msr = new MediaSource();
     const buf = dstFile.getBuffer();
     console.log('result: resized!', file.size, buf.byteLength);
 
     const info2 = await getMP4Info(new File([buf], 'test.mp4', { type: 'video/mp4' }));
-
+    const newUrl = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));;
     if (a.value) {
-      a.value.href = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
+      a.value.href = newUrl;
       a.value.download = 'test.mp4';
     }
 
-    msr.addEventListener('sourceopen', () => {
-      const sb = msr.addSourceBuffer('video/mp4; codecs="avc1.4d0034"');
-      sb.addEventListener('updateend', () => {
-        if (DEV) console.log('updateend');
-        if (sb.updating) return;
-        if (DEV) console.log('endOfStream', msr.readyState);
-        msr.endOfStream();
-      });
-      if (DEV) console.log('sourceopen');
-      if (DEV) console.log('buf', buf);
-      sb.appendBuffer(buf);
-    });
-
     if (video.value) {
-      video.value.src = URL.createObjectURL(msr);
+      video.value.src = newUrl;
     }
 
     console.log('info2', info2);
