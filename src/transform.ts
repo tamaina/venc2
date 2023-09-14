@@ -128,7 +128,6 @@ export function floorWithSignificance(value: number, significance: number) {
  * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @param config Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>
- * @param forcedSize { width: number, height: number } Size to force resize to (crop).
  * @returns TransformStream<VideoFrame, VideoFrame>
  * 
  */
@@ -149,7 +148,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
             srcFrame.close();
             const dstFrame = new VideoFrame(canvas, {
                 timestamp: srcFrame.timestamp,
-				duration: srcFrame.duration ?? undefined,
+				//duration: srcFrame.duration ?? undefined,
             });
             if (DEV) {
                 performance.mark('resize end');
