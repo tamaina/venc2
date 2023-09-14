@@ -49,7 +49,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                     if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize);
 
                     if (framecnt === data.nbSamples) {
-                        if (DEV) console.log('encode: encoded: done', framecnt, data.nbSamples);
+                        if (DEV) console.log('encode: encoded: [terminate] done', framecnt, data.nbSamples);
                         encoder.flush();
                         controller.terminate();
                     }
@@ -82,7 +82,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
             });
         },
         flush(controller) {
-            if (DEV) console.log('encode: flush', framecnt, enqueuecnt);
+            if (DEV) console.log('encode: [terminate] flush', framecnt, enqueuecnt);
             encoder.flush();
             controller.terminate();
         },

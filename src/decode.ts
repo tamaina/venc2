@@ -24,7 +24,7 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 			}));
 		},
 		flush(controller) {
-			if (DEV) console.log('sample: sample flush');
+			if (DEV) console.log('sample: [terminate] sample flush');
 			controller.terminate();
 		},
 	});
@@ -68,7 +68,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 					}
 					if (allowWriteEval()) emitResolve();
 					if (totalcnt === framecnt) {
-						if (DEV) console.log('decode: enqueue frame: last frame', totalcnt, framecnt);
+						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', totalcnt, framecnt);
 						controller.terminate();
 					}
 				},
@@ -112,7 +112,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 			});
 		},
 		flush(controller) {
-			if (DEV) console.log('decode: vchunk flush');
+			if (DEV) console.log('decode: [terminate] vchunk flush');
 			controller.terminate();
 			return decoder.flush();
 		},

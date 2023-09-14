@@ -89,7 +89,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { n
 				} else {
 					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
 				}
-				if (DEV) console.log('sort: recieving frame: terminate', totalcnt, data.nbSamples);
+				if (DEV) console.log('sort: recieving frame: [terminate]', totalcnt, data.nbSamples);
 				controller.terminate();
 				return;
 			}
@@ -113,7 +113,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { n
 			send(controller, frame);
 		},
 		flush(controller) {
-			if (DEV) console.log('sort: frame flush');
+			if (DEV) console.log('sort: [terminate] frame flush');
             controller.terminate();
 		},
 	});
@@ -158,7 +158,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
             controller.enqueue(dstFrame);
         },
         flush(controller) {
-            if (DEV) console.log('resize: videoframe flush')
+            if (DEV) console.log('resize: [terminate] videoframe flush')
             controller.terminate();
         },
     });

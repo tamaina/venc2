@@ -69,7 +69,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 					if (data.processedSample === data.totalSamples) {
 						// totalSamplesとsample.number+1が一致する = 最後のサンプルを処理した
 						// なのでクリーンアップを行う
-						if (DEV) console.log('demux: onSamples: last sample', sample.number);
+						if (DEV) console.log('demux: onSamples: [terminate] last sample', sample.number);
 						controller.terminate();
 						mp4boxfile.flush();
 						clearInterval();
@@ -120,7 +120,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 		},
 		flush(controller) {
 			// 呼ばれたのを見たことがないが一応書いておく
-			if (DEV) console.log('demux: file flush');
+			if (DEV) console.log('demux: [terminate] file flush');
 			clearInterval();
 			controller.terminate();
 		},
