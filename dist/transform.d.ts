@@ -17,7 +17,6 @@ export declare function floorWithSignificance(value: number, significance: numbe
  * **Set preventClose: false** when using the stream with pipeThrough.
  *
  * @param config Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>
- * @param forcedSize { width: number, height: number } Size to force resize to (crop).
  * @returns TransformStream<VideoFrame, VideoFrame>
  *
  */

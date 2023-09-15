@@ -9,6 +9,7 @@ export declare const generateDemuxTransformer: (trackId: number, DEV?: boolean) 
 export type VideoInfo = {
     info: MP4Info;
     videoInfo: MP4VideoTrack;
+    fps: number;
     audioInfo?: MP4AudioTrack;
     description: Uint8Array;
     file: MP4File;

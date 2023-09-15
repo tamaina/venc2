@@ -28,7 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var require_mp4box_all = __commonJS({
   "node_modules/.pnpm/@webav+mp4box.js@0.5.3-fenghen/node_modules/@webav/mp4box.js/dist/mp4box.all.js"(exports) {
     "use strict";
-    var Log = function() {
+    var Log2 = function() {
       var start = /* @__PURE__ */ new Date();
       var LOG_LEVEL_ERROR = 4;
       var LOG_LEVEL_WARNING = 3;
@@ -53,7 +53,7 @@ var require_mp4box_all = __commonJS({
             console.debug = console.log;
           }
           if (LOG_LEVEL_DEBUG >= log_level) {
-            console.debug("[" + Log.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
+            console.debug("[" + Log2.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
           }
         },
         log: function(module2, msg) {
@@ -61,23 +61,23 @@ var require_mp4box_all = __commonJS({
         },
         info: function(module2, msg) {
           if (LOG_LEVEL_INFO >= log_level) {
-            console.info("[" + Log.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
+            console.info("[" + Log2.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
           }
         },
         warn: function(module2, msg) {
           if (LOG_LEVEL_WARNING >= log_level) {
-            console.warn("[" + Log.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
+            console.warn("[" + Log2.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
           }
         },
         error: function(module2, msg) {
           if (LOG_LEVEL_ERROR >= log_level) {
-            console.error("[" + Log.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
+            console.error("[" + Log2.getDurationString(/* @__PURE__ */ new Date() - start, 1e3) + "]", "[" + module2 + "]", msg);
           }
         }
       };
       return logObject;
     }();
-    Log.getDurationString = function(duration, _timescale) {
+    Log2.getDurationString = function(duration, _timescale) {
       var neg;
       function pad(number, length) {
         var str = "" + number;
@@ -105,14 +105,14 @@ var require_mp4box_all = __commonJS({
       msec = Math.floor(msec);
       return (neg ? "-" : "") + hours + ":" + pad(minutes, 2) + ":" + pad(duration_sec, 2) + "." + pad(msec, 3);
     };
-    Log.printRanges = function(ranges) {
+    Log2.printRanges = function(ranges) {
       var length = ranges.length;
       if (length > 0) {
         var str = "";
         for (var i2 = 0; i2 < length; i2++) {
           if (i2 > 0)
             str += ",";
-          str += "[" + Log.getDurationString(ranges.start(i2)) + "," + Log.getDurationString(ranges.end(i2)) + "]";
+          str += "[" + Log2.getDurationString(ranges.start(i2)) + "," + Log2.getDurationString(ranges.end(i2)) + "]";
         }
         return str;
       } else {
@@ -120,7 +120,7 @@ var require_mp4box_all = __commonJS({
       }
     };
     if (typeof exports !== "undefined") {
-      exports.Log = Log;
+      exports.Log = Log2;
     }
     var MP4BoxStream = function(arrayBuffer) {
       if (arrayBuffer instanceof ArrayBuffer) {
@@ -1102,21 +1102,21 @@ var require_mp4box_all = __commonJS({
         if (firstBuffer.fileStart === 0) {
           this.buffer = firstBuffer;
           this.bufferIndex = 0;
-          Log.debug("MultiBufferStream", "Stream ready for parsing");
+          Log2.debug("MultiBufferStream", "Stream ready for parsing");
           return true;
         } else {
-          Log.warn("MultiBufferStream", "The first buffer should have a fileStart of 0");
+          Log2.warn("MultiBufferStream", "The first buffer should have a fileStart of 0");
           this.logBufferLevel();
           return false;
         }
       } else {
-        Log.warn("MultiBufferStream", "No buffer to start parsing from");
+        Log2.warn("MultiBufferStream", "No buffer to start parsing from");
         this.logBufferLevel();
         return false;
       }
     };
     ArrayBuffer.concat = function(buffer1, buffer2) {
-      Log.debug("ArrayBuffer", "Trying to create a new buffer of size: " + (buffer1.byteLength + buffer2.byteLength));
+      Log2.debug("ArrayBuffer", "Trying to create a new buffer of size: " + (buffer1.byteLength + buffer2.byteLength));
       var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
       tmp.set(new Uint8Array(buffer1), 0);
       tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
@@ -1141,14 +1141,14 @@ var require_mp4box_all = __commonJS({
               i2--;
               continue;
             } else {
-              Log.warn("MultiBufferStream", "Buffer (fileStart: " + ab.fileStart + " - Length: " + ab.byteLength + ") already appended, ignoring");
+              Log2.warn("MultiBufferStream", "Buffer (fileStart: " + ab.fileStart + " - Length: " + ab.byteLength + ") already appended, ignoring");
             }
           } else {
             if (ab.fileStart + ab.byteLength <= b.fileStart) {
             } else {
               ab = this.reduceBuffer(ab, 0, b.fileStart - ab.fileStart);
             }
-            Log.debug("MultiBufferStream", "Appending new buffer (fileStart: " + ab.fileStart + " - Length: " + ab.byteLength + ")");
+            Log2.debug("MultiBufferStream", "Appending new buffer (fileStart: " + ab.fileStart + " - Length: " + ab.byteLength + ")");
             this.buffers.splice(i2, 0, ab);
             if (i2 === 0) {
               this.buffer = ab;
@@ -1168,7 +1168,7 @@ var require_mp4box_all = __commonJS({
         }
       }
       if (to_add) {
-        Log.debug("MultiBufferStream", "Appending new buffer (fileStart: " + ab.fileStart + " - Length: " + ab.byteLength + ")");
+        Log2.debug("MultiBufferStream", "Appending new buffer (fileStart: " + ab.fileStart + " - Length: " + ab.byteLength + ")");
         this.buffers.push(ab);
         if (i2 === 0) {
           this.buffer = ab;
@@ -1207,7 +1207,7 @@ var require_mp4box_all = __commonJS({
       if (ranges.length > 0) {
         bufferedString += range.end - 1 + "]";
       }
-      var log = info ? Log.info : Log.debug;
+      var log = info ? Log2.info : Log2.debug;
       if (this.buffers.length === 0) {
         log("MultiBufferStream", "No more buffer in memory");
       } else {
@@ -1220,7 +1220,7 @@ var require_mp4box_all = __commonJS({
       for (i2 = 0; i2 < this.buffers.length; i2++) {
         buffer = this.buffers[i2];
         if (buffer.usedBytes === buffer.byteLength) {
-          Log.debug("MultiBufferStream", "Removing buffer #" + i2);
+          Log2.debug("MultiBufferStream", "Removing buffer #" + i2);
           this.buffers.splice(i2, 1);
           i2--;
         }
@@ -1239,7 +1239,7 @@ var require_mp4box_all = __commonJS({
           this.buffers.splice(this.bufferIndex + 1, 1);
           this.buffer.usedBytes = oldUsedBytes;
           this.buffer.fileStart = oldFileStart;
-          Log.debug("ISOFile", "Concatenating buffer for box parsing (length: " + oldLength + "->" + this.buffer.byteLength + ")");
+          Log2.debug("ISOFile", "Concatenating buffer for box parsing (length: " + oldLength + "->" + this.buffer.byteLength + ")");
           return true;
         } else {
           return false;
@@ -1277,7 +1277,7 @@ var require_mp4box_all = __commonJS({
       if (index !== -1) {
         abuffer = this.buffers[index];
         if (abuffer.fileStart + abuffer.byteLength >= filePosition) {
-          Log.debug("MultiBufferStream", "Found position in existing buffer #" + index);
+          Log2.debug("MultiBufferStream", "Found position in existing buffer #" + index);
           return index;
         } else {
           return -1;
@@ -1327,10 +1327,10 @@ var require_mp4box_all = __commonJS({
         this.buffer = this.buffers[index];
         this.bufferIndex = index;
         this.position = filePosition - this.buffer.fileStart;
-        Log.debug("MultiBufferStream", "Repositioning parser at buffer position: " + this.position);
+        Log2.debug("MultiBufferStream", "Repositioning parser at buffer position: " + this.position);
         return true;
       } else {
-        Log.debug("MultiBufferStream", "Position " + filePosition + " not found in buffered data");
+        Log2.debug("MultiBufferStream", "Position " + filePosition + " not found in buffered data");
         return false;
       }
     };
@@ -1383,7 +1383,7 @@ var require_mp4box_all = __commonJS({
           hdrSize++;
         }
         size += byteRead & 127;
-        Log.debug("MPEG4DescriptorParser", "Found " + (descTagToName[tag] || "Descriptor " + tag) + ", size " + size + " at position " + stream.getPosition());
+        Log2.debug("MPEG4DescriptorParser", "Found " + (descTagToName[tag] || "Descriptor " + tag) + ", size " + size + " at position " + stream.getPosition());
         if (descTagToName[tag]) {
           desc = new classes[descTagToName[tag]](size);
         } else {
@@ -1748,22 +1748,22 @@ var require_mp4box_all = __commonJS({
       var diff;
       var uuid;
       if (stream.getEndPosition() - start < 8) {
-        Log.debug("BoxParser", "Not enough data in stream to parse the type and size of the box");
+        Log2.debug("BoxParser", "Not enough data in stream to parse the type and size of the box");
         return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
       }
       if (parentSize && parentSize < 8) {
-        Log.debug("BoxParser", "Not enough bytes left in the parent box to parse a new box");
+        Log2.debug("BoxParser", "Not enough bytes left in the parent box to parse a new box");
         return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
       }
       var size = stream.readUint32();
       var type = stream.readString(4);
       var box_type = type;
-      Log.debug("BoxParser", "Found box of type '" + type + "' and size " + size + " at position " + start);
+      Log2.debug("BoxParser", "Found box of type '" + type + "' and size " + size + " at position " + start);
       hdr_size = 8;
       if (type == "uuid") {
         if (stream.getEndPosition() - stream.getPosition() < 16 || parentSize - hdr_size < 16) {
           stream.seek(start);
-          Log.debug("BoxParser", "Not enough bytes left in the parent box to parse a UUID box");
+          Log2.debug("BoxParser", "Not enough bytes left in the parent box to parse a UUID box");
           return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
         }
         uuid = BoxParser.parseUUID(stream);
@@ -1773,7 +1773,7 @@ var require_mp4box_all = __commonJS({
       if (size == 1) {
         if (stream.getEndPosition() - stream.getPosition() < 8 || parentSize && parentSize - hdr_size < 8) {
           stream.seek(start);
-          Log.warn("BoxParser", 'Not enough data in stream to parse the extended size of the "' + type + '" box');
+          Log2.warn("BoxParser", 'Not enough data in stream to parse the extended size of the "' + type + '" box');
           return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
         }
         size = stream.readUint64();
@@ -1783,23 +1783,23 @@ var require_mp4box_all = __commonJS({
           size = parentSize;
         } else {
           if (type !== "mdat") {
-            Log.error("BoxParser", "Unlimited box size not supported for type: '" + type + "'");
+            Log2.error("BoxParser", "Unlimited box size not supported for type: '" + type + "'");
             box2 = new BoxParser.Box(type, size);
             return { code: BoxParser.OK, box: box2, size: box2.size };
           }
         }
       }
       if (size !== 0 && size < hdr_size) {
-        Log.error("BoxParser", "Box of type " + type + " has an invalid size " + size + " (too small to be a box)");
+        Log2.error("BoxParser", "Box of type " + type + " has an invalid size " + size + " (too small to be a box)");
         return { code: BoxParser.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
       }
       if (size !== 0 && parentSize && size > parentSize) {
-        Log.error("BoxParser", "Box of type '" + type + "' has a size " + size + " greater than its container size " + parentSize);
+        Log2.error("BoxParser", "Box of type '" + type + "' has a size " + size + " greater than its container size " + parentSize);
         return { code: BoxParser.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
       }
       if (size !== 0 && start + size > stream.getEndPosition()) {
         stream.seek(start);
-        Log.info("BoxParser", "Not enough data in stream to parse the entire '" + type + "' box");
+        Log2.info("BoxParser", "Not enough data in stream to parse the entire '" + type + "' box");
         return { code: BoxParser.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
       }
       if (headerOnly) {
@@ -1809,14 +1809,14 @@ var require_mp4box_all = __commonJS({
           box2 = new BoxParser[type + "Box"](size);
         } else {
           if (type !== "uuid") {
-            Log.warn("BoxParser", "Unknown box type: '" + type + "'");
+            Log2.warn("BoxParser", "Unknown box type: '" + type + "'");
             box2 = new BoxParser.Box(type, size);
             box2.has_unparsed_data = true;
           } else {
             if (BoxParser.UUIDBoxes[uuid]) {
               box2 = new BoxParser.UUIDBoxes[uuid](size);
             } else {
-              Log.warn("BoxParser", "Unknown uuid type: '" + uuid + "'");
+              Log2.warn("BoxParser", "Unknown uuid type: '" + uuid + "'");
               box2 = new BoxParser.Box(type, size);
               box2.uuid = uuid;
               box2.has_unparsed_data = true;
@@ -1827,16 +1827,16 @@ var require_mp4box_all = __commonJS({
       box2.hdr_size = hdr_size;
       box2.start = start;
       if (box2.write === BoxParser.Box.prototype.write && box2.type !== "mdat") {
-        Log.info("BoxParser", "'" + box_type + "' box writing not yet implemented, keeping unparsed data in memory for later write");
+        Log2.info("BoxParser", "'" + box_type + "' box writing not yet implemented, keeping unparsed data in memory for later write");
         box2.parseDataAndRewind(stream);
       }
       box2.parse(stream);
       diff = stream.getPosition() - (box2.start + box2.size);
       if (diff < 0) {
-        Log.warn("BoxParser", "Parsing of box '" + box_type + "' did not read the entire indicated box data size (missing " + -diff + " bytes), seeking forward");
+        Log2.warn("BoxParser", "Parsing of box '" + box_type + "' did not read the entire indicated box data size (missing " + -diff + " bytes), seeking forward");
         stream.seek(box2.start + box2.size);
       } else if (diff > 0) {
-        Log.error("BoxParser", "Parsing of box '" + box_type + "' read " + diff + " more bytes than the indicated box data size, seeking backwards");
+        Log2.error("BoxParser", "Parsing of box '" + box_type + "' read " + diff + " more bytes than the indicated box data size, seeking backwards");
         if (box2.size !== 0)
           stream.seek(box2.start + box2.size);
       }
@@ -1885,7 +1885,7 @@ var require_mp4box_all = __commonJS({
           } else {
             var box_type = box2.type !== "uuid" ? box2.type : box2.uuid;
             if (this[box_type]) {
-              Log.warn("Box of type " + box_type + " already stored in field of this type");
+              Log2.warn("Box of type " + box_type + " already stored in field of this type");
             } else {
               this[box_type] = box2;
             }
@@ -2027,12 +2027,12 @@ var require_mp4box_all = __commonJS({
       var toparse;
       var tmp = stream.readUint8();
       if (tmp >> 7 & false) {
-        Log.error("av1C marker problem");
+        Log2.error("av1C marker problem");
         return;
       }
       this.version = tmp & 127;
       if (this.version !== 1) {
-        Log.error("av1C version " + this.version + " not supported");
+        Log2.error("av1C version " + this.version + " not supported");
         return;
       }
       tmp = stream.readUint8();
@@ -2049,7 +2049,7 @@ var require_mp4box_all = __commonJS({
       tmp = stream.readUint8();
       this.reserved_1 = tmp >> 5 & 7;
       if (this.reserved_1 !== 0) {
-        Log.error("av1C reserved_1 parsing problem");
+        Log2.error("av1C reserved_1 parsing problem");
         return;
       }
       this.initial_presentation_delay_present = tmp >> 4 & 1;
@@ -2058,7 +2058,7 @@ var require_mp4box_all = __commonJS({
       } else {
         this.reserved_2 = tmp & 15;
         if (this.reserved_2 !== 0) {
-          Log.error("av1C reserved_2 parsing problem");
+          Log2.error("av1C reserved_2 parsing problem");
           return;
         }
       }
@@ -2236,7 +2236,7 @@ var require_mp4box_all = __commonJS({
           this.sample_counts.push(stream.readUint32());
           var value = stream.readInt32();
           if (value < 0) {
-            Log.warn("BoxParser", "ctts box uses negative values without using version 1");
+            Log2.warn("BoxParser", "ctts box uses negative values without using version 1");
           }
           this.sample_offsets.push(value);
         }
@@ -2528,7 +2528,7 @@ var require_mp4box_all = __commonJS({
         ret2 = BoxParser.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
         if (ret2.code === BoxParser.OK) {
           if (ret2.box.type !== "infe") {
-            Log.error("BoxParser", "Expected 'infe' box, got " + ret2.box.type);
+            Log2.error("BoxParser", "Expected 'infe' box, got " + ret2.box.type);
           }
           this.item_infos[i2] = ret2.box;
         } else {
@@ -2650,7 +2650,7 @@ var require_mp4box_all = __commonJS({
       }
       if (this.version === 1) {
         this.extension_type = stream.readString(4);
-        Log.warn("BoxParser", "Cannot parse extension type");
+        Log2.warn("BoxParser", "Cannot parse extension type");
         stream.seek(this.start + this.size);
         return;
       }
@@ -2712,7 +2712,7 @@ var require_mp4box_all = __commonJS({
             box2 = new BoxParser.SingleItemTypeReferenceBoxLarge(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
           }
           if (box2.write === BoxParser.Box.prototype.write && box2.type !== "mdat") {
-            Log.warn("BoxParser", box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
+            Log2.warn("BoxParser", box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
             box2.parseDataAndRewind(stream);
           }
           box2.parse(stream);
@@ -2759,7 +2759,7 @@ var require_mp4box_all = __commonJS({
             level.sub_track_id = stream.readUint32();
             break;
           default:
-            Log.warn("BoxParser", "Unknown leva assignement type");
+            Log2.warn("BoxParser", "Unknown leva assignement type");
         }
       }
     });
@@ -2804,7 +2804,7 @@ var require_mp4box_all = __commonJS({
     });
     BoxParser.createFullBoxCtor("mehd", function(stream) {
       if (this.flags & 1) {
-        Log.warn("BoxParser", "mehd box incorrectly uses flags set to 1, converting version to 1");
+        Log2.warn("BoxParser", "mehd box incorrectly uses flags set to 1, converting version to 1");
         this.version = 1;
       }
       if (this.version == 1) {
@@ -3066,10 +3066,10 @@ var require_mp4box_all = __commonJS({
       }
     });
     BoxParser.createSampleGroupCtor("dtrt", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("mvif", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("prol", function(stream) {
       this.roll_distance = stream.readInt16();
@@ -3082,7 +3082,7 @@ var require_mp4box_all = __commonJS({
     BoxParser.createSampleGroupCtor("rash", function(stream) {
       this.operation_point_count = stream.readUint16();
       if (this.description_length !== 2 + (this.operation_point_count === 1 ? 2 : this.operation_point_count * 6) + 9) {
-        Log.warn("BoxParser", "Mismatch in " + this.grouping_type + " sample group length");
+        Log2.warn("BoxParser", "Mismatch in " + this.grouping_type + " sample group length");
         this.data = stream.readUint8Array(this.description_length - 2);
       } else {
         if (this.operation_point_count === 1) {
@@ -3104,14 +3104,14 @@ var require_mp4box_all = __commonJS({
       this.roll_distance = stream.readInt16();
     });
     BoxParser.SampleGroupEntry.prototype.parse = function(stream) {
-      Log.warn("BoxParser", "Unknown Sample Group type: " + this.grouping_type);
+      Log2.warn("BoxParser", "Unknown Sample Group type: " + this.grouping_type);
       this.data = stream.readUint8Array(this.description_length);
     };
     BoxParser.createSampleGroupCtor("scif", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("scnm", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("seig", function(stream) {
       this.reserved = stream.readUint8();
@@ -3129,7 +3129,7 @@ var require_mp4box_all = __commonJS({
       }
     });
     BoxParser.createSampleGroupCtor("stsa", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("sync", function(stream) {
       var tmp_byte = stream.readUint8();
@@ -3140,13 +3140,13 @@ var require_mp4box_all = __commonJS({
       this.level_independently_decodable = tmp_byte >> 7;
     });
     BoxParser.createSampleGroupCtor("tsas", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("tscl", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createSampleGroupCtor("vipr", function(stream) {
-      Log.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
+      Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
     BoxParser.createFullBoxCtor("sbgp", function(stream) {
       this.grouping_type = stream.readString(4);
@@ -3216,7 +3216,7 @@ var require_mp4box_all = __commonJS({
     );
     BoxParser.createFullBoxCtor("sgpd", function(stream) {
       this.grouping_type = stream.readString(4);
-      Log.debug("BoxParser", "Found Sample Groups of type " + this.grouping_type);
+      Log2.debug("BoxParser", "Found Sample Groups of type " + this.grouping_type);
       if (this.version === 1) {
         this.default_length = stream.readUint32();
       } else {
@@ -3245,7 +3245,7 @@ var require_mp4box_all = __commonJS({
           entry.description_length = this.default_length;
         }
         if (entry.write === BoxParser.SampleGroupEntry.prototype.write) {
-          Log.info("BoxParser", "SampleGroup for type " + this.grouping_type + " writing not yet implemented, keeping unparsed data in memory for later write");
+          Log2.info("BoxParser", "SampleGroup for type " + this.grouping_type + " writing not yet implemented, keeping unparsed data in memory for later write");
           entry.data = stream.readUint8Array(entry.description_length);
           stream.position -= entry.description_length;
         }
@@ -3398,11 +3398,11 @@ var require_mp4box_all = __commonJS({
             box2.hdr_size = ret2.hdr_size;
             box2.start = ret2.start;
           } else {
-            Log.warn("BoxParser", "Unknown sample entry type: " + ret2.type);
+            Log2.warn("BoxParser", "Unknown sample entry type: " + ret2.type);
             box2 = new BoxParser.SampleEntry(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
           }
           if (box2.write === BoxParser.SampleEntry.prototype.write) {
-            Log.info("BoxParser", "SampleEntry " + box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
+            Log2.info("BoxParser", "SampleEntry " + box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
             box2.parseDataAndRewind(stream);
           }
           box2.parse(stream);
@@ -3471,7 +3471,7 @@ var require_mp4box_all = __commonJS({
           this.sample_counts.push(stream.readUint32());
           delta = stream.readInt32();
           if (delta < 0) {
-            Log.warn("BoxParser", "File uses negative stts sample delta, using value 1 instead, sync may be lost!");
+            Log2.warn("BoxParser", "File uses negative stts sample delta, using value 1 instead, sync may be lost!");
             delta = 1;
           }
           this.sample_deltas.push(delta);
@@ -3525,7 +3525,7 @@ var require_mp4box_all = __commonJS({
             this.sample_sizes[i2] = stream.readUint16();
           }
         } else {
-          Log.error("BoxParser", "Error in length field in stz2 box");
+          Log2.error("BoxParser", "Error in length field in stz2 box");
         }
       }
     });
@@ -3697,7 +3697,7 @@ var require_mp4box_all = __commonJS({
         if (ret2.code === BoxParser.OK) {
           box2 = new BoxParser.TrackReferenceTypeBox(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
           if (box2.write === BoxParser.Box.prototype.write && box2.type !== "mdat") {
-            Log.info("BoxParser", "TrackReference " + box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
+            Log2.info("BoxParser", "TrackReference " + box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
             box2.parseDataAndRewind(stream);
           }
           box2.parse(stream);
@@ -4284,7 +4284,7 @@ var require_mp4box_all = __commonJS({
       if (this.type === "uuid") {
         this.size += 16;
       }
-      Log.debug("BoxWriter", "Writing box " + this.type + " of size: " + this.size + " at position " + stream.getPosition() + (msg || ""));
+      Log2.debug("BoxWriter", "Writing box " + this.type + " of size: " + this.size + " at position " + stream.getPosition() + (msg || ""));
       if (this.size > MAX_SIZE) {
         stream.writeUint32(1);
       } else {
@@ -4329,7 +4329,7 @@ var require_mp4box_all = __commonJS({
           this.size += this.boxes[i2].size;
         }
       }
-      Log.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
+      Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
     BoxParser.TrackReferenceTypeBox.prototype.write = function(stream) {
@@ -4418,7 +4418,7 @@ var require_mp4box_all = __commonJS({
         this.entries[i2].write(stream);
         this.size += this.entries[i2].size;
       }
-      Log.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
+      Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
     BoxParser.elngBox.prototype.write = function(stream) {
@@ -4581,14 +4581,14 @@ var require_mp4box_all = __commonJS({
         this.boxes[i2].write(stream);
         this.size += this.boxes[i2].size;
       }
-      Log.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
+      Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
     BoxParser.SampleEntry.prototype.write = function(stream) {
       this.writeHeader(stream);
       stream.writeUint8Array(this.data);
       this.size += this.data.length;
-      Log.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
+      Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
     BoxParser.VisualSampleEntry.prototype.write = function(stream) {
@@ -4741,7 +4741,7 @@ var require_mp4box_all = __commonJS({
         this.entries[i2].write(stream);
         this.size += this.entries[i2].size;
       }
-      Log.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
+      Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
     BoxParser.stshBox.prototype.write = function(stream) {
@@ -5314,7 +5314,7 @@ var require_mp4box_all = __commonJS({
                 }
               default:
                 if (this[box_type] !== void 0) {
-                  Log.warn("ISOFile", "Duplicate Box of type: " + box_type + ", overriding previous occurrence");
+                  Log2.warn("ISOFile", "Duplicate Box of type: " + box_type + ", overriding previous occurrence");
                 }
                 this[box_type] = box2;
                 break;
@@ -5334,16 +5334,16 @@ var require_mp4box_all = __commonJS({
         throw "Buffer must have a fileStart property";
       }
       if (ab.byteLength === 0) {
-        Log.warn("ISOFile", "Ignoring empty buffer (fileStart: " + ab.fileStart + ")");
+        Log2.warn("ISOFile", "Ignoring empty buffer (fileStart: " + ab.fileStart + ")");
         this.stream.logBufferLevel();
         return false;
       }
-      Log.info("ISOFile", "Processing buffer (fileStart: " + ab.fileStart + ")");
+      Log2.info("ISOFile", "Processing buffer (fileStart: " + ab.fileStart + ")");
       ab.usedBytes = 0;
       this.stream.insertBuffer(ab);
       this.stream.logBufferLevel();
       if (!this.stream.initialized()) {
-        Log.warn("ISOFile", "Not ready to start parsing");
+        Log2.warn("ISOFile", "Not ready to start parsing");
         return false;
       }
       return true;
@@ -5402,11 +5402,11 @@ var require_mp4box_all = __commonJS({
         }
       }
       if (this.stream.cleanBuffers) {
-        Log.info("ISOFile", "Done processing buffer (fileStart: " + ab.fileStart + ") - next buffer to fetch should have a fileStart position of " + nextFileStart);
+        Log2.info("ISOFile", "Done processing buffer (fileStart: " + ab.fileStart + ") - next buffer to fetch should have a fileStart position of " + nextFileStart);
         this.stream.logBufferLevel();
         this.stream.cleanBuffers();
         this.stream.logBufferLevel(true);
-        Log.info("ISOFile", "Sample data size in memory: " + this.getAllocatedSampleDataSize());
+        Log2.info("ISOFile", "Sample data size in memory: " + this.getAllocatedSampleDataSize());
       }
       return nextFileStart;
     };
@@ -5549,7 +5549,7 @@ var require_mp4box_all = __commonJS({
           var fragTrak = this.fragmentedTracks[i2];
           trak = fragTrak.trak;
           while (trak.nextSample < trak.samples.length && this.sampleProcessingStarted) {
-            Log.debug("ISOFile", "Creating media fragment on track #" + fragTrak.id + " for sample " + trak.nextSample);
+            Log2.debug("ISOFile", "Creating media fragment on track #" + fragTrak.id + " for sample " + trak.nextSample);
             var result = this.createFragment(fragTrak.id, trak.nextSample, fragTrak.segmentStream);
             if (result) {
               fragTrak.segmentStream = result;
@@ -5558,8 +5558,8 @@ var require_mp4box_all = __commonJS({
               break;
             }
             if (trak.nextSample % fragTrak.nb_samples === 0 || (last || trak.nextSample >= trak.samples.length)) {
-              Log.info("ISOFile", "Sending fragmented data on track #" + fragTrak.id + " for samples [" + Math.max(0, trak.nextSample - fragTrak.nb_samples) + "," + (trak.nextSample - 1) + "]");
-              Log.info("ISOFile", "Sample data size in memory: " + this.getAllocatedSampleDataSize());
+              Log2.info("ISOFile", "Sending fragmented data on track #" + fragTrak.id + " for samples [" + Math.max(0, trak.nextSample - fragTrak.nb_samples) + "," + (trak.nextSample - 1) + "]");
+              Log2.info("ISOFile", "Sample data size in memory: " + this.getAllocatedSampleDataSize());
               if (this.onSegment) {
                 this.onSegment(fragTrak.id, fragTrak.user, fragTrak.segmentStream.buffer, trak.nextSample, last || trak.nextSample >= trak.samples.length);
               }
@@ -5576,7 +5576,7 @@ var require_mp4box_all = __commonJS({
           var extractTrak = this.extractedTracks[i2];
           trak = extractTrak.trak;
           while (trak.nextSample < trak.samples.length && this.sampleProcessingStarted) {
-            Log.debug("ISOFile", "Exporting on track #" + extractTrak.id + " sample #" + trak.nextSample);
+            Log2.debug("ISOFile", "Exporting on track #" + extractTrak.id + " sample #" + trak.nextSample);
             var sample = this.getSample(trak, trak.nextSample);
             if (sample) {
               trak.nextSample++;
@@ -5586,7 +5586,7 @@ var require_mp4box_all = __commonJS({
               break;
             }
             if (trak.nextSample % extractTrak.nb_samples === 0 || trak.nextSample >= trak.samples.length) {
-              Log.debug("ISOFile", "Sending samples on track #" + extractTrak.id + " for sample " + trak.nextSample);
+              Log2.debug("ISOFile", "Sending samples on track #" + extractTrak.id + " for sample " + trak.nextSample);
               if (this.onSamples) {
                 this.onSamples(extractTrak.id, extractTrak.user, extractTrak.samples);
               }
@@ -5638,7 +5638,7 @@ var require_mp4box_all = __commonJS({
       for (var i2 = trak.lastValidSample; i2 < sampleNum; i2++) {
         size += this.releaseSample(trak, i2);
       }
-      Log.info("ISOFile", "Track #" + id + " released samples up to " + sampleNum + " (released size: " + size + ", remaining: " + this.samplesDataSize + ")");
+      Log2.info("ISOFile", "Track #" + id + " released samples up to " + sampleNum + " (released size: " + size + ", remaining: " + this.samplesDataSize + ")");
       trak.lastValidSample = sampleNum;
     };
     ISOFile.prototype.start = function() {
@@ -5649,7 +5649,7 @@ var require_mp4box_all = __commonJS({
       this.sampleProcessingStarted = false;
     };
     ISOFile.prototype.flush = function() {
-      Log.info("ISOFile", "Flushing remaining samples");
+      Log2.info("ISOFile", "Flushing remaining samples");
       this.updateSampleLists();
       this.processSamples(true);
       this.stream.cleanBuffers();
@@ -5663,7 +5663,7 @@ var require_mp4box_all = __commonJS({
       var seek_sample_num = 0;
       var timescale;
       if (trak.samples.length === 0) {
-        Log.info("ISOFile", "No sample in track, cannot seek! Using time " + Log.getDurationString(0, 1) + " and offset: 0");
+        Log2.info("ISOFile", "No sample in track, cannot seek! Using time " + Log2.getDurationString(0, 1) + " and offset: 0");
         return { offset: 0, time: 0 };
       }
       for (j = 0; j < trak.samples.length; j++) {
@@ -5691,7 +5691,7 @@ var require_mp4box_all = __commonJS({
         seek_sample_num++;
       }
       seek_offset = trak.samples[seek_sample_num].offset + trak.samples[seek_sample_num].alreadyRead;
-      Log.info("ISOFile", "Seeking to " + (useRap ? "RAP" : "") + " sample #" + trak.nextSample + " on track " + trak.tkhd.track_id + ", time " + Log.getDurationString(time, timescale) + " and offset: " + seek_offset);
+      Log2.info("ISOFile", "Seeking to " + (useRap ? "RAP" : "") + " sample #" + trak.nextSample + " on track " + trak.tkhd.track_id + ", time " + Log2.getDurationString(time, timescale) + " and offset: " + seek_offset);
       return { offset: seek_offset, time: time / timescale };
     };
     ISOFile.prototype.getTrackDuration = function(trak) {
@@ -5724,13 +5724,13 @@ var require_mp4box_all = __commonJS({
             seek_info.time = trak_seek_info.time;
           }
         }
-        Log.info("ISOFile", "Seeking at time " + Log.getDurationString(seek_info.time, 1) + " needs a buffer with a fileStart position of " + seek_info.offset);
+        Log2.info("ISOFile", "Seeking at time " + Log2.getDurationString(seek_info.time, 1) + " needs a buffer with a fileStart position of " + seek_info.offset);
         if (seek_info.offset === Infinity) {
           seek_info = { offset: this.nextParsePosition, time: 0 };
         } else {
           seek_info.offset = this.stream.getEndFilePositionAfter(seek_info.offset);
         }
-        Log.info("ISOFile", "Adjusted seek position (after checking data already in buffer): " + seek_info.offset);
+        Log2.info("ISOFile", "Adjusted seek position (after checking data already in buffer): " + seek_info.offset);
         return seek_info;
       }
     };
@@ -5812,7 +5812,7 @@ var require_mp4box_all = __commonJS({
       box2 = this.parsingMdat;
       found = this.stream.seek(box2.start + box2.size, false, this.discardMdatData);
       if (found) {
-        Log.debug("ISOFile", "Found 'mdat' end in buffered data");
+        Log2.debug("ISOFile", "Found 'mdat' end in buffered data");
         this.parsingMdat = null;
         return true;
       } else {
@@ -6460,7 +6460,7 @@ var require_mp4box_all = __commonJS({
         sample.data = new Uint8Array(sample.size);
         sample.alreadyRead = 0;
         this.samplesDataSize += sample.size;
-        Log.debug("ISOFile", "Allocating sample #" + sampleNum + " on track #" + trak.tkhd.track_id + " of size " + sample.size + " (total: " + this.samplesDataSize + ")");
+        Log2.debug("ISOFile", "Allocating sample #" + sampleNum + " on track #" + trak.tkhd.track_id + " of size " + sample.size + " (total: " + this.samplesDataSize + ")");
       } else if (sample.alreadyRead == sample.size) {
         return sample;
       }
@@ -6470,7 +6470,7 @@ var require_mp4box_all = __commonJS({
           buffer = this.stream.buffers[index];
           var lengthAfterStart = buffer.byteLength - (sample.offset + sample.alreadyRead - buffer.fileStart);
           if (sample.size - sample.alreadyRead <= lengthAfterStart) {
-            Log.debug("ISOFile", "Getting sample #" + sampleNum + " data (alreadyRead: " + sample.alreadyRead + " offset: " + (sample.offset + sample.alreadyRead - buffer.fileStart) + " read size: " + (sample.size - sample.alreadyRead) + " full size: " + sample.size + ")");
+            Log2.debug("ISOFile", "Getting sample #" + sampleNum + " data (alreadyRead: " + sample.alreadyRead + " offset: " + (sample.offset + sample.alreadyRead - buffer.fileStart) + " read size: " + (sample.size - sample.alreadyRead) + " full size: " + sample.size + ")");
             DataStream2.memcpy(
               sample.data.buffer,
               sample.alreadyRead,
@@ -6485,7 +6485,7 @@ var require_mp4box_all = __commonJS({
           } else {
             if (lengthAfterStart === 0)
               return null;
-            Log.debug("ISOFile", "Getting sample #" + sampleNum + " partial data (alreadyRead: " + sample.alreadyRead + " offset: " + (sample.offset + sample.alreadyRead - buffer.fileStart) + " read size: " + lengthAfterStart + " full size: " + sample.size + ")");
+            Log2.debug("ISOFile", "Getting sample #" + sampleNum + " partial data (alreadyRead: " + sample.alreadyRead + " offset: " + (sample.offset + sample.alreadyRead - buffer.fileStart) + " read size: " + lengthAfterStart + " full size: " + sample.size + ")");
             DataStream2.memcpy(
               sample.data.buffer,
               sample.alreadyRead,
@@ -6586,17 +6586,17 @@ var require_mp4box_all = __commonJS({
           var itemloc = meta.iloc.items[i2];
           item = items[itemloc.item_ID];
           if (itemloc.data_reference_index !== 0) {
-            Log.warn("Item storage with reference to other files: not supported");
+            Log2.warn("Item storage with reference to other files: not supported");
             item.source = meta.dinf.boxes[itemloc.data_reference_index - 1];
           }
           switch (itemloc.construction_method) {
             case 0:
               break;
             case 1:
-              Log.warn("Item storage with construction_method : not supported");
+              Log2.warn("Item storage with construction_method : not supported");
               break;
             case 2:
-              Log.warn("Item storage with construction_method : not supported");
+              Log2.warn("Item storage with construction_method : not supported");
               break;
           }
           item.extents = [];
@@ -6654,7 +6654,7 @@ var require_mp4box_all = __commonJS({
         item.data = new Uint8Array(item.size);
         item.alreadyRead = 0;
         this.itemsDataSize += item.size;
-        Log.debug("ISOFile", "Allocating item #" + item_id + " of size " + item.size + " (total: " + this.itemsDataSize + ")");
+        Log2.debug("ISOFile", "Allocating item #" + item_id + " of size " + item.size + " (total: " + this.itemsDataSize + ")");
       } else if (item.alreadyRead === item.size) {
         return item;
       }
@@ -6668,7 +6668,7 @@ var require_mp4box_all = __commonJS({
             buffer = this.stream.buffers[index];
             var lengthAfterStart = buffer.byteLength - (extent.offset + extent.alreadyRead - buffer.fileStart);
             if (extent.length - extent.alreadyRead <= lengthAfterStart) {
-              Log.debug("ISOFile", "Getting item #" + item_id + " extent #" + i2 + " data (alreadyRead: " + extent.alreadyRead + " offset: " + (extent.offset + extent.alreadyRead - buffer.fileStart) + " read size: " + (extent.length - extent.alreadyRead) + " full extent size: " + extent.length + " full item size: " + item.size + ")");
+              Log2.debug("ISOFile", "Getting item #" + item_id + " extent #" + i2 + " data (alreadyRead: " + extent.alreadyRead + " offset: " + (extent.offset + extent.alreadyRead - buffer.fileStart) + " read size: " + (extent.length - extent.alreadyRead) + " full extent size: " + extent.length + " full item size: " + item.size + ")");
               DataStream2.memcpy(
                 item.data.buffer,
                 item.alreadyRead,
@@ -6681,7 +6681,7 @@ var require_mp4box_all = __commonJS({
               item.alreadyRead += extent.length - extent.alreadyRead;
               extent.alreadyRead = extent.length;
             } else {
-              Log.debug("ISOFile", "Getting item #" + item_id + " extent #" + i2 + " partial data (alreadyRead: " + extent.alreadyRead + " offset: " + (extent.offset + extent.alreadyRead - buffer.fileStart) + " read size: " + lengthAfterStart + " full extent size: " + extent.length + " full item size: " + item.size + ")");
+              Log2.debug("ISOFile", "Getting item #" + item_id + " extent #" + i2 + " partial data (alreadyRead: " + extent.alreadyRead + " offset: " + (extent.offset + extent.alreadyRead - buffer.fileStart) + " read size: " + lengthAfterStart + " full extent size: " + extent.length + " full item size: " + item.size + ")");
               DataStream2.memcpy(
                 item.data.buffer,
                 item.alreadyRead,
@@ -6797,7 +6797,7 @@ var require_mp4box_all = __commonJS({
       var moof = this.createSingleSampleMoof(sample);
       moof.write(stream);
       moof.trafs[0].truns[0].data_offset = moof.size + 8;
-      Log.debug("MP4Box", "Adjusting data_offset with new value " + moof.trafs[0].truns[0].data_offset);
+      Log2.debug("MP4Box", "Adjusting data_offset with new value " + moof.trafs[0].truns[0].data_offset);
       stream.adjustUint32(moof.trafs[0].truns[0].data_offset_position, moof.trafs[0].truns[0].data_offset);
       var mdat = new BoxParser.mdatBox();
       mdat.data = sample.data;
@@ -6810,7 +6810,7 @@ var require_mp4box_all = __commonJS({
       var mehd;
       var trex;
       var box2;
-      Log.debug("ISOFile", "Generating initialization segment");
+      Log2.debug("ISOFile", "Generating initialization segment");
       var stream = new DataStream2();
       stream.endianness = DataStream2.BIG_ENDIAN;
       ftyp.write(stream);
@@ -6844,7 +6844,7 @@ var require_mp4box_all = __commonJS({
       var trak;
       var seg;
       if (this.onSegment === null) {
-        Log.warn("MP4Box", "No segmentation callback set!");
+        Log2.warn("MP4Box", "No segmentation callback set!");
       }
       if (!this.isFragmentationInitialized) {
         this.isFragmentationInitialized = true;
@@ -7405,7 +7405,7 @@ var generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
     },
     flush(controller) {
       if (DEV)
-        console.log("sample: sample flush");
+        console.log("sample: [terminate] sample flush");
       controller.terminate();
     }
   });
@@ -7439,7 +7439,7 @@ async function generateVideoDecodeTransformer(videoInfo, description, DEV = fals
             emitResolve();
           if (totalcnt === framecnt) {
             if (DEV)
-              console.log("decode: enqueue frame: last frame", totalcnt, framecnt);
+              console.log("decode: enqueue frame: [terminate] last frame", totalcnt, framecnt);
             controller.terminate();
           }
         },
@@ -7481,7 +7481,7 @@ async function generateVideoDecodeTransformer(videoInfo, description, DEV = fals
     },
     flush(controller) {
       if (DEV)
-        console.log("decode: vchunk flush");
+        console.log("decode: [terminate] vchunk flush");
       controller.terminate();
       return decoder.flush();
     }
@@ -7498,6 +7498,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
   let mp4boxfile;
   const data = {
     track: void 0,
+    tracks: void 0,
     totalSamples: 0,
     processedSample: 0,
     /**
@@ -7529,6 +7530,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
       };
       mp4boxfile.onReady = (info) => {
         mp4boxfile.setExtractionOptions(trackId, null, { nbSamples: 1 });
+        data.tracks = new Set(info.tracks.map((track2) => track2.id));
         const track = info.tracks.find((track2) => track2.id === trackId);
         if (!track) {
           controller.error("No track found");
@@ -7551,7 +7553,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
             console.log("demux: onSamples: sample", sample.track_id, sample.number, data.totalSamples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
           if (data.processedSample === data.totalSamples) {
             if (DEV)
-              console.log("demux: onSamples: last sample", sample.number);
+              console.log("demux: onSamples: [terminate] last sample", sample.number);
             controller.terminate();
             mp4boxfile.flush();
             clearInterval();
@@ -7583,6 +7585,12 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
             console.log("demux: recieving chunk: release used samples", trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
           mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
         }
+        for (const track of data.tracks ?? []) {
+          const length = mp4boxfile.getTrackSamplesInfo(track).length;
+          if (track !== trackId && length) {
+            mp4boxfile.releaseUsedSamples(track, length);
+          }
+        }
       }
       if (data.totalSamples === 0)
         return;
@@ -7594,7 +7602,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
     },
     flush(controller) {
       if (DEV)
-        console.log("demux: file flush");
+        console.log("demux: [terminate] file flush");
       clearInterval();
       controller.terminate();
     }
@@ -7642,6 +7650,7 @@ function getMP4Info(file, DEV = false) {
       }
       result.info = info;
       result.videoInfo = info.videoTracks[0];
+      result.fps = result.videoInfo.duration ? result.videoInfo.timescale * result.videoInfo.nb_samples / result.videoInfo.duration : 30;
       const trak = mp4boxfile.getTrackById(result.videoInfo.id);
       if (!trak) {
         return reject("No video track found");
@@ -7747,7 +7756,7 @@ function generateVideoSortTransformer(videoInfo, data, DEV = false) {
             console.error("sort: recieving frame: drop last frame", frame.timestamp, expectedNextTimestamp);
         }
         if (DEV)
-          console.log("sort: recieving frame: terminate", totalcnt, data.nbSamples);
+          console.log("sort: recieving frame: [terminate]", totalcnt, data.nbSamples);
         controller.terminate();
         return;
       }
@@ -7768,7 +7777,7 @@ function generateVideoSortTransformer(videoInfo, data, DEV = false) {
     },
     flush(controller) {
       if (DEV)
-        console.log("sort: frame flush");
+        console.log("sort: [terminate] frame flush");
       controller.terminate();
     }
   });
@@ -7793,8 +7802,8 @@ function generateResizeTransformer(config, DEV = false) {
       });
       srcFrame.close();
       const dstFrame = new VideoFrame(canvas, {
-        timestamp: srcFrame.timestamp,
-        duration: srcFrame.duration ?? void 0
+        timestamp: srcFrame.timestamp
+        //duration: srcFrame.duration ?? undefined,
       });
       if (DEV) {
         performance.mark("resize end");
@@ -7804,7 +7813,7 @@ function generateResizeTransformer(config, DEV = false) {
     },
     flush(controller) {
       if (DEV)
-        console.log("resize: videoframe flush");
+        console.log("resize: [terminate] videoframe flush");
       controller.terminate();
     }
   });
@@ -7838,10 +7847,10 @@ function generateVideoEncoderTransformStream(config, data, DEV = false) {
           }
           controller.enqueue({ type: "encodedVideoChunk", data: chunk });
           if (DEV)
-            console.log("encode: encoded", framecnt, chunk, encoder.encodeQueueSize);
-          if (framecnt === data.nbSamples) {
+            console.log("encode: encoded", framecnt, chunk, encoder.encodeQueueSize, config2);
+          if (enqueuecnt === data.nbSamples) {
             if (DEV)
-              console.log("encode: encoded: done", framecnt, data.nbSamples);
+              console.log("encode: encoded: [terminate] done", framecnt, data.nbSamples);
             encoder.flush();
             controller.terminate();
           }
@@ -7860,6 +7869,7 @@ function generateVideoEncoderTransformStream(config, data, DEV = false) {
       if (DEV)
         console.log("encode: frame", framecnt, frame, encoder.encodeQueueSize);
       encoder.encode(frame);
+      frame.close();
       emitResolve();
       if (allowWriteEval()) {
         if (DEV)
@@ -7874,7 +7884,7 @@ function generateVideoEncoderTransformStream(config, data, DEV = false) {
     },
     flush(controller) {
       if (DEV)
-        console.log("encode: flush", framecnt, enqueuecnt);
+        console.log("encode: [terminate] flush", framecnt, enqueuecnt);
       encoder.flush();
       controller.terminate();
     }
@@ -7913,7 +7923,7 @@ function writeEncodedVideoChunksToMP4File(file, encoderConfig, srcInfo, DEV = fa
           trak.tkhd.set("matrix", srcInfo.matrix);
         }
         if (DEV)
-          console.log("write: addTrack", trackId, trak);
+          console.log("write: addTrack", trackId, trak, TIMESCALE, scaleScale);
         return;
       } else {
         samplecnt++;
@@ -8011,11 +8021,12 @@ var EasyVideoEncoder = class extends EventTarget {
   }
   async start(order) {
     const DEV = order.DEV ?? false;
+    import_mp4box2.Log.setLogLevel(DEV ? import_mp4box2.Log.LOG_LEVEL_DEBUG : import_mp4box2.Log.LOG_LEVEL_ERROR);
     const dispatchEvent = this.dispatchEvent.bind(this);
     const info = await getMP4Info(order.file);
-    const fps = info.videoInfo.duration ? info.videoInfo.timescale * info.videoInfo.nb_samples / info.videoInfo.duration : 30;
+    const fps = info.fps;
     if (DEV)
-      console.log("fps", fps);
+      console.log("info", info);
     const samplesNumber = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
     let samplesCount = 0;
     dispatchEvent(new CustomEvent("progress", { detail: { samplesNumber, samplesCount } }));
@@ -8026,7 +8037,7 @@ var EasyVideoEncoder = class extends EventTarget {
     };
     const encoderConfig = {
       ...order.encoderConfig,
-      codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, "avc1.4d001f"])[1],
+      codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, "avc1.4d0034"])[1],
       ...outputSize
     };
     const dstFile = (0, import_mp4box2.createFile)();
@@ -8043,11 +8054,11 @@ var EasyVideoEncoder = class extends EventTarget {
         }
       });
     }
+    const data = { nbSamples: info.videoInfo.nb_samples };
+    await order.file.stream().pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer).pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV)).pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer).pipeThrough(generateVideoSortTransformer(info.videoInfo, data, DEV), preventer).pipeThrough(generateResizeTransformer(order.resizeConfig, DEV)).pipeThrough(generateVideoEncoderTransformStream(encoderConfig, data, DEV), preventer).pipeThrough(upcnt()).pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, DEV));
     if (info.audioInfo) {
       await order.file.stream().pipeThrough(generateDemuxTransformer(info.audioInfo.id, DEV), preventer).pipeThrough(upcnt()).pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo, DEV));
     }
-    const data = { nbSamples: info.videoInfo.nb_samples };
-    await order.file.stream().pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer).pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV)).pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer).pipeThrough(generateVideoSortTransformer(info.videoInfo, data, DEV), preventer).pipeThrough(generateResizeTransformer(order.resizeConfig, DEV)).pipeThrough(generateVideoEncoderTransformStream(encoderConfig, data, DEV), preventer).pipeThrough(upcnt()).pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, DEV));
     if (samplesCount !== samplesNumber) {
       samplesCount = samplesNumber;
       dispatchEvent(new CustomEvent("progress", { detail: { samplesNumber, samplesCount } }));

@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { getMP4Info } from '../../../src/demux';
 import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
-import TheWorker from '../../../src/workers/worker?worker';
+import TheWorker from '../../../src/worker?worker';
 
 const DEV = import.meta.env.DEV;
 
@@ -143,4 +143,3 @@ a {
   color: #41b883;
 }
 </style>
-../../../src/type

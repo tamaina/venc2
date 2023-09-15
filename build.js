@@ -18,7 +18,7 @@ const lib = {
 };
 
 const worker = {
-	entryPoints: [ `${__dirname}/src/workers/worker.ts` ],
+	entryPoints: [ `${__dirname}/src/worker.ts` ],
 	bundle: true,
 	format: 'esm',
 	treeShaking: true,

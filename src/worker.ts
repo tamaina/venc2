@@ -1,5 +1,5 @@
-import { EasyVideoEncoder } from '..';
-import type { EasyVideoEncoderEvents, VencWorkerOrder } from '../type';
+import { EasyVideoEncoder } from '.';
+import type { EasyVideoEncoderEvents, VencWorkerOrder } from './type';
 
 globalThis.onmessage = async (ev) => {
     const order = ev.data as VencWorkerOrder;
