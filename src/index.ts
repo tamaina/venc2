@@ -1,4 +1,4 @@
-import { createFile } from '@webav/mp4box.js';
+import { createFile, Log } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from './decode';
 export * from './decode';
@@ -30,11 +30,12 @@ export class EasyVideoEncoder extends EventTarget {
     };
     async start(order: VencWorkerOrder) {
         const DEV = order.DEV ?? false;
+        Log.setLogLevel(DEV ? Log.LOG_LEVEL_DEBUG : Log.LOG_LEVEL_ERROR);
         const dispatchEvent = this.dispatchEvent.bind(this);
         const info = await getMP4Info(order.file)
-        // info.videoInfo.timescale / (info.videoInfo.duration / info.videoInfo.nb_samples)
-        const fps = info.videoInfo.duration ? (info.videoInfo.timescale * info.videoInfo.nb_samples) / info.videoInfo.duration : 30;
-        if (DEV) console.log('fps', fps);
+
+        const fps = info.fps;
+        if (DEV) console.log('info', info);
 
         const samplesNumber = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
         let samplesCount = 0;
@@ -48,7 +49,7 @@ export class EasyVideoEncoder extends EventTarget {
         };
         const encoderConfig = {
             ...order.encoderConfig,
-            codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d001f'])[1],
+            codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d0034'])[1],
             ...outputSize,
         };
 
@@ -66,13 +67,6 @@ export class EasyVideoEncoder extends EventTarget {
             });
         }
 
-        if (info.audioInfo) {
-            await order.file.stream()
-                .pipeThrough(generateDemuxTransformer(info.audioInfo.id, DEV), preventer)
-                .pipeThrough(upcnt())
-                .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo, DEV));
-        }
-
         const data = { nbSamples: info.videoInfo.nb_samples };
 
         await order.file.stream()
@@ -84,6 +78,13 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, data, DEV), preventer)
             .pipeThrough(upcnt())
             .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, DEV));
+
+        if (info.audioInfo) {
+            await order.file.stream()
+                .pipeThrough(generateDemuxTransformer(info.audioInfo.id, DEV), preventer)
+                .pipeThrough(upcnt())
+                .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo, DEV));
+        }
 
         if (samplesCount !== samplesNumber) {
             samplesCount = samplesNumber;

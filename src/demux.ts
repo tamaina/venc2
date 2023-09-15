@@ -14,6 +14,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	let mp4boxfile: MP4File;
 	const data = {
 		track: undefined as MP4Track | undefined,
+		tracks: undefined as Set<number> | undefined,
 
 		totalSamples: 0,
 		processedSample: 0,
@@ -49,6 +50,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 
 			mp4boxfile.onReady = (info) => {
 				mp4boxfile.setExtractionOptions(trackId, null, { nbSamples: 1 });
+				data.tracks = new Set(info.tracks.map((track) => track.id));
 				const track = info.tracks.find((track) => track.id === trackId);
 				if (!track) {
 					controller.error('No track found');
@@ -108,6 +110,14 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 					if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
 					mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
 				}
+
+				for (const track of data.tracks ?? []) {
+					// Release samples in other tracks
+					const length = mp4boxfile.getTrackSamplesInfo(track).length;
+					if (track !== trackId && length) {
+						mp4boxfile.releaseUsedSamples(track, length);
+					}
+				}
 			}
 
 			// readyになるまでは問答無用で読み込む
@@ -132,6 +142,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 export type VideoInfo = {
 	info: MP4Info,
 	videoInfo: MP4VideoTrack,
+	fps: number,
 	audioInfo?: MP4AudioTrack,
 	description: Uint8Array,
 	file: MP4File,
@@ -190,6 +201,10 @@ export function getMP4Info(file: Blob, DEV = false) {
 
 			result.info = info;
             result.videoInfo = info.videoTracks[0];
+
+			// info.videoInfo.timescale / (info.videoInfo.duration / info.videoInfo.nb_samples)
+			result.fps = result.videoInfo.duration ? (result.videoInfo.timescale * result.videoInfo.nb_samples) / result.videoInfo.duration : 30;
+
 			const trak = mp4boxfile.getTrackById(result.videoInfo.id);
 			if (!trak) {
 				return reject('No video track found');

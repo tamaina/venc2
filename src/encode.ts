@@ -46,7 +46,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                         if (DEV) console.log('encode: encoded: metadata', config);
                     }
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
-                    if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize);
+                    if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize, config);
 
                     if (enqueuecnt === data.nbSamples) {
                         if (DEV) console.log('encode: encoded: [terminate] done', framecnt, data.nbSamples);
@@ -123,7 +123,7 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 if ((trak as any).tkhd) {
                     (trak as any).tkhd.set('matrix', (srcInfo as any).matrix)
                 }
-                if (DEV) console.log('write: addTrack', trackId, trak);
+                if (DEV) console.log('write: addTrack', trackId, trak, TIMESCALE, scaleScale);
                 return;
             } else {
                 samplecnt++;

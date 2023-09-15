@@ -7,7 +7,7 @@ export type VencWorkerOrder = {
      * [number(max fps), codec][]
      * 
      * Example: [[32, 'avc1.4d001f'], [64, 'avc1.4d0020'], [Infinity, 'avc1.4d0028']]
-     * If not set, encoding codec will be set to 'avc1.4d001f'.
+     * If not set, encoding codec will be set to `avc1.4d0034`.
      */
     codecEntries?: [number, string][];
     encoderConfig: Partial<VideoEncoderConfig>;
