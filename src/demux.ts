@@ -1,4 +1,4 @@
-import { DataStream, MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
+import { DataStream, MP4ArrayBuffer, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
 
 // デコードのTransformStreamのhighWaterMark
 const DECODE_HWM = 16;
@@ -143,7 +143,6 @@ export type VideoInfo = {
 	info: MP4Info,
 	videoInfo: MP4VideoTrack,
 	fps: number,
-	audioInfo?: MP4AudioTrack,
 	description: Uint8Array,
 	file: MP4File,
 };
@@ -218,9 +217,6 @@ export function getMP4Info(file: Blob, DEV = false) {
 			}
 			if (!result.description) {
 				return reject('No description found');
-			}
-			if (info.audioTracks.length > 0) {
-				result.audioInfo = info.audioTracks[0];
 			}
 
 			resolve(result as VideoInfo);

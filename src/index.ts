@@ -1,13 +1,15 @@
 import { createFile, Log } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
-import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from './decode';
-export * from './decode';
 import { getMP4Info, generateDemuxTransformer } from './demux';
 export * from './demux';
+import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from './decode';
+export * from './decode';
 import { floorWithSignificance, generateResizeTransformer, generateVideoSortTransformer } from './transform';
 export * from './transform';
-import { generateVideoEncoderTransformStream, writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './encode';
+import { generateVideoEncoderTransformStream } from './encode';
 export * from './encode';
+import { writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './mux';
+export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
 export * from './type';
 
@@ -37,7 +39,7 @@ export class EasyVideoEncoder extends EventTarget {
         const fps = info.fps;
         if (DEV) console.log('info', info);
 
-        const samplesNumber = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
+        const samplesNumber = info.videoInfo.nb_samples + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
         let samplesCount = 0;
         
         dispatchEvent(new CustomEvent('progress', { detail: { samplesNumber, samplesCount } }));
@@ -89,11 +91,12 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(upcnt())
             .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, DEV));
 
-        if (info.audioInfo) {
+
+        for (const track of info.info.audioTracks) {
             await order.file.stream()
-                .pipeThrough(generateDemuxTransformer(info.audioInfo.id, DEV), preventer)
+                .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
                 .pipeThrough(upcnt())
-                .pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo, DEV));
+                .pipeTo(writeAudioSamplesToMP4File(dstFile, track, DEV));
         }
 
         if (samplesCount !== samplesNumber) {

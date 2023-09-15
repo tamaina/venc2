@@ -33,3 +33,13 @@ export type EasyVideoEncoderEvents = {
     progress: CustomEvent<Omit<VencWorkerProgress, 'type'>>;
     result: CustomEvent<Omit<VencWorkerResult, 'type'>>;
 };
+
+type VideoEncoderOutputEncodedVideoChunk = {
+    type: 'encodedVideoChunk',
+    data: EncodedVideoChunk,
+};
+type VideoEncoderOutputMetadata = {
+    type: 'metadata',
+    data: EncodedVideoChunkMetadata,
+}
+export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | VideoEncoderOutputMetadata;
