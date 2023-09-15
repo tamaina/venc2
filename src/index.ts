@@ -54,6 +54,16 @@ export class EasyVideoEncoder extends EventTarget {
         };
 
         const dstFile = createFile();
+        dstFile.init({
+            timescale: info.info.timescale,
+            duration: info.info.duration,
+        });
+        if (dstFile.moov) {
+            const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
+            (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
+            (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
+        }
+
 
         function upcnt() {
             return new TransformStream({
@@ -89,14 +99,6 @@ export class EasyVideoEncoder extends EventTarget {
         if (samplesCount !== samplesNumber) {
             samplesCount = samplesNumber;
             dispatchEvent(new CustomEvent('progress', { detail: { samplesNumber, samplesCount } }));
-        }
-
-        if (dstFile.moov) {
-            const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
-            (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
-            (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
-            (dstFile.moov as any).mvhd?.set('timescale', info.info.timescale);
-            (dstFile.moov as any).mvhd?.set('duration', info.info.duration);
         }
 
         // NEVER execute initializeSegmentation

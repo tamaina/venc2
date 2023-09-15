@@ -97,18 +97,16 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
     let samplecnt = 0;
     let prevChunk: EncodedVideoChunk;
     let currentChunk: EncodedVideoChunk | null;
-    const TIMESCALE = srcInfo.timescale || 90000;    
-    const scaleScale = TIMESCALE / srcInfo.timescale;
 
     return new WritableStream<VideoEncoderOutputChunk>({
         start() {
         },
         write(data) {
             if (data.type === 'metadata' && !trak) {
-                const media_duration = Math.round(srcInfo.duration * scaleScale);
+                const media_duration = srcInfo.duration;
                 trackId = file.addTrack({
                     name: 'VideoHandle',
-                    timescale: TIMESCALE,
+                    timescale: srcInfo.timescale,
                     duration: media_duration,
                     media_duration: media_duration,
                     language: srcInfo.language,
@@ -124,7 +122,7 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 if ((trak as any).tkhd) {
                     (trak as any).tkhd.set('matrix', (srcInfo as any).matrix)
                 }
-                if (DEV) console.log('write: addTrack', trackId, trak, TIMESCALE, scaleScale);
+                if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
                 return;
             } else if (data.type === 'encodedVideoChunk') {
                 samplecnt++;
@@ -137,9 +135,9 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 const b = new ArrayBuffer(prevChunk.byteLength);
                 prevChunk.copyTo(b);
                 const sample = file.addSample(trackId, b, {
-                    cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-                    dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-                    duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6),
+                    cts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
+                    dts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
+                    duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * srcInfo.timescale / 1e6),
                     is_sync: prevChunk.type === 'key',
                 });
                 prevChunk = currentChunk;
@@ -152,9 +150,9 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
             const b = new ArrayBuffer(prevChunk.byteLength);
             prevChunk.copyTo(b);
             const sample = file.addSample(trackId, b, {
-                cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-                dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-                duration: Math.round(((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * TIMESCALE / 1e6),
+                cts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
+                dts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
+                duration: Math.round(((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale / 1e6),
             })
             if (DEV) console.log('write: addSample last', samplecnt, sample);
             file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
