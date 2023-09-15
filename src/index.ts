@@ -49,7 +49,7 @@ export class EasyVideoEncoder extends EventTarget {
         };
         const encoderConfig = {
             ...order.encoderConfig,
-            codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d0034'])[1],
+            codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
             ...outputSize,
         };
 

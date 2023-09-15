@@ -14,7 +14,7 @@ const video = ref<HTMLVideoElement>();
 const a = ref<HTMLAnchorElement>();
 const progress = ref<HTMLProgressElement>();
 
-const size = ref(sizeInput.value?.valueAsNumber || 2048);
+const size = ref(sizeInput.value?.valueAsNumber || 1920);
 
 /*
 const worker = new TheWorker();
@@ -80,8 +80,8 @@ async function execMain() {
     </div>
     <div class="control">
       <input type="file" ref="input" accept="video/*" multiple />
-      <input type="number" min="0" step="1" placeholder="size" value="2048" ref="sizeInput"
-        @change="size = sizeInput?.valueAsNumber || 2048" />
+      <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
+        @change="size = sizeInput?.valueAsNumber || 1920" />
     </div>
 
     <div class="do">
