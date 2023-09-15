@@ -10,7 +10,6 @@ const worker = new TheWorker();
 
 const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
-const canvas = ref<HTMLCanvasElement>();
 const video = ref<HTMLVideoElement>();
 const a = ref<HTMLAnchorElement>();
 const progress = ref<HTMLProgressElement>();
@@ -54,6 +53,11 @@ worker.onerror = (e) => {
 }
 
 async function execMain() {
+  if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
+    alert('VideoEncoder/VideoDecoder is not supported');
+    return;
+  }
+
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
       file,
@@ -70,6 +74,10 @@ async function execMain() {
 
 <template>
   <div id="myapp">
+    <div>
+      <h1>Easy Video Encoder for browsers (tentative)</h1>
+      <a href="https://github.com/tamaina/venc2">https://github.com/tamaina/venc2</a>
+    </div>
     <div class="control">
       <input type="file" ref="input" accept="video/*" multiple />
       <input type="number" min="0" step="1" placeholder="size" value="2048" ref="sizeInput"
@@ -86,7 +94,6 @@ async function execMain() {
         <a ref="a">Download</a>
       </div>
       <video ref="video" type="video/mp4" controls></video>
-      <canvas ref="canvas" width="2048" height="2048"></canvas>
     </main>
   </div>
 </template>
@@ -103,11 +110,21 @@ body {
   color: #f0f0f0;
 }
 
+h1 {
+  margin: 1rem;
+  line-height: 1.1;
+}
+
 .control {
   display: flex;
+  flex-wrap: wrap;
   flex-direction: row;
   justify-content: center;
   padding: 20px 10px;
+}
+
+.control > * {
+  margin: 4px;
 }
 
 .do {
