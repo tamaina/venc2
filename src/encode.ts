@@ -67,6 +67,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
             if (DEV) console.log('encode: frame', framecnt, frame, encoder.encodeQueueSize);
 
             encoder.encode(frame);
+            frame.close();
 
 			// safety
 			emitResolve();
