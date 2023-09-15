@@ -10,7 +10,7 @@ const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
  * 
  * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
  */
-export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { nbSamples: number }, DEV = false) {
+export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedData: { nbSamples: number }, DEV = false) {
 	let expectedNextTimestamp = 0;
 	const cache = new Map<number, VideoFrame>();
 	let recievedcnt = 0;
@@ -62,6 +62,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { n
 	}
 
 	return new TransformStream<VideoFrame, VideoFrame>({
+		// TODO: どっかnbSamplesを引き忘れている
 		start() {},
 		transform(frame, controller) {
 			recievedcnt++
@@ -69,7 +70,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { n
 
 			if (frame.timestamp < expectedNextTimestamp) {
 				console.error('sort: recieving frame: drop frame', frame.timestamp, expectedNextTimestamp);
-				data.nbSamples--;
+				sharedData.nbSamples--;
 				frame.close();
 				return;
 			}
@@ -82,14 +83,17 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { n
 					if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
 					controller.enqueue(cache.get(timestamp)!);
 					cache.delete(timestamp);
+					enqueuecnt++;
 				}
 				if (frame.timestamp >= expectedNextTimestamp) {
 					if (DEV) console.log('sort: recieving frame: enqueue last frame', frame.timestamp);
 					controller.enqueue(frame);
+					enqueuecnt++;
 				} else {
 					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
+					sharedData.nbSamples--;
 				}
-				if (DEV) console.log('sort: recieving frame: [terminate]', totalcnt, data.nbSamples);
+				if (DEV) console.log('sort: recieving frame: [terminate]', totalcnt, enqueuecnt, sharedData.nbSamples);
 				controller.terminate();
 				return;
 			}
@@ -104,7 +108,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, data: { n
 					if (timestamp < expectedNextTimestamp) {
 						cache.get(timestamp)?.close();
 						cache.delete(timestamp);
-						data.nbSamples--;
+						sharedData.nbSamples--;
 					}
 				}
 				expectedNextTimestamp = Math.min(...cache.keys());

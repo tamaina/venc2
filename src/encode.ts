@@ -17,7 +17,7 @@ export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | Vide
  * Returns a transform stream that encodes videoframes.
  * **Set preventClose: true** when using the stream with pipeThrough.
  */
-export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, data: { nbSamples: number }, DEV = false) {
+export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, sharedData: { nbSamples: number }, DEV = false) {
     let encoder: VideoEncoder;
     let framecnt = 0;
     let enqueuecnt = 0;
@@ -48,8 +48,8 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
                     if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize, config);
 
-                    if (enqueuecnt === data.nbSamples) {
-                        if (DEV) console.log('encode: encoded: [terminate] done', framecnt, data.nbSamples);
+                    if (enqueuecnt === sharedData.nbSamples) {
+                        if (DEV) console.log('encode: encoded: [terminate] done', framecnt, sharedData.nbSamples);
                         encoder.flush();
                         controller.terminate();
                     }
@@ -90,7 +90,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
     });
 }
 
-export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack, DEV = false) {
+export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack, sharedData: { nbSamples: number }, DEV = false) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     let trackId: number;
     let trak: BoxParser.trakBox;
@@ -135,9 +135,9 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 const b = new ArrayBuffer(prevChunk.byteLength);
                 prevChunk.copyTo(b);
                 const sample = file.addSample(trackId, b, {
-                    cts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
-                    dts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
-                    duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * srcInfo.timescale / 1e6),
+                    cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
+                    dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
+                    duration: Math.round(((currentChunk.timestamp - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
                     is_sync: prevChunk.type === 'key',
                 });
                 prevChunk = currentChunk;
@@ -150,12 +150,12 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
             const b = new ArrayBuffer(prevChunk.byteLength);
             prevChunk.copyTo(b);
             const sample = file.addSample(trackId, b, {
-                cts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
-                dts: Math.round(prevChunk.timestamp * srcInfo.timescale / 1e6),
-                duration: Math.round(((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale / 1e6),
+                cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
+                dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
+                duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
             })
             if (DEV) console.log('write: addSample last', samplecnt, sample);
-            file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
+            file.setSegmentOptions(trackId, null, { nbSamples: sharedData.nbSamples });
             if (DEV) console.log('write: close', file);
         },
     });

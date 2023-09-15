@@ -77,17 +77,17 @@ export class EasyVideoEncoder extends EventTarget {
             });
         }
 
-        const data = { nbSamples: info.videoInfo.nb_samples };
+        const sharedData = { nbSamples: info.videoInfo.nb_samples };
 
         await order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
             .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer)
-            .pipeThrough(generateVideoSortTransformer(info.videoInfo, data, DEV), preventer)
+            .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer)
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
-            .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, data, DEV), preventer)
+            .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
-            .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, DEV));
+            .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, DEV));
 
         if (info.audioInfo) {
             await order.file.stream()
