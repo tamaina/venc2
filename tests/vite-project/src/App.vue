@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { getMP4Info } from '../../../src/demux';
 import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
+import { EasyVideoEncoder } from '../../../src/index';
 
 const DEV = import.meta.env.DEV;
 
@@ -16,6 +17,8 @@ const progress = ref<HTMLProgressElement>();
 
 const size = ref(sizeInput.value?.valueAsNumber || 1920);
 
+const main = new EasyVideoEncoder();
+
 /*
 const worker = new TheWorker();
 console.log(worker);
@@ -26,13 +29,8 @@ worker.onmessage = (event) => {
 worker.onerror = e => console.error(e);
 */
 
-worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
-  if (ev.data.type === 'progress') {
-    progress.value!.max = ev.data.samplesNumber;
-    progress.value!.value = ev.data.samplesCount;
-    return;
-  } else if (ev.data.type === 'result') {
-    const file = new File([ev.data.buffer], 'test.mp4', { type: 'video/mp4' });
+async function showBuffer(buffer: Uint8Array) {
+    const file = new File([buffer], 'test.mp4', { type: 'video/mp4' });
     const info2 = await getMP4Info(file);
     const newUrl = URL.createObjectURL(file);
     if (a.value) {
@@ -45,14 +43,24 @@ worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
     }
 
     console.log('info2', info2);
+}
+
+worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
+  if (ev.data.type === 'progress') {
+    progress.value!.max = ev.data.samplesNumber;
+    progress.value!.value = ev.data.samplesCount;
+    return;
+  } else if (ev.data.type === 'result') {
+    console.log('worker result', ev.data.buffer);
+    showBuffer(ev.data.buffer);
   }
 }
 
-worker.onerror = (e) => {
+worker.onerror = (e: any) => {
   console.error('worker error', e);
 }
 
-async function execMain() {
+async function execWorker() {
   if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
     alert('VideoEncoder/VideoDecoder is not supported');
     return;
@@ -68,6 +76,35 @@ async function execMain() {
       },
       DEV,
     } as VencWorkerOrder)
+  };
+}
+
+main.addEventListener('progress', (ev) => {
+  progress.value!.max = ev.detail.samplesNumber;
+  progress.value!.value = ev.detail.samplesCount;
+});
+
+main.addEventListener('result', async (ev) => {
+  console.log('main result', ev.detail);
+  showBuffer(ev.detail.buffer);
+})
+
+function execMain() {
+  if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
+    alert('VideoEncoder/VideoDecoder is not supported');
+    return;
+  }
+
+  for (const file of Array.from(input.value?.files ?? [])) {
+    main.start({
+      file,
+      encoderConfig: {},
+      resizeConfig: {
+        maxWidth: size.value,
+        maxHeight: size.value,
+      },
+      DEV,
+    } as VencWorkerOrder);
   }
 }
 </script>
@@ -85,6 +122,7 @@ async function execMain() {
     </div>
 
     <div class="do">
+      <button @click="execWorker()">Worker</button>
       <button @click="execMain()">Main</button>
     </div>
 
