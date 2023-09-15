@@ -49,6 +49,10 @@ worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
   }
 }
 
+worker.onerror = (e) => {
+  console.error('worker error', e);
+}
+
 async function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({

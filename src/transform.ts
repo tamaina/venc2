@@ -157,7 +157,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
             controller.enqueue(dstFrame);
         },
         flush(controller) {
-            if (DEV) console.log('resize: [terminate] videoframe flush')
+            if (DEV) console.log('resize: [terminate]  cache is too large flush')
             controller.terminate();
         },
     });

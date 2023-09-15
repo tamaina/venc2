@@ -126,7 +126,7 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 }
                 if (DEV) console.log('write: addTrack', trackId, trak, TIMESCALE, scaleScale);
                 return;
-            } else {
+            } else if (data.type === 'encodedVideoChunk') {
                 samplecnt++;
                 if (!prevChunk) {
                     prevChunk = data.data as EncodedVideoChunk;
