@@ -37,7 +37,7 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrame>
  */
-export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, DEV = false) {
+export function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, DEV = false) {
 	let samplecnt = 0;
 	let framecnt = 0;
 	const totalcnt = videoInfo.nb_samples;
@@ -58,7 +58,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
 
 	return new TransformStream<EncodedVideoChunk, VideoFrame>({
-		start(controller) {
+		async start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
 					if (frame) {
@@ -79,13 +79,22 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 			});
 
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
-			decoder.configure({
+			const config = {
 				codec: videoInfo.codec.startsWith('vp08') ? 'vp8' : videoInfo.codec,
 				codedHeight: videoInfo.track_height,
 				codedWidth: videoInfo.track_width,
-				hardwareAcceleration: 'prefer-hardware',
+				hardwareAcceleration: 'prefer-hardware' as const,
 				description,
-			})
+			};
+			try {
+				if (DEV) console.log('decode: configure', config);
+				await VideoDecoder.isConfigSupported(config);
+			} catch (e) {
+				console.error('decode: decoder error', e);
+				controller.error(e);
+				return;
+			}
+			decoder.configure(config);
 		},
 		transform(vchunk, controller) {
 			samplecnt++;

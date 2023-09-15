@@ -33,6 +33,8 @@ export class EasyVideoEncoder extends EventTarget {
     async start(order: VencWorkerOrder) {
         const DEV = order.DEV ?? false;
         Log.setLogLevel(DEV ? Log.LOG_LEVEL_DEBUG : Log.LOG_LEVEL_ERROR);
+        if (DEV) console.log('start', order);
+
         const dispatchEvent = this.dispatchEvent.bind(this);
         const info = await getMP4Info(order.file)
 
@@ -54,6 +56,7 @@ export class EasyVideoEncoder extends EventTarget {
             codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
             ...outputSize,
         };
+        await VideoEncoder.isConfigSupported(encoderConfig);
 
         const dstFile = createFile();
         dstFile.init({
@@ -66,6 +69,7 @@ export class EasyVideoEncoder extends EventTarget {
             (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
         }
 
+        if (DEV) console.log('prepare', samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
 
         function upcnt() {
             return new TransformStream({
@@ -84,7 +88,7 @@ export class EasyVideoEncoder extends EventTarget {
         await order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
-            .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer)
+            .pipeThrough(generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer)
             .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer)
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
