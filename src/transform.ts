@@ -17,43 +17,50 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 	let enqueuecnt = 0;
 	const totalcnt = videoInfo.nb_samples;
 
-	function send(controller: TransformStreamDefaultController<VideoFrame>, incoming: VideoFrame, _buffer?: Set<VideoFrame>) {
+	function dropByCache(timestamp: number) {
+		cache.get(timestamp)?.close();
+		cache.delete(timestamp);
+		sharedData.nbSamples--;
+	}
+	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrame>) {
+		controller.enqueue(cache.get(timestamp)!);
+		cache.delete(timestamp);
+		enqueuecnt++;
+	}
+
+	function send(controller: TransformStreamDefaultController<VideoFrame>, incoming: VideoFrame, _timestamps?: Set<number>) {
 		if (DEV) console.log('sort: send: trying to send', expectedNextTimestamp, incoming, cache.keys());
 
 		// 前のフレームをenqueueしてしまうと次の処理でframeがcloseされてしまう可能性があるため、
 		// バッファに入れておいてまとめてexpectedNextTimestampに当てはまるフレームが来るまでenqueueする
-		const buffer = _buffer ?? new Set<VideoFrame>();
+		const timestamps = _timestamps ?? new Set<number>();
 
 		cache.set(incoming.timestamp, incoming);
 
 		for (const margin of TIMESTAMP_MARGINS) {
 			const timestamp = expectedNextTimestamp + margin;
 			if (incoming?.timestamp === timestamp) {
-				buffer.add(incoming);
-				cache.delete(incoming.timestamp);
+				timestamps.add(incoming.timestamp);
 				expectedNextTimestamp = timestamp + (incoming.duration ?? 0);
 				break;
 			}
 			if (cache.size && cache.has(timestamp)) {
+				timestamps.add(timestamp);
 				const frame = cache.get(timestamp)!;
-				buffer.add(frame);
-				cache.delete(timestamp);
 
-				if (frame?.duration) {
+				if (frame.duration) {
 					expectedNextTimestamp = timestamp + frame.duration;
-					send(controller, frame, buffer);
+					send(controller, frame, timestamps);
 					return;
 				}
 			}
 		}
 
-		if (buffer.size > 0) {
-			if (DEV) console.log('sort: send: enqueue buffer', buffer, buffer.size);
-			for (const frame of buffer) {
-				controller.enqueue(frame);
-				cache.delete(frame.timestamp);
-				enqueuecnt++;
-				if (DEV) console.log('sort: send: enqueue buffer: sending frame', frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+		if (timestamps.size > 0) {
+			if (DEV) console.log('sort: send: enqueue buffer', timestamps, timestamps.size);
+			for (const frame of timestamps) {
+				enqueueByCache(frame, controller);
+				if (DEV) console.log('sort: send: enqueue buffer: sending frame', frame, recievedcnt, enqueuecnt, cache.size);
 			}
 			return;
 		} else {
@@ -62,7 +69,6 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 	}
 
 	return new TransformStream<VideoFrame, VideoFrame>({
-		// TODO: どっかnbSamplesを引き忘れている
 		start() {},
 		transform(frame, controller) {
 			recievedcnt++
@@ -78,12 +84,15 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 			if (recievedcnt === totalcnt) {
 				// 最後のフレームを受信した場合片付ける
 				if (DEV) console.log('sort: recieving frame: last frame', frame.timestamp, cache);
-				for (const timestamp of Array.from(cache.keys()).filter(x => x >= expectedNextTimestamp).sort((a, b) => a - b)) {
+				for (const timestamp of Array.from(cache.keys()).sort((a, b) => a - b)) {
 					// キャッシュを全てenqueueする
-					if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
-					controller.enqueue(cache.get(timestamp)!);
-					cache.delete(timestamp);
-					enqueuecnt++;
+					if (timestamp < expectedNextTimestamp) {
+						if (DEV) console.error('sort: recieving frame: drop frame', timestamp, expectedNextTimestamp);
+						dropByCache(timestamp);
+					} else {
+						if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
+						enqueueByCache(timestamp, controller);
+					}
 				}
 				if (frame.timestamp >= expectedNextTimestamp) {
 					if (DEV) console.log('sort: recieving frame: enqueue last frame', frame.timestamp);
@@ -91,6 +100,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 					enqueuecnt++;
 				} else {
 					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
+					frame.close();
 					sharedData.nbSamples--;
 				}
 				if (DEV) console.log('sort: recieving frame: [terminate]', totalcnt, enqueuecnt, sharedData.nbSamples);
@@ -106,9 +116,7 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 				console.error('sort: recieving frame: cache is too large', frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
 				for (const timestamp of cache.keys()) {
 					if (timestamp < expectedNextTimestamp) {
-						cache.get(timestamp)?.close();
-						cache.delete(timestamp);
-						sharedData.nbSamples--;
+						dropByCache(timestamp);
 					}
 				}
 				expectedNextTimestamp = Math.min(...cache.keys());
