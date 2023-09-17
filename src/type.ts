@@ -34,8 +34,7 @@ export type VencWorkerResult = {
 export type VencWorkerMessage = VencWorkerProgress | VencWorkerResult;
 
 export type EasyVideoEncoderEvents = {
-    progress: CustomEvent<Omit<VencWorkerProgress, 'type'>>;
-    result: CustomEvent<Omit<VencWorkerResult, 'type'>>;
+    [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, { type: k }> , 'type'>>;
 };
 
 type VideoEncoderOutputEncodedVideoChunk = {
