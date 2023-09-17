@@ -305,7 +305,7 @@ export class ISOFile {
 	buildSampleLists(): void
 	buildTrakSampleLists(trak: any): void
 	checkBuffer(ab: any): any
-	createFragment(track_id: any, sampleNumber: any, stream_: any): any
+	createFragment(track_id: any, sampleNumber: any, stream_?: any): any
 	equal(b: any): any
 	flattenItemInfo(): void
 	flush(): void

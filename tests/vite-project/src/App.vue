@@ -29,20 +29,25 @@ worker.onmessage = (event) => {
 worker.onerror = e => console.error(e);
 */
 
-async function showBuffer(buffer: Uint8Array) {
-    const file = new File([buffer], 'test.mp4', { type: 'video/mp4' });
-    const info2 = await getMP4Info(file);
-    const newUrl = URL.createObjectURL(file);
-    if (a.value) {
-      a.value.href = newUrl;
-      a.value.download = 'test.mp4';
-    }
+let buffers = new Set<ArrayBuffer>();
 
-    if (video.value) {
-      video.value.src = newUrl;
-    }
+async function showBuffer() {
+  console.log('buffers', buffers);
+  const file = new File(Array.from(buffers), 'test.mp4', { type: 'video/mp4' });
+  console.log(file);
+  buffers = new Set();
+  const newUrl = URL.createObjectURL(file);
+  if (a.value) {
+    a.value.href = newUrl;
+    a.value.download = 'test.mp4';
+  }
 
-    console.log('info2', info2);
+  if (video.value) {
+    video.value.src = newUrl;
+  }
+
+  const info2 = await getMP4Info(file);
+  console.log('info2', info2);
 }
 
 worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
@@ -50,9 +55,12 @@ worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
     progress.value!.max = ev.data.samplesNumber;
     progress.value!.value = ev.data.samplesCount;
     return;
-  } else if (ev.data.type === 'result') {
-    console.log('worker result', ev.data.buffer);
-    showBuffer(ev.data.buffer);
+  } else if (ev.data.type === 'segment') {
+    console.log('worker segment', ev.data.buffer);
+    buffers.add(ev.data.buffer);
+  } else if (ev.data.type === 'complete') {
+    console.log('worker complete', ev.data);
+    await showBuffer();
   }
 }
 
@@ -84,10 +92,15 @@ main.addEventListener('progress', (ev) => {
   progress.value!.value = ev.detail.samplesCount;
 });
 
-main.addEventListener('result', async (ev) => {
-  console.log('main result', ev.detail);
-  showBuffer(ev.detail.buffer);
-})
+main.addEventListener('segment', async (ev) => {
+  console.log('main segment', ev.detail);
+  buffers.add(ev.detail.buffer);
+});
+
+main.addEventListener('complete', async (ev) => {
+  console.log('main complete', ev.detail);
+  await showBuffer();
+});
 
 function execMain() {
   if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {

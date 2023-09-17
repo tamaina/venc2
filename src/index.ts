@@ -1,4 +1,4 @@
-import { createFile, Log } from '@webav/mp4box.js';
+import { createFile, DataStream, Log } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxTransformer } from './demux';
 export * from './demux';
@@ -67,6 +67,7 @@ export class EasyVideoEncoder extends EventTarget {
             timescale: info.info.timescale,
             duration: info.info.duration,
         });
+        (dstFile as any).isFragmentationInitialized = true;
         if (dstFile.moov) {
             const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
             (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
@@ -93,14 +94,40 @@ export class EasyVideoEncoder extends EventTarget {
 
         const sharedData = { nbSamples: info.videoInfo.nb_samples };
 
-        // videoTrackAddedCallbackを初期化したことにするために即時関数を使う
-        const [videoTrackAddedCallback, videoTrackAddedPromise] = (() => {
+        // callbackを初期化したことにするために即時関数を使う
+        const ___ = (() => {
             let videoTrackAddedCallback: () => any;
             const videoTrackAddedPromise = new Promise<void>((resolve) => {
                 videoTrackAddedCallback = resolve;
             });
-            return [videoTrackAddedCallback!, videoTrackAddedPromise];
+            let startToWriteVideoChunksCallback: () => any;
+            const startToWriteVideoChunksPromise = new Promise<void>((resolve) => {
+                startToWriteVideoChunksCallback = resolve;
+            });
+            return {
+                videoTrackAddedCallback: videoTrackAddedCallback!,
+                videoTrackAddedPromise,
+                startToWriteVideoChunksCallback: startToWriteVideoChunksCallback!,
+                startToWriteVideoChunksPromise,
+            };
         })();
+
+        let nextBox = 0;
+        function sendBoxes() {
+            for (let i = nextBox; i < dstFile.boxes.length; i++) {
+                if (DEV) console.log('send box', nextBox, i, dstFile.boxes[i]);
+                const box = dstFile.boxes[i];
+                const ds = new DataStream();
+                box.write(ds);
+                const buffer = ds.buffer;
+                dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
+                if (box.data) {
+                    //box.data = undefined;
+                }
+            }
+            if (DEV) console.log('send box: next', dstFile.boxes.length);
+            nextBox = dstFile.boxes.length;
+        }
 
         const videoStreamPromise = order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
@@ -110,10 +137,15 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
-            .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, videoTrackAddedCallback, DEV));
+            .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, ___.startToWriteVideoChunksPromise, DEV))
+            .pipeTo(new WritableStream({
+                start() { },
+                write() { sendBoxes() },
+                close() { sendBoxes() },
+            }));
 
         // add a video track
-        await videoTrackAddedPromise;
+        await ___.videoTrackAddedPromise;
 
         const audioStreams = new Set<() => Promise<void>>();
         for (const track of info.info.audioTracks) {
@@ -127,10 +159,28 @@ export class EasyVideoEncoder extends EventTarget {
             );
         }
 
-        dstFile.onSegment = (id, user, buffer, sampleNum) => {
-            if (DEV) console.log('onSegment', id, user, buffer, sampleNum);
-            dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
+        //dstFile.onSegment = (id, user, buffer, sampleNum) => {
+        //    if (DEV) console.log('onSegment', id, user, buffer, sampleNum);
+        //    dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
+        //    //dstFile.releaseUsedSamples(id, sampleNum);
+        //}
+
+        //#region send first segment
+        const firstSegment = dstFile.getBuffer();
+        if (DEV) console.log('the first segment', firstSegment, dstFile);
+        dispatchEvent(new CustomEvent('result', { detail: { identifier, buffer: firstSegment } }));
+        //#endregion
+
+        //dstFile.start();
+        ___.startToWriteVideoChunksCallback();
+
+        //#region wait for mux and stream end
+        await videoStreamPromise;
+        for (const stream of audioStreams) {
+            await stream();
+            sendBoxes();
         }
+        //#endregion
 
         if (samplesCount !== samplesNumber) {
             samplesCount = samplesNumber;
@@ -139,11 +189,8 @@ export class EasyVideoEncoder extends EventTarget {
 
         if (DEV) console.log('mux finish', samplesNumber, samplesCount, dstFile);
 
-        // NEVER execute initializeSegmentation
-        const buffer = dstFile.getBuffer();
+        dispatchEvent(new CustomEvent('complete', { detail: { identifier } }));
 
-        dispatchEvent(new CustomEvent('result', { detail: { identifier, buffer } }));
-
-        dstFile.flush();
+        //dstFile.flush();
     };
 }

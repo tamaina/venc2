@@ -19,6 +19,7 @@ export function writeEncodedVideoChunksToMP4File(
     srcInfo: MP4VideoTrack,
     sharedData: { nbSamples: number },
     trackAddedCallback: () => any,
+    promiseToStartChunks: Promise<void>,
     DEV = false
 ) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
@@ -28,10 +29,10 @@ export function writeEncodedVideoChunksToMP4File(
     let prevChunk: EncodedVideoChunk;
     let currentChunk: EncodedVideoChunk | null;
 
-    return new WritableStream<VideoEncoderOutputChunk>({
+    return new TransformStream<VideoEncoderOutputChunk, Sample>({
         start() {
         },
-        write(data) {
+        async transform(data, controller) {
             if (data.type === 'metadata' && !trak) {
                 const media_duration = srcInfo.duration;
                 trackId = file.addTrack({
@@ -58,6 +59,7 @@ export function writeEncodedVideoChunksToMP4File(
 
                 if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
                 trackAddedCallback();
+                await promiseToStartChunks;
                 return;
             } else if (data.type === 'encodedVideoChunk') {
                 samplecnt++;
@@ -77,19 +79,26 @@ export function writeEncodedVideoChunksToMP4File(
                 });
                 prevChunk = currentChunk;
                 currentChunk = null;
-                if (DEV) console.log('write: addSample', samplecnt - 1, sample);
+                if (DEV) console.log('write: addSample', samplecnt - 1, sample, file.getSample(trak, sample.number));
+                controller.enqueue(sample);
+
+                if (samplecnt === sharedData.nbSamples) {
+                    const b = new ArrayBuffer(prevChunk.byteLength);
+                    prevChunk.copyTo(b);
+                    const sample = file.addSample(trackId, b, {
+                        cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
+                        dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
+                        duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
+                    })
+                    controller.enqueue(sample);
+                    if (DEV) console.log('write: [terminate] addSample last', sharedData.nbSamples, samplecnt, sample, file);
+                    controller.terminate();
+                }
             }
         },
-        close() {
-            const b = new ArrayBuffer(prevChunk.byteLength);
-            prevChunk.copyTo(b);
-            const sample = file.addSample(trackId, b, {
-                cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
-                dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
-                duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
-            })
-            if (DEV) console.log('write: addSample last', sharedData.nbSamples, samplecnt, sample);
-            if (DEV) console.log('write: close', file);
+        flush(controller) {
+            if (DEV) console.log('write: flush', file);
+            controller.terminate();
         },
     });
 }

@@ -28,7 +28,7 @@ export type VencWorkerProgress = {
 export type VencWorkerSegment = {
     identifier?: any;
     type: 'segment',
-    buffer: Uint8Array,
+    buffer: ArrayBuffer,
 };
 
 export type VencWorkerComplete = {

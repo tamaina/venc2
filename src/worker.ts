@@ -15,15 +15,18 @@ globalThis.onmessage = async (ev) => {
             };
         }
         const onProgress = onEvent('progress');
-        const onResult = (ev: EasyVideoEncoderEvents['result']) => {
-            onEvent('result')(ev);
+        const onSegment = onEvent('segment');
+        const onComplete = (ev: EasyVideoEncoderEvents['complete']) => {
+            onEvent('complete')(ev);
             resolve();
 
             encoder.removeEventListener('progress', onProgress);
-            encoder.removeEventListener('result', onResult);
+            encoder.removeEventListener('segment', onSegment);
+            encoder.removeEventListener('complete', onComplete);
         };
         encoder.addEventListener('progress', onProgress);
-        encoder.addEventListener('result', onResult);
+        encoder.addEventListener('segment', onSegment);
+        encoder.addEventListener('complete', onComplete);
 
         encoder.start(order).catch(e => reject(e));
     });
