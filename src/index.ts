@@ -71,6 +71,10 @@ export class EasyVideoEncoder extends EventTarget {
             const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
             (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
             (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
+
+            // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/isofile-write.js#L49
+            const mehd = (dstFile.moov as any).mvex?.add('mehd');
+            mehd.set('fragment_duration', info.info.duration);
         }
 
         if (DEV) console.log('prepare', samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
