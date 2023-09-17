@@ -1,5 +1,16 @@
-import { BoxParser, MP4AudioTrack, MP4File, MP4VideoTrack, Sample } from "@webav/mp4box.js";
+import { BoxParser, MP4AudioTrack, MP4File, MP4MediaTrack, MP4VideoTrack, Sample } from "@webav/mp4box.js";
 import type { VideoEncoderOutputChunk } from "./type";
+
+function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
+    // Copy edits
+    if ((srcInfo as any).edits) {
+        const edts = tragetTrak.add('edts');
+        const elst = edts.add('elst');
+        ((srcInfo as any).edits).forEach((editEntry: any) => {
+            elst.addEntry(editEntry);
+        });
+    }
+}
 
 export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack, sharedData: { nbSamples: number }, DEV = false) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
@@ -33,6 +44,8 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 if ((trak as any).tkhd) {
                     (trak as any).tkhd.set('matrix', (srcInfo as any).matrix)
                 }
+                copyEdits(trak, srcInfo);
+
                 if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
                 return;
             } else if (data.type === 'encodedVideoChunk') {
@@ -55,7 +68,6 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 currentChunk = null;
                 if (DEV) console.log('write: addSample', samplecnt - 1, sample);
             }
-
         },
         close() {
             const b = new ArrayBuffer(prevChunk.byteLength);
@@ -65,8 +77,8 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
                 duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
             })
-            if (DEV) console.log('write: addSample last', samplecnt, sample);
-            file.setSegmentOptions(trackId, null, { nbSamples: sharedData.nbSamples });
+            if (DEV) console.log('write: addSample last', sharedData.nbSamples, samplecnt, sample);
+            //file.setSegmentOptions(trackId, null, { nbSamples: sharedData.nbSamples });
             if (DEV) console.log('write: close', file);
         },
     });
@@ -92,6 +104,9 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
     });
 
     if (DEV) console.log('write audio: addTrack', trackId);
+    const trak = file.getTrackById(trackId)!;
+    copyEdits(trak, srcInfo);
+
     let samplecnt = 0;
     return new WritableStream<Sample>({
         start() {
@@ -114,7 +129,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
                 if (DEV) console.log('write audio: addSample', samplecnt, sample, res);
         },
         close() {
-            file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
+            //file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
             if (DEV) console.log('write audio: close', file);
         },
     });

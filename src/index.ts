@@ -33,6 +33,7 @@ export class EasyVideoEncoder extends EventTarget {
     async start(order: VencWorkerOrder) {
         const DEV = order.DEV ?? false;
         Log.setLogLevel(DEV ? Log.LOG_LEVEL_DEBUG : Log.LOG_LEVEL_ERROR);
+        const identifier = order.identifier;
         if (DEV) console.log('start', order);
 
         const dispatchEvent = this.dispatchEvent.bind(this);
@@ -43,8 +44,11 @@ export class EasyVideoEncoder extends EventTarget {
 
         const samplesNumber = info.videoInfo.nb_samples + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
         let samplesCount = 0;
-        
-        dispatchEvent(new CustomEvent('progress', { detail: { samplesNumber, samplesCount } }));
+
+        function dispatchProgress() {
+            dispatchEvent(new CustomEvent('progress', { detail: { identifier, samplesNumber, samplesCount } }));   
+        }
+        dispatchProgress();
 
         const _outputSize = calculateSize(info.videoInfo.video, order.resizeConfig);
         const outputSize = {
@@ -77,7 +81,7 @@ export class EasyVideoEncoder extends EventTarget {
                 transform(chunk, controller) {
                     controller.enqueue(chunk);
                     samplesCount++;
-                    dispatchEvent(new CustomEvent('progress', { detail: { samplesNumber, samplesCount } }));
+                    dispatchProgress();
                 },
                 flush() { },
             });
@@ -104,13 +108,15 @@ export class EasyVideoEncoder extends EventTarget {
 
         if (samplesCount !== samplesNumber) {
             samplesCount = samplesNumber;
-            dispatchEvent(new CustomEvent('progress', { detail: { samplesNumber, samplesCount } }));
+            dispatchProgress();
         }
+
+        if (DEV) console.log('mux finish', samplesNumber, samplesCount, dstFile);
 
         // NEVER execute initializeSegmentation
         const buffer = dstFile.getBuffer();
 
-        dispatchEvent(new CustomEvent('result', { detail: { buffer } }));
+        dispatchEvent(new CustomEvent('result', { detail: { identifier, buffer } }));
 
         dstFile.flush();
     };

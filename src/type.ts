@@ -1,6 +1,7 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
 
 export type VencWorkerOrder = {
+    identifier?: any;
     file: Blob;
 
     /**
@@ -18,12 +19,14 @@ export type VencWorkerOrder = {
 };
 
 export type VencWorkerProgress = {
+    identifier?: any;
     type: 'progress',
     samplesNumber: number;
     samplesCount: number;
 };
 
 export type VencWorkerResult = {
+    identifier?: any;
     type: 'result',
     buffer: Uint8Array,
 };

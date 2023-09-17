@@ -20,6 +20,7 @@ export interface MP4MediaTrack {
 	language: string
 	nb_samples: number
 	type: 'video' | 'audio' | 'subtitles' | 'metadata'
+	edits?: any[]
 }
 
 export interface MP4VideoData {
