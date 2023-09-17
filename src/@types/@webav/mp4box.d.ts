@@ -69,6 +69,7 @@ export interface MP4File extends ISOFile {
 	onReady?: (info: MP4Info) => void
 	onError?: (e: string) => void
 	onSamples?: (id: number, user: any, samples: Sample[]) => void
+	onSegment: (id: number, user: any, buffer: ArrayBuffer, sampleNum) => void
 
 	appendBuffer(data: MP4ArrayBuffer): number
 	start(): void

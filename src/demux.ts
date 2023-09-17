@@ -143,6 +143,7 @@ export type VideoInfo = {
 	info: MP4Info,
 	videoInfo: MP4VideoTrack,
 	fps: number,
+	defaultSampleDuration: number,
 	description: Uint8Array,
 	file: MP4File,
 };
@@ -201,12 +202,13 @@ export function getMP4Info(file: Blob, DEV = false) {
 			result.info = info;
             result.videoInfo = info.videoTracks[0];
 
-			// info.videoInfo.timescale / (info.videoInfo.duration / info.videoInfo.nb_samples)
 			if (result.videoInfo.edits && result.videoInfo.edits.length) {
 				result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
+				result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
 			} else {
 				// Fragmented MP4などでsamplesが全て読まれないうちにonReadyが呼ばれることがあるため、こちらの計算は不正確
-				result.fps = result.videoInfo.duration ? (result.videoInfo.timescale * result.videoInfo.nb_samples) / result.videoInfo.duration : 30;
+				result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples ?? 1;
+				result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
 			}
 
 			const trak = mp4boxfile.getTrackById(result.videoInfo.id);

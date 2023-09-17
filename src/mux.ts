@@ -12,7 +12,15 @@ function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
     }
 }
 
-export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: VideoEncoderConfig, srcInfo: MP4VideoTrack, sharedData: { nbSamples: number }, DEV = false) {
+export function writeEncodedVideoChunksToMP4File(
+    file: MP4File,
+    encoderConfig:
+    VideoEncoderConfig,
+    srcInfo: MP4VideoTrack,
+    sharedData: { nbSamples: number },
+    trackAddedCallback: () => any,
+    DEV = false
+) {
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     let trackId: number;
     let trak: BoxParser.trakBox;
@@ -46,7 +54,10 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 }
                 copyEdits(trak, srcInfo);
 
+                file.setSegmentOptions(trackId, null, { nbSamples: sharedData.nbSamples });
+
                 if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
+                trackAddedCallback();
                 return;
             } else if (data.type === 'encodedVideoChunk') {
                 samplecnt++;
@@ -78,7 +89,6 @@ export function writeEncodedVideoChunksToMP4File(file: MP4File, encoderConfig: V
                 duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
             })
             if (DEV) console.log('write: addSample last', sharedData.nbSamples, samplecnt, sample);
-            //file.setSegmentOptions(trackId, null, { nbSamples: sharedData.nbSamples });
             if (DEV) console.log('write: close', file);
         },
     });
@@ -106,6 +116,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
     if (DEV) console.log('write audio: addTrack', trackId);
     const trak = file.getTrackById(trackId)!;
     copyEdits(trak, srcInfo);
+    file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
 
     let samplecnt = 0;
     return new WritableStream<Sample>({

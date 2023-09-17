@@ -89,7 +89,16 @@ export class EasyVideoEncoder extends EventTarget {
 
         const sharedData = { nbSamples: info.videoInfo.nb_samples };
 
-        await order.file.stream()
+        // videoTrackAddedCallbackを初期化したことにするために即時関数を使う
+        const [videoTrackAddedCallback, videoTrackAddedPromise] = (() => {
+            let videoTrackAddedCallback: () => any;
+            const videoTrackAddedPromise = new Promise<void>((resolve) => {
+                videoTrackAddedCallback = resolve;
+            });
+            return [videoTrackAddedCallback!, videoTrackAddedPromise];
+        })();
+
+        const videoStreamPromise = order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
             .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, DEV), preventer)
@@ -97,13 +106,26 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
-            .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, DEV));
+            .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, videoTrackAddedCallback, DEV));
 
+        // add a video track
+        await videoTrackAddedPromise;
+
+        const audioStreams = new Set<() => Promise<void>>();
         for (const track of info.info.audioTracks) {
-            await order.file.stream()
+            // add audio tracks
+            const writer = writeAudioSamplesToMP4File(dstFile, track, DEV);
+
+            audioStreams.add(() => order.file.stream()
                 .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
                 .pipeThrough(upcnt())
-                .pipeTo(writeAudioSamplesToMP4File(dstFile, track, DEV));
+                .pipeTo(writer)
+            );
+        }
+
+        dstFile.onSegment = (id, user, buffer, sampleNum) => {
+            if (DEV) console.log('onSegment', id, user, buffer, sampleNum);
+            dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
         }
 
         if (samplesCount !== samplesNumber) {

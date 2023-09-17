@@ -25,13 +25,18 @@ export type VencWorkerProgress = {
     samplesCount: number;
 };
 
-export type VencWorkerResult = {
+export type VencWorkerSegment = {
     identifier?: any;
-    type: 'result',
+    type: 'segment',
     buffer: Uint8Array,
 };
 
-export type VencWorkerMessage = VencWorkerProgress | VencWorkerResult;
+export type VencWorkerComplete = {
+    identifier?: any;
+    type: 'complete',
+};
+
+export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete;
 
 export type EasyVideoEncoderEvents = {
     [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, { type: k }> , 'type'>>;
