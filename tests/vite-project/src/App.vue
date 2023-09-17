@@ -69,7 +69,7 @@ async function execWorker() {
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
       file,
-      encoderConfig: {},
+      videoEncoderConfig: {},
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,
@@ -98,7 +98,7 @@ function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
     main.start({
       file,
-      encoderConfig: {},
+      videoEncoderConfig: {},
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,

@@ -37,11 +37,23 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrame>
  */
-export function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, DEV = false) {
+export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, orderConfig: Partial<VideoDecoderConfig>, DEV = false) {
 	let samplecnt = 0;
 	let framecnt = 0;
 	const totalcnt = videoInfo.nb_samples;
 	let decoder: VideoDecoder;
+
+	// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
+	const config = {
+		codec: videoInfo.codec.startsWith('vp08') ? 'vp8' : videoInfo.codec,
+		hardwareAcceleration: 'prefer-hardware' as const,
+		...orderConfig,
+		codedHeight: videoInfo.track_height,
+		codedWidth: videoInfo.track_width,
+		description,
+	};
+	if (DEV) console.log('decode: configure', config);
+	await VideoDecoder.isConfigSupported(config);
 
 	/**
 	 * transformで返されているPromiseのresolve
@@ -78,22 +90,6 @@ export function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, descrip
 				}
 			});
 
-			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
-			const config = {
-				codec: videoInfo.codec.startsWith('vp08') ? 'vp8' : videoInfo.codec,
-				codedHeight: videoInfo.track_height,
-				codedWidth: videoInfo.track_width,
-				hardwareAcceleration: 'prefer-hardware' as const,
-				description,
-			};
-			try {
-				if (DEV) console.log('decode: configure', config);
-				await VideoDecoder.isConfigSupported(config);
-			} catch (e) {
-				console.error('decode: decoder error', e);
-				controller.error(e);
-				return;
-			}
 			decoder.configure(config);
 		},
 		transform(vchunk, controller) {

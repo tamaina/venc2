@@ -9,8 +9,9 @@ export type VencWorkerOrder = {
      * Example: [[32, 'avc1.4d001f'], [64, 'avc1.4d0020'], [Infinity, 'avc1.4d0028']]
      * If not set, encoding codec will be set to `avc1.4d002a`.
      */
-    codecEntries?: [number, string][];
-    encoderConfig: Partial<VideoEncoderConfig>;
+    videoCodecEntries?: [number, string][];
+    videoDecoderConfig?: Partial<VideoDecoderConfig>;
+    videoEncoderConfig: Partial<VideoEncoderConfig>;
     resizeConfig: Partial<BrowserImageResizerConfigWithOffscreenCanvasOutput>;
 
     DEV?: boolean;

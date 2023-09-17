@@ -46,11 +46,17 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
 					if (allowWriteEval()) emitResolve();
                 },
                 error: (error) => {
-                    console.error('encoder error', error);
+                    console.error('encode: encoder error', error);
                     controller.error(error);
                 }
             });
-            encoder.configure(config);
+
+            try {
+                encoder.configure(config);
+            } catch (e) {
+                console.error('encoder configure error', e);
+                controller.error(e);
+            }
         },
         transform(frame, controller) {
             framecnt++;

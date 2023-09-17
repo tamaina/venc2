@@ -52,8 +52,8 @@ export class EasyVideoEncoder extends EventTarget {
             height: floorWithSignificance(_outputSize.height, 2),
         };
         const encoderConfig = {
-            ...order.encoderConfig,
-            codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
+            ...order.videoEncoderConfig,
+            codec: (order.videoCodecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
             ...outputSize,
         };
         await VideoEncoder.isConfigSupported(encoderConfig);
@@ -88,13 +88,12 @@ export class EasyVideoEncoder extends EventTarget {
         await order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
-            .pipeThrough(generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer)
+            .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, DEV), preventer)
             .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer)
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
             .pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, DEV));
-
 
         for (const track of info.info.audioTracks) {
             await order.file.stream()
