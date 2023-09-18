@@ -79,6 +79,7 @@ async function execWorker() {
 
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
+      type: 'encode',
       file,
       videoEncoderConfig: {
         hardwareAcceleration: 'prefer-hardware',
@@ -122,7 +123,7 @@ function execMain() {
         maxHeight: size.value,
       },
       DEV: devchk.value?.checked,
-    } as VencWorkerOrder);
+    });
   }
 }
 </script>

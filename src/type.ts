@@ -1,6 +1,7 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
 
 export type VencWorkerOrder = {
+    type?: 'encode',
     identifier?: any;
     file: Blob;
 
@@ -18,31 +19,45 @@ export type VencWorkerOrder = {
     DEV?: boolean;
 };
 
+export type VencWorkerAbort = {
+    type: 'abort';
+    identifier?: any;
+    memo: any;
+};
+
+export type VencWorkerRequest = VencWorkerOrder | VencWorkerAbort;
+
 export type VencWorkerProgress = {
     identifier?: any;
-    type: 'progress',
+    type: 'progress';
     samplesNumber: number;
     samplesCount: number;
 };
 
 export type VencWorkerSegment = {
     identifier?: any;
-    type: 'segment',
-    buffer: ArrayBuffer,
+    type: 'segment';
+    buffer: ArrayBuffer;
 };
 
 export type VencWorkerComplete = {
     identifier?: any;
-    type: 'complete',
+    type: 'complete';
 };
 
 export type VencWorkerError = {
     identifier?: any;
-    type: 'error',
-    error: any,
+    type: 'error';
+    error: any;
 };
 
-export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError;
+export type VencWorkerAborted = {
+    identifier?: any;
+    type: 'aborted';
+    memo: any;
+};
+
+export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError | VencWorkerAborted;
 
 export type EasyVideoEncoderEvents = {
     [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, { type: k }> , 'type'>>;
