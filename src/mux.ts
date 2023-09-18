@@ -71,15 +71,18 @@ export function writeEncodedVideoChunksToMP4File(
                 currentChunk = data.data as EncodedVideoChunk;
                 const b = new ArrayBuffer(prevChunk.byteLength);
                 prevChunk.copyTo(b);
-                const sample = file.addSample(trackId, b, {
+                const times = {
                     cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
                     dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
                     duration: Math.round(((currentChunk.timestamp - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
+                };
+                const sample = file.addSample(trackId, b, {
+                    ...times,
                     is_sync: prevChunk.type === 'key',
                 });
                 prevChunk = currentChunk;
                 currentChunk = null;
-                if (DEV) console.log('write: addSample', samplecnt - 1, sample, file.getSample(trak, sample.number));
+                if (DEV) console.log('write: addSample', samplecnt - 1, times, sample);
                 controller.enqueue(sample);
 
                 if (samplecnt === sharedData.nbSamples) {
