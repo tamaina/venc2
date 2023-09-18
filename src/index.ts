@@ -208,6 +208,17 @@ export class EasyVideoEncoder extends EventTarget {
         }
         //#endregion
 
+        /**
+         * TODO: send mfra/tfra/mfro
+        const mfra = dstFile.add('mfra');
+        for (const trak of dstFile.moov?.traks ?? []) {
+            mfra.addEntry('tfra', {
+                track_ID: (trak as any).tkhd.track_id,
+            });
+        }
+        sendBoxes();
+        */
+
         if (samplesCount !== samplesNumber) {
             samplesCount = samplesNumber;
             dispatchProgress();
