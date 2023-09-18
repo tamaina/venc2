@@ -160,7 +160,7 @@ export class DataStream {
 	//readCString(length: number): any
 	//readString(length: number, encoding: any): any
 
-	static endianness: boolean
+	endianness: boolean
 
 	memcpy(dst: ArrayBufferLike, dstOffset: number, src: ArrayBufferLike, srcOffset: number, byteLength: number): void
 

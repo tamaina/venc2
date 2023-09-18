@@ -118,11 +118,12 @@ export class EasyVideoEncoder extends EventTarget {
                 if (DEV) console.log('send box', nextBox, i, dstFile.boxes[i]);
                 const box = dstFile.boxes[i];
                 const ds = new DataStream();
+                ds.endianness = DataStream.BIG_ENDIAN;
                 box.write(ds);
                 const buffer = ds.buffer;
                 dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
                 if (box.data) {
-                    //box.data = undefined;
+                    box.data = undefined;
                 }
             }
             if (DEV) console.log('send box: next', dstFile.boxes.length);
@@ -137,7 +138,7 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
-            .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, ___.startToWriteVideoChunksPromise, DEV))
+            .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
             .pipeTo(new WritableStream({
                 start() { },
                 write() { sendBoxes() },
@@ -159,19 +160,13 @@ export class EasyVideoEncoder extends EventTarget {
             );
         }
 
-        //dstFile.onSegment = (id, user, buffer, sampleNum) => {
-        //    if (DEV) console.log('onSegment', id, user, buffer, sampleNum);
-        //    dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
-        //    //dstFile.releaseUsedSamples(id, sampleNum);
-        //}
-
         //#region send first segment
-        const firstSegment = dstFile.getBuffer();
-        if (DEV) console.log('the first segment', firstSegment, dstFile);
-        dispatchEvent(new CustomEvent('result', { detail: { identifier, buffer: firstSegment } }));
+        if (DEV) console.log('send first boxes', dstFile);
+        sendBoxes();
+        debugger;
         //#endregion
 
-        //dstFile.start();
+        // Stop writing video samples until all tracks are added
         ___.startToWriteVideoChunksCallback();
 
         //#region wait for mux and stream end
