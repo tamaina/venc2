@@ -18,7 +18,7 @@ export function writeEncodedVideoChunksToMP4File(
     VideoEncoderConfig,
     srcInfo: MP4VideoTrack,
     sharedData: { getResultSamples: () => number },
-    trackAddedCallback: () => any,
+    trackAddedCallback: (result: number) => void,
     promiseToStartChunks: Promise<void>,
     DEV = false
 ) {
@@ -58,7 +58,7 @@ export function writeEncodedVideoChunksToMP4File(
                 file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
 
                 if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
-                trackAddedCallback();
+                trackAddedCallback(trackId);
                 await promiseToStartChunks;
                 return;
             } else if (data.type === 'encodedVideoChunk') {
@@ -131,7 +131,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
     file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
 
     let samplecnt = 0;
-    return new WritableStream<Sample>({
+    const writable = new WritableStream<Sample>({
         start() {
         },
         write(sample) {
@@ -156,4 +156,9 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
             if (DEV) console.log('write audio: close', file);
         },
     });
+
+    return {
+        writable,
+        trackId,
+    }
 }

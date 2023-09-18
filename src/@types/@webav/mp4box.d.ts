@@ -186,7 +186,7 @@ export class DataStream {
 	writeFloat32(v: number, endianness?: boolean): void
 	writeFloat64(v: number, endianness?: boolean): void
 	writeUCS2String(s: string, endianness?: boolean, length?: number): void
-	writeString(s: string, encoding?: string, length?: number): void
+	writeString(s: string, encoding?: string | null, length?: number): void
 	writeCString(s: string, length?: number): void
 	writeUint64(v: number): void
 	writeUint24(v: number): void
