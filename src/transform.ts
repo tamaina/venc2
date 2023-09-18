@@ -10,17 +10,16 @@ const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
  * 
  * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
  */
-export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedData: { nbSamples: number }, DEV = false) {
+export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedData: { dropFrames: number; getResultSamples: () => number }, DEV = false) {
 	let expectedNextTimestamp = 0;
 	const cache = new Map<number, VideoFrame>();
 	let recievedcnt = 0;
 	let enqueuecnt = 0;
-	const totalcnt = videoInfo.nb_samples;
 
 	function dropByCache(timestamp: number) {
 		cache.get(timestamp)?.close();
 		cache.delete(timestamp);
-		sharedData.nbSamples--;
+		sharedData.dropFrames++;
 	}
 	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrame>) {
 		controller.enqueue(cache.get(timestamp)!);
@@ -76,12 +75,12 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 
 			if (frame.timestamp < expectedNextTimestamp) {
 				console.error('sort: recieving frame: drop frame', frame.timestamp, expectedNextTimestamp);
-				sharedData.nbSamples--;
+				sharedData.dropFrames++;
 				frame.close();
 				return;
 			}
 
-			if (recievedcnt === totalcnt) {
+			if (recievedcnt === videoInfo.nb_samples) {
 				// 最後のフレームを受信した場合片付ける
 				if (DEV) console.log('sort: recieving frame: last frame', frame.timestamp, cache);
 				for (const timestamp of Array.from(cache.keys()).sort((a, b) => a - b)) {
@@ -101,9 +100,9 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 				} else {
 					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
 					frame.close();
-					sharedData.nbSamples--;
+					sharedData.dropFrames++;
 				}
-				if (DEV) console.log('sort: recieving frame: [terminate]', totalcnt, enqueuecnt, sharedData.nbSamples);
+				if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData.dropFrames, sharedData.getResultSamples());
 				controller.terminate();
 				return;
 			}

@@ -40,7 +40,6 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, orderConfig: Partial<VideoDecoderConfig>, DEV = false) {
 	let samplecnt = 0;
 	let framecnt = 0;
-	const totalcnt = videoInfo.nb_samples;
 	let decoder: VideoDecoder;
 
 	// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
@@ -75,12 +74,12 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 				output: (frame) => {
 					if (frame) {
 						framecnt++;
-						if (DEV) console.log('decode: enqueue frame', frame.timestamp, framecnt, totalcnt);
+						if (DEV) console.log('decode: enqueue frame', frame.timestamp, framecnt, videoInfo.nb_samples);
 						controller.enqueue(frame);
 					}
 					if (allowWriteEval()) emitResolve();
-					if (totalcnt === framecnt) {
-						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', totalcnt, framecnt);
+					if (framecnt === videoInfo.nb_samples) {
+						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', videoInfo.nb_samples, framecnt);
 						controller.terminate();
 					}
 				},
@@ -102,8 +101,8 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 			// safety
 			emitResolve();
 
-			if (totalcnt === samplecnt) {
-				if (DEV) console.log('decode: recieving vchunk: last chunk', totalcnt, samplecnt);
+			if (samplecnt === videoInfo.nb_samples) {
+				if (DEV) console.log('decode: recieving vchunk: last chunk', videoInfo.nb_samples, samplecnt);
 				decoder.flush();
 				return Promise.resolve();
 			}

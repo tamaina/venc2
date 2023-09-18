@@ -17,7 +17,7 @@ export function writeEncodedVideoChunksToMP4File(
     encoderConfig:
     VideoEncoderConfig,
     srcInfo: MP4VideoTrack,
-    sharedData: { nbSamples: number },
+    sharedData: { getResultSamples: () => number },
     trackAddedCallback: () => any,
     promiseToStartChunks: Promise<void>,
     DEV = false
@@ -55,7 +55,7 @@ export function writeEncodedVideoChunksToMP4File(
                 }
                 copyEdits(trak, srcInfo);
 
-                file.setSegmentOptions(trackId, null, { nbSamples: sharedData.nbSamples });
+                file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
 
                 if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
                 trackAddedCallback();
@@ -85,7 +85,7 @@ export function writeEncodedVideoChunksToMP4File(
                 if (DEV) console.log('write: addSample', samplecnt - 1, times, sample);
                 controller.enqueue(sample);
 
-                if (samplecnt === sharedData.nbSamples) {
+                if (samplecnt === sharedData.getResultSamples()) {
                     const b = new ArrayBuffer(prevChunk.byteLength);
                     prevChunk.copyTo(b);
                     const sample = file.addSample(trackId, b, {
@@ -94,7 +94,7 @@ export function writeEncodedVideoChunksToMP4File(
                         duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
                     })
                     controller.enqueue(sample);
-                    if (DEV) console.log('write: [terminate] addSample last', sharedData.nbSamples, samplecnt, sample, file);
+                    if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
                     controller.terminate();
                 }
             }

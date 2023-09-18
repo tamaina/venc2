@@ -7,7 +7,7 @@ const ENCODE_QUEUE_MAX = 32;
  * Returns a transform stream that encodes videoframes.
  * **Set preventClose: true** when using the stream with pipeThrough.
  */
-export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, sharedData: { nbSamples: number }, DEV = false) {
+export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, sharedData: { getResultSamples: () => number }, DEV = false) {
     let encoder: VideoEncoder;
     let framecnt = 0;
     let enqueuecnt = 0;
@@ -38,8 +38,8 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
                     if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize, config);
 
-                    if (enqueuecnt === sharedData.nbSamples) {
-                        if (DEV) console.log('encode: encoded: [terminate] done', framecnt, sharedData.nbSamples);
+                    if (enqueuecnt === sharedData.getResultSamples()) {
+                        if (DEV) console.log('encode: encoded: [terminate] done', framecnt, sharedData.getResultSamples());
                         encoder.flush();
                         controller.terminate();
                     }

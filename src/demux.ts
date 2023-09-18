@@ -1,4 +1,4 @@
-import { DataStream, MP4ArrayBuffer, MP4File, MP4Info, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
+import { DataStream, MP4ArrayBuffer, MP4File, MP4Info, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
 
 // デコードのTransformStreamのhighWaterMark
 const DECODE_HWM = 16;
@@ -13,10 +13,9 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	let seek = 0;
 	let mp4boxfile: MP4File;
 	const data = {
-		track: undefined as MP4Track | undefined,
+		track: undefined as MP4MediaTrack | MP4Track | undefined,
 		tracks: undefined as Set<number> | undefined,
 
-		totalSamples: 0,
 		processedSample: 0,
 
 		/**
@@ -51,13 +50,12 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 			mp4boxfile.onReady = (info) => {
 				mp4boxfile.setExtractionOptions(trackId, null, { nbSamples: 1 });
 				data.tracks = new Set(info.tracks.map((track) => track.id));
-				const track = info.tracks.find((track) => track.id === trackId);
-				if (!track) {
+				data.track = info.tracks.find((track) => track.id === trackId);
+				if (!data.track) {
 					controller.error('No track found');
 					return;
 				}
-				data.totalSamples = track.nb_samples;
-				if (DEV) console.log('demux: onReady', info, data.totalSamples);
+				if (DEV) console.log('demux: onReady', info, data.track.nb_samples);
 				mp4boxfile.start();
 			};
 
@@ -67,11 +65,11 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 				for (const sample of samples) {
 					controller.enqueue(sample);
 					data.processedSample = sample.number + 1;
-					if (DEV) console.log('demux: onSamples: sample', sample.track_id, sample.number, data.totalSamples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
-					if (data.processedSample === data.totalSamples) {
-						// totalSamplesとsample.number+1が一致する = 最後のサンプルを処理した
+					if (DEV) console.log('demux: onSamples: sample', sample.track_id, sample.number, data.track!.nb_samples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
+					if (data.processedSample === data.track!.nb_samples) {
+						// data.track!.nb_samplesと.number+1が一致する = 最後のサンプルを処理した
 						// なのでクリーンアップを行う
-						if (DEV) console.log('demux: onSamples: [terminate] last sample', sample.number);
+						if (DEV) console.log('demux: onSamples: [terminate] last sample', sample.number, data.processedSample, data.track!.nb_samples);
 						controller.terminate();
 						mp4boxfile.flush();
 						clearInterval();
@@ -121,7 +119,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 			}
 
 			// readyになるまでは問答無用で読み込む
-			if (data.totalSamples === 0) return;
+			if (!data.track?.nb_samples) return;
 
 			return new Promise<void>((resolve) => {
 				if (data.resolve) data.resolve();
@@ -206,7 +204,7 @@ export function getMP4Info(file: Blob, DEV = false) {
 				result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
 				result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
 			} else {
-				// Fragmented MP4などでsamplesが全て読まれないうちにonReadyが呼ばれることがあるため、こちらの計算は不正確
+				// Fragmented MP4などでsamplesが全て読まれない（nb_samplesが確定しない）うちにonReadyが呼ばれることがあるため、こちらの計算は不正確
 				result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples ?? 1;
 				result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
 			}

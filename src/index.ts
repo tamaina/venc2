@@ -141,8 +141,6 @@ export class EasyVideoEncoder extends EventTarget {
             });
         }
 
-        const sharedData = { nbSamples: info.videoInfo.nb_samples };
-
         // callbackを初期化したことにするために即時関数を使う
         const ___ = (() => {
             let videoTrackAddedCallback: () => any;
@@ -181,6 +179,13 @@ export class EasyVideoEncoder extends EventTarget {
             nextBox = dstFile.boxes.length;
         }
 
+        const sharedData = {
+            /**
+             * Number of samples/frames video_sort_transformer has dropped
+             */
+            dropFrames: 0,
+            getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames,
+        };
         const writeThenSendBoxStream = () => new WritableStream({
             start() { },
             write() { sendBoxes() },
@@ -200,6 +205,7 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeTo(videoWriter)
             .catch(e => {
                 if (this.aborts.has(identifier)) return;
+                console.error('video stream error', e);
                 dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
                 // ここでthrow eしてもルートに伝わらない
             });
@@ -237,18 +243,19 @@ export class EasyVideoEncoder extends EventTarget {
         //#endregion
 
         //#region process!
-        // Stop writing video samples until all tracks are added
-        ___.startToWriteVideoChunksCallback();
-
-        await videoStreamPromise;
-        if (this.aborts.has(identifier)) return;
-
+        // Add audio tracks first because they are usually smaller than video tracks
         for (const stream of audioStreams) {
             if (this.aborts.has(identifier)) return;
             await stream();
             if (this.aborts.has(identifier)) return;
             sendBoxes();
         }
+        // Stop writing video samples until all tracks are added
+        ___.startToWriteVideoChunksCallback();
+
+        await videoStreamPromise;
+        if (this.aborts.has(identifier)) return;
+
         //#endregion
 
         /**
