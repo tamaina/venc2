@@ -27,10 +27,34 @@ export interface EasyVideoEncoder extends EventTarget {
 };
 
 export class EasyVideoEncoder extends EventTarget {
+    private processes = new Map<any, Promise<void>>();
     constructor() {
         super();
     };
-    async start(order: VencWorkerOrder) {
+    public async waitForAllProcesses() {
+        await Promise.all(this.processes.values());
+    }
+    public async getProcesses() {
+        return new Map(this.processes);
+    }
+    public async start(order: VencWorkerOrder) {
+        const identifier = order.identifier ?? crypto.randomUUID();
+        if (this.processes.has(order.identifier)) throw new Error('Already started');
+
+        const process = this._start({ ...order, identifier });
+        this.processes.set(identifier, process);
+        try {
+            await process;
+        } catch (e) {
+            if (order.DEV) {
+                console.error('start root: error caught', e);
+            }
+            this.dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
+        } finally {
+            this.processes.delete(identifier);
+        }
+    }
+    private async _start(order: VencWorkerOrder) {
         const DEV = order.DEV ?? false;
         Log.setLogLevel(DEV ? Log.LOG_LEVEL_DEBUG : Log.LOG_LEVEL_ERROR);
         const identifier = order.identifier;
@@ -143,7 +167,11 @@ export class EasyVideoEncoder extends EventTarget {
                 start() { },
                 write() { sendBoxes() },
                 close() { sendBoxes() },
-            }));
+            }))
+            .catch(e => {
+                dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
+                // ここでthrow eしてもルートに伝わらない
+            });
 
         // add a video track
         await ___.videoTrackAddedPromise;
@@ -157,13 +185,16 @@ export class EasyVideoEncoder extends EventTarget {
                 .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
                 .pipeThrough(upcnt())
                 .pipeTo(writer)
+                .catch(e => {
+                    dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
+                    // ここでthrow eしてもルートに伝わらない
+                })
             );
         }
 
         //#region send first segment
         if (DEV) console.log('send first boxes', dstFile);
         sendBoxes();
-        debugger;
         //#endregion
 
         // Stop writing video samples until all tracks are added
@@ -186,6 +217,6 @@ export class EasyVideoEncoder extends EventTarget {
 
         dispatchEvent(new CustomEvent('complete', { detail: { identifier } }));
 
-        //dstFile.flush();
+        dstFile.flush();
     };
 }

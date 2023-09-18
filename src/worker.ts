@@ -16,16 +16,19 @@ globalThis.onmessage = async (ev) => {
         }
         const onProgress = onEvent('progress');
         const onSegment = onEvent('segment');
+        const onError = onEvent('error');
         const onComplete = (ev: EasyVideoEncoderEvents['complete']) => {
             onEvent('complete')(ev);
             resolve();
 
             encoder.removeEventListener('progress', onProgress);
             encoder.removeEventListener('segment', onSegment);
+            encoder.removeEventListener('error', onError);
             encoder.removeEventListener('complete', onComplete);
         };
         encoder.addEventListener('progress', onProgress);
         encoder.addEventListener('segment', onSegment);
+        encoder.addEventListener('error', onError);
         encoder.addEventListener('complete', onComplete);
 
         encoder.start(order).catch(e => reject(e));

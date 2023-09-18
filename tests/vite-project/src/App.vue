@@ -5,12 +5,11 @@ import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
 
-const DEV = import.meta.env.DEV;
-
 const worker = new TheWorker();
 
 const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
+const devchk = ref<HTMLInputElement>();
 const video = ref<HTMLVideoElement>();
 const a = ref<HTMLAnchorElement>();
 const progress = ref<HTMLProgressElement>();
@@ -56,16 +55,20 @@ worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
     progress.value!.value = ev.data.samplesCount;
     return;
   } else if (ev.data.type === 'segment') {
-    console.log('worker segment', ev.data.buffer);
+    if (devchk.value?.checked) console.log('worker segment', ev.data.buffer);
     buffers.add(ev.data.buffer);
   } else if (ev.data.type === 'complete') {
     console.log('worker complete', ev.data);
     await showBuffer();
+  } else if (ev.data.type === 'error') {
+    console.error('worker error (via message)', ev.data);
+    alert(ev.data.error);
   }
 }
 
 worker.onerror = (e: any) => {
-  console.error('worker error', e);
+  console.error('worker error (via worker.onerror)', e);
+  alert(e);
 }
 
 async function execWorker() {
@@ -77,12 +80,14 @@ async function execWorker() {
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
       file,
-      videoEncoderConfig: {},
+      videoEncoderConfig: {
+        hardwareAcceleration: 'prefer-hardware',
+      },
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,
       },
-      DEV,
+      DEV: devchk.value?.checked,
     } as VencWorkerOrder)
   };
 }
@@ -116,7 +121,7 @@ function execMain() {
         maxWidth: size.value,
         maxHeight: size.value,
       },
-      DEV,
+      DEV: devchk.value?.checked,
     } as VencWorkerOrder);
   }
 }
@@ -132,6 +137,10 @@ function execMain() {
       <input type="file" ref="input" accept="video/*" multiple />
       <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
         @change="size = sizeInput?.valueAsNumber || 1920" />
+      <div>
+        <input type="checkbox" ref="devchk" id="devchk" />
+        <label for="devchk">DEV</label>
+      </div>
     </div>
 
     <div class="do">

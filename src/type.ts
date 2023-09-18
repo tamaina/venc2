@@ -36,7 +36,13 @@ export type VencWorkerComplete = {
     type: 'complete',
 };
 
-export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete;
+export type VencWorkerError = {
+    identifier?: any;
+    type: 'error',
+    error: any,
+};
+
+export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError;
 
 export type EasyVideoEncoderEvents = {
     [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, { type: k }> , 'type'>>;
