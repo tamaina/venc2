@@ -165,16 +165,28 @@ export class EasyVideoEncoder extends EventTarget {
          * File size count for mfra/tfra/mfro
          */
         let fileSize = 0;
+
+        /**
+         * For tfra
+         */
+        const startPositionMap = new Map<number, number>();
+
         function sendBoxes() {
             for (let i = nextBox; i < dstFile.boxes.length; i++) {
                 if (DEV) console.log('send box', nextBox, i, dstFile.boxes[i]);
-                const box = dstFile.boxes[i];
+                const box = dstFile.boxes[i] as any;
+                if (box.type === 'moof') {
+                    const trackId = box.trafs[0].tfhd.track_id;
+                    if (!startPositionMap.has(trackId)) {
+                        startPositionMap.set(trackId, fileSize);
+                        if (DEV) console.log('send box: set start position', trackId, fileSize);
+                    }
+                }
                 const ds = new DataStream();
                 ds.endianness = DataStream.BIG_ENDIAN;
                 box.write(ds);
-                // box.sizeは書き込み時に計算される
-                fileSize += box.size ?? 0;
                 const buffer = ds.buffer;
+                fileSize += ds.buffer.byteLength;
                 dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
                 if (box.data) {
                     box.data = undefined;
@@ -218,7 +230,7 @@ export class EasyVideoEncoder extends EventTarget {
         if (this.aborts.has(identifier)) return;
 
         // add a video track
-        const dstVideoTrackId = await ___.videoTrackAddedPromise;
+        await ___.videoTrackAddedPromise;
 
         const audioStreams = [] as (() => Promise<void>)[];
         const audioTrackIds = [] as number[];
@@ -250,16 +262,9 @@ export class EasyVideoEncoder extends EventTarget {
         //#endregion
 
         //#region process!
-        /**
-         * For tfra
-         */
-        const startPositionMap = new Map<number, number>();
-
         // Add audio tracks first because they are usually smaller than video tracks
         for (let i = 0; i < audioStreams.length; i++) {
             const audioStream = audioStreams[i];
-            const trackId = audioTrackIds[i];
-            startPositionMap.set(trackId, fileSize);
 
             if (this.aborts.has(identifier)) return;
             await audioStream();
@@ -267,8 +272,7 @@ export class EasyVideoEncoder extends EventTarget {
             sendBoxes();
         }
         // Stop writing video samples until all tracks are added
-        startPositionMap.set(dstVideoTrackId, fileSize);
-        if (DEV) console.log('start writing video chunks', startPositionMap);
+        if (DEV) console.log('start writing video chunks');
         ___.startToWriteVideoChunksCallback();
         await videoStreamPromise;
         if (this.aborts.has(identifier)) return;
