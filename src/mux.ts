@@ -153,8 +153,11 @@ export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTra
     const trackId = file.addTrack({
         name: 'VideoHandle',
         timescale: videoInfo.timescale,
-        duration: videoInfo.duration,
-        media_duration: videoInfo.duration,
+        //duration: videoInfo.duration,
+        //media_duration: videoInfo.duration,
+        // duration must be 0 for fragmented mp4
+        duration: 0,
+        media_duration: 0,
         language: videoInfo.language,
         width: videoInfo.video.width,
         height: videoInfo.video.height,
@@ -186,8 +189,11 @@ export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTra
         name: 'SoundHandle',
         timescale: audioInfo.timescale,
 
-        duration: audioInfo.duration,
-        media_duration: audioInfo.duration,
+        //duration: audioInfo.duration,
+        //media_duration: audioInfo.duration,
+        // duration must be 0 for fragmented mp4
+        duration: 0,
+        media_duration: 0,
         language: audioInfo.language,
         width: 0,
         height: 0,

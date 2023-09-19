@@ -88,10 +88,16 @@ export class EasyVideoEncoder extends EventTarget {
 
         const dstFile = createFile();
         dstFile.init({
+            brands: Array.from(new Set([
+                'isom', 'iso6', 'iso2',
+                encoderConfig.codec.split('.')[0],
+                ...info.info.audioTracks.map(track => track.codec.split('.')[0])
+            ])).filter(brand => brand && typeof brand === 'string' && brand.length === 4),
             timescale: info.info.timescale,
-            duration: info.info.duration,
+            //duration: info.info.duration,
+            // duration must be 0 for fragmented mp4
+            duration: 0,
         });
-        (dstFile as any).isFragmentationInitialized = true;
         if (dstFile.moov) {
             const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
             (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
