@@ -5,8 +5,6 @@ import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
 
-const worker = new TheWorker();
-
 const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
 const devchk = ref<HTMLInputElement>();
@@ -29,7 +27,7 @@ worker.onerror = e => console.error(e);
 */
 
 let buffers = new Set<ArrayBuffer>();
-
+let worker = null as InstanceType<typeof TheWorker> | null;
 async function showBuffer() {
   console.log('buffers', buffers);
   const file = new File(Array.from(buffers), 'test.mp4', { type: 'video/mp4' });
@@ -49,7 +47,15 @@ async function showBuffer() {
   console.log('info2', info2);
 }
 
-worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
+async function execWorker() {
+  if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
+    alert('VideoEncoder/VideoDecoder is not supported');
+    return;
+  }
+
+  worker = new TheWorker();
+
+  worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
   if (ev.data.type === 'progress') {
     progress.value!.max = ev.data.samplesNumber;
     progress.value!.value = ev.data.samplesCount;
@@ -59,9 +65,13 @@ worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
     buffers.add(ev.data.buffer);
   } else if (ev.data.type === 'complete') {
     console.log('worker complete', ev.data);
+    worker?.terminate();
+    worker = null;
     await showBuffer();
   } else if (ev.data.type === 'error') {
     console.error('worker error (via message)', ev.data);
+    worker?.terminate();
+    worker = null;
     alert(ev.data.error);
   }
 }
@@ -70,12 +80,6 @@ worker.onerror = (e: any) => {
   console.error('worker error (via worker.onerror)', e);
   alert(e);
 }
-
-async function execWorker() {
-  if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
-    alert('VideoEncoder/VideoDecoder is not supported');
-    return;
-  }
 
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
@@ -135,7 +139,7 @@ function execMain() {
       <a href="https://github.com/tamaina/venc2">https://github.com/tamaina/venc2</a>
     </div>
     <div class="control">
-      <input type="file" ref="input" accept="video/*" multiple />
+      <input type="file" ref="input" accept="video/*" />
       <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
         @change="size = sizeInput?.valueAsNumber || 1920" />
       <div>
