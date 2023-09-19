@@ -28,8 +28,6 @@ export interface EasyVideoEncoder extends EventTarget {
 
 export class EasyVideoEncoder extends EventTarget {
     private processes = new Map<any, Promise<void>>();
-    private aborts = new Set<any>();
-    private aborters = new Map<any, Set<() => void>>();
     constructor() {
         super();
     };
@@ -56,31 +54,10 @@ export class EasyVideoEncoder extends EventTarget {
             this.processes.delete(identifier);
         }
     }
-    public abort(identifier, memo: any) {
-        const process = this.processes.get(identifier);
-        if (!process) return;
-
-        this.aborts.add(identifier);
-        process
-            .catch(() => { })
-            .finally(() => {
-                this.aborts.delete(identifier);
-            });
-        this.aborters.get(identifier)?.forEach(aborter => {
-            try {
-                aborter();
-            } catch (e) {}
-        });
-        this.dispatchEvent(new CustomEvent('aborted', { detail: { identifier, memo } }));
-        this.aborters.delete(identifier);
-        this.processes.delete(identifier);
-        return process;
-    }
     private async _start(order: VencWorkerOrder & { identifier: any }) {
         const DEV = order.DEV ?? false;
         Log.setLogLevel(DEV ? Log.LOG_LEVEL_DEBUG : Log.LOG_LEVEL_ERROR);
         const identifier = order.identifier;
-        const aborters = this.aborters.set(identifier, new Set()).get(identifier)!;
         if (DEV) console.log('start', order);
 
         const dispatchEvent = this.dispatchEvent.bind(this);
@@ -108,8 +85,6 @@ export class EasyVideoEncoder extends EventTarget {
             ...outputSize,
         };
         await VideoEncoder.isConfigSupported(encoderConfig);
-
-        if (this.aborts.has(identifier)) return;
 
         const dstFile = createFile();
         dstFile.init({
@@ -209,7 +184,6 @@ export class EasyVideoEncoder extends EventTarget {
             close() { sendBoxes() },
         });
         const videoWriter = writeThenSendBoxStream();
-        aborters.add(() => videoWriter.abort());
         const videoStreamPromise = order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
@@ -221,13 +195,10 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
             .pipeTo(videoWriter)
             .catch(e => {
-                if (this.aborts.has(identifier)) return;
                 console.error('video stream error', e);
                 dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
                 // ここでthrow eしてもルートに伝わらない
             });
-
-        if (this.aborts.has(identifier)) return;
 
         // add a video track
         await ___.videoTrackAddedPromise;
@@ -235,11 +206,8 @@ export class EasyVideoEncoder extends EventTarget {
         const audioStreams = [] as (() => Promise<void>)[];
         const audioTrackIds = [] as number[];
         for (const track of info.info.audioTracks) {
-            if (this.aborts.has(identifier)) return;
-    
             // add audio tracks
             const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, DEV);
-            aborters.add(() => audioWriter.abort());
 
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()
@@ -253,8 +221,6 @@ export class EasyVideoEncoder extends EventTarget {
             );
         }
 
-        if (this.aborts.has(identifier)) return;
-
         //#region send the first segment
         //        after all tracks are added
         if (DEV) console.log('send first boxes', dstFile);
@@ -266,16 +232,13 @@ export class EasyVideoEncoder extends EventTarget {
         for (let i = 0; i < audioStreams.length; i++) {
             const audioStream = audioStreams[i];
 
-            if (this.aborts.has(identifier)) return;
             await audioStream();
-            if (this.aborts.has(identifier)) return;
             sendBoxes();
         }
         // Stop writing video samples until all tracks are added
         if (DEV) console.log('start writing video chunks');
         ___.startToWriteVideoChunksCallback();
         await videoStreamPromise;
-        if (this.aborts.has(identifier)) return;
         //#endregion
 
         //#region make mfra/tfra/mfro

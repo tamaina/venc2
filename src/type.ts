@@ -19,13 +19,7 @@ export type VencWorkerOrder = {
     DEV?: boolean;
 };
 
-export type VencWorkerAbort = {
-    type: 'abort';
-    identifier?: any;
-    memo: any;
-};
-
-export type VencWorkerRequest = VencWorkerOrder | VencWorkerAbort;
+export type VencWorkerRequest = VencWorkerOrder;
 
 export type VencWorkerProgress = {
     identifier?: any;
@@ -51,13 +45,7 @@ export type VencWorkerError = {
     error: any;
 };
 
-export type VencWorkerAborted = {
-    identifier?: any;
-    type: 'aborted';
-    memo: any;
-};
-
-export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError | VencWorkerAborted;
+export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError;
 
 export type EasyVideoEncoderEvents = {
     [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, { type: k }> , 'type'>>;
