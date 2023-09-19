@@ -4,6 +4,7 @@ import { getMP4Info } from '../../../src/demux';
 import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
+import { write } from 'fs';
 
 const sizeInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
@@ -14,7 +15,7 @@ const progress = ref<HTMLProgressElement>();
 
 const size = ref(sizeInput.value?.valueAsNumber || 1920);
 
-const main = new EasyVideoEncoder();
+let dir: FileSystemDirectoryHandle;
 
 /*
 const worker = new TheWorker();
@@ -26,13 +27,9 @@ worker.onmessage = (event) => {
 worker.onerror = e => console.error(e);
 */
 
-let buffers = new Set<ArrayBuffer>();
 let worker = null as InstanceType<typeof TheWorker> | null;
-async function showBuffer() {
-  console.log('buffers', buffers);
-  const file = new File(Array.from(buffers), 'test.mp4', { type: 'video/mp4' });
+async function showBuffer(file: File) {
   console.log(file);
-  buffers = new Set();
   const newUrl = URL.createObjectURL(file);
   if (a.value) {
     a.value.href = newUrl;
@@ -53,6 +50,13 @@ async function execWorker() {
     return;
   }
 
+  if (!dir) dir = await navigator.storage.getDirectory();
+  console.log(dir);
+  await dir.removeEntry('test.mp4').catch(e => {});
+  const file = await dir.getFileHandle('test.mp4', { create: true });
+  const writable = await file.createWritable();
+  const writer = writable.getWriter();
+
   if (worker) {
     worker.terminate();
   }
@@ -65,12 +69,13 @@ async function execWorker() {
     return;
   } else if (ev.data.type === 'segment') {
     if (devchk.value?.checked) console.log('worker segment', ev.data.buffer);
-    buffers.add(ev.data.buffer);
+    writer.write(ev.data.buffer);
   } else if (ev.data.type === 'complete') {
     console.log('worker complete', ev.data);
     worker?.terminate();
     worker = null;
-    await showBuffer();
+    await writer.close();
+    showBuffer(await file.getFile());
   } else if (ev.data.type === 'error') {
     console.error('worker error (via message)', ev.data);
     worker?.terminate();
@@ -100,28 +105,36 @@ worker.onerror = (e: any) => {
   };
 }
 
-main.addEventListener('progress', (ev) => {
-  progress.value!.max = ev.detail.samplesNumber;
-  progress.value!.value = ev.detail.samplesCount;
-});
-
-main.addEventListener('segment', async (ev) => {
-  console.log('main segment', ev.detail);
-  buffers.add(ev.detail.buffer);
-});
-
-main.addEventListener('complete', async (ev) => {
-  console.log('main complete', ev.detail);
-  await showBuffer();
-});
-
-function execMain() {
+async function execMain() {
   if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
     alert('VideoEncoder/VideoDecoder is not supported');
     return;
   }
 
-  for (const file of Array.from(input.value?.files ?? [])) {
+  const main = new EasyVideoEncoder();
+
+  if (!dir) dir = await navigator.storage.getDirectory();
+  await dir.removeEntry('test.mp4');
+  const file = await dir.getFileHandle('test.mp4', { create: true });
+  const writable = await file.createWritable();
+  const writer = writable.getWriter();
+
+  main.addEventListener('progress', (ev) => {
+    progress.value!.max = ev.detail.samplesNumber;
+    progress.value!.value = ev.detail.samplesCount;
+  });
+
+  main.addEventListener('segment', async (ev) => {
+    console.log('main segment', ev.detail);
+    writer.write(ev.detail.buffer);
+  });
+
+  main.addEventListener('complete', async (ev) => {
+    console.log('main complete', ev.detail);
+    showBuffer(await file.getFile());
+  });
+
+    for (const file of Array.from(input.value?.files ?? [])) {
     main.start({
       file,
       videoEncoderConfig: {},
