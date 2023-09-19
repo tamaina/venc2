@@ -1,4 +1,4 @@
-import { BoxParser, MP4AudioTrack, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample } from "@webav/mp4box.js";
+import { BoxParser, MP4AudioTrack, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, SampleOptions } from "@webav/mp4box.js";
 import type { VideoEncoderOutputChunk } from "./type";
 
 function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
@@ -106,7 +106,7 @@ export function writeEncodedVideoChunksToMP4File(
     });
 }
 
-export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo: MP4MediaTrack | MP4Track, DEV = false) {
+export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo: MP4MediaTrack | MP4Track, sampleOptions: Partial<SampleOptions> = {}, DEV = false) {
     const trak = file.getTrackById(trackId)!;
     copyEdits(trak, srcInfo);
     file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
@@ -120,7 +120,6 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
         write(sample) {
                 samplecnt++;
                 const res = file.addSample(trackId, sample.data, {
-                    sample_description_index: sample.description_index,
                     duration: sample.duration,
                     cts: sample.cts,
                     dts: sample.dts,
@@ -131,6 +130,7 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
                     has_redundancy: sample.has_redundancy,
                     degradation_priority: sample.degradation_priority,
                     subsamples: sample.subsamples,
+                    ...sampleOptions,
                 });
                 if (DEV) console.log('write samples to file: addSample', `#${trackId}`, samplecnt, sample, res);
         },
@@ -166,7 +166,7 @@ export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTra
     });
 
     return {
-        writable: samplesToMp4FileWritable(file, trackId, videoInfo, DEV),
+        writable: samplesToMp4FileWritable(file, trackId, videoInfo, {}, DEV),
         trackId,
     }
 }
@@ -198,7 +198,7 @@ export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTra
     });
 
     return {
-        writable: samplesToMp4FileWritable(file, trackId, audioInfo, DEV),
+        writable: samplesToMp4FileWritable(file, trackId, audioInfo, {}, DEV),
         trackId,
     }
 }
