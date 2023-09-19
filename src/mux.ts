@@ -16,7 +16,7 @@ export function writeEncodedVideoChunksToMP4File(
     file: MP4File,
     encoderConfig:
     VideoEncoderConfig,
-    srcInfo: MP4VideoTrack,
+    videoInfo: MP4VideoTrack,
     sharedData: { getResultSamples: () => number },
     trackAddedCallback: (result: number) => void,
     promiseToStartChunks: Promise<void>,
@@ -34,13 +34,13 @@ export function writeEncodedVideoChunksToMP4File(
         },
         async transform(data, controller) {
             if (data.type === 'metadata' && !trak) {
-                const media_duration = srcInfo.duration;
+                const media_duration = videoInfo.duration;
                 trackId = file.addTrack({
                     name: 'VideoHandle',
-                    timescale: srcInfo.timescale,
+                    timescale: videoInfo.timescale,
                     duration: media_duration,
                     media_duration: media_duration,
-                    language: srcInfo.language,
+                    language: videoInfo.language,
                     width: encoderConfig.width,
                     height: encoderConfig.height,
                     ...(encoderConfig.codec.startsWith('avc') ? {
@@ -51,13 +51,13 @@ export function writeEncodedVideoChunksToMP4File(
                 });
                 trak = file.getTrackById(trackId)!;
                 if ((trak as any).tkhd) {
-                    (trak as any).tkhd.set('matrix', (srcInfo as any).matrix)
+                    (trak as any).tkhd.set('matrix', (videoInfo as any).matrix)
                 }
-                copyEdits(trak, srcInfo);
+                copyEdits(trak, videoInfo);
 
                 file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
 
-                if (DEV) console.log('write: addTrack', trackId, trak, srcInfo.timescale);
+                if (DEV) console.log('write: addTrack', trackId, trak, videoInfo.timescale);
                 trackAddedCallback(trackId);
                 await promiseToStartChunks;
                 return;
@@ -72,9 +72,9 @@ export function writeEncodedVideoChunksToMP4File(
                 const b = new ArrayBuffer(prevChunk.byteLength);
                 prevChunk.copyTo(b);
                 const times = {
-                    cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
-                    dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
-                    duration: Math.round(((currentChunk.timestamp - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
+                    cts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
+                    dts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
+                    duration: Math.round(((currentChunk.timestamp - prevChunk.timestamp) * videoInfo.timescale) / 1e6),
                 };
                 const sample = file.addSample(trackId, b, {
                     ...times,
@@ -89,9 +89,9 @@ export function writeEncodedVideoChunksToMP4File(
                     const b = new ArrayBuffer(prevChunk.byteLength);
                     prevChunk.copyTo(b);
                     const sample = file.addSample(trackId, b, {
-                        cts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
-                        dts: Math.round((prevChunk.timestamp * srcInfo.timescale) / 1e6),
-                        duration: Math.round((((srcInfo.duration / srcInfo.timescale) * 1e6 - prevChunk.timestamp) * srcInfo.timescale) / 1e6),
+                        cts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
+                        dts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
+                        duration: Math.max(0, Math.round((((videoInfo.duration / videoInfo.timescale) * 1e6 - prevChunk.timestamp) * videoInfo.timescale) / 1e6)),
                     })
                     controller.enqueue(sample);
                     if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
