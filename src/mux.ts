@@ -1,4 +1,4 @@
-import { BoxParser, MP4AudioTrack, MP4File, MP4MediaTrack, MP4VideoTrack, Sample } from "@webav/mp4box.js";
+import { BoxParser, MP4AudioTrack, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample } from "@webav/mp4box.js";
 import type { VideoEncoderOutputChunk } from "./type";
 
 function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
@@ -106,32 +106,15 @@ export function writeEncodedVideoChunksToMP4File(
     });
 }
 
-export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack, DEV = false) {
-    // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
-    const trackId = file.addTrack({
-        type: srcInfo.codec.split('.')[0],
-        hdlr: 'soun',
-        name: 'SoundHandle',
-        timescale: srcInfo.timescale,
-
-        duration: srcInfo.duration,
-        media_duration: srcInfo.duration,
-        language: srcInfo.language,
-        width: 0,
-        height: 0,
-
-        channel_count: srcInfo.audio.channel_count,
-        samplerate: srcInfo.audio.sample_rate,
-        samplesize: srcInfo.audio.sample_size,
-    });
-
-    if (DEV) console.log('write audio: addTrack', trackId);
+export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo: MP4MediaTrack | MP4Track, DEV = false) {
     const trak = file.getTrackById(trackId)!;
     copyEdits(trak, srcInfo);
     file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
 
+    if (DEV) console.log('write samples to file: addTrack', trackId, trak, srcInfo.nb_samples);
+
     let samplecnt = 0;
-    const writable = new WritableStream<Sample>({
+    return new WritableStream<Sample>({
         start() {
         },
         write(sample) {
@@ -156,9 +139,67 @@ export function writeAudioSamplesToMP4File(file: MP4File, srcInfo: MP4AudioTrack
             if (DEV) console.log('write audio: close', file);
         },
     });
+}
+
+/**
+ * Simply copy video samples to the dst-file from the src-file
+ * 
+ * @param file MP4File via mp4box.js
+ * @param videoInfo MP4VideoTrack
+ * @param description ArrayBuffer decoder config
+ * @param DEV enable debug log
+ */
+export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTrack, description: any, DEV = false) {
+    // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
+    const trackId = file.addTrack({
+        name: 'VideoHandle',
+        timescale: videoInfo.timescale,
+        duration: videoInfo.duration,
+        media_duration: videoInfo.duration,
+        language: videoInfo.language,
+        width: videoInfo.video.width,
+        height: videoInfo.video.height,
+        ...(videoInfo.codec.startsWith('avc') ? {
+            avcDecoderConfigRecord: description,
+        } : videoInfo.codec.startsWith('hevc') ? {
+            hevcDecoderConfigRecord: description,
+        } : {}),
+    });
 
     return {
-        writable,
+        writable: samplesToMp4FileWritable(file, trackId, videoInfo, DEV),
+        trackId,
+    }
+}
+
+/**
+ * Simply copy video samples to the dst-file from the src-file
+ * 
+ * @param file MP4File via mp4box.js
+ * @param audioInfo MP4AudioTrack
+ * @param DEV enable debug log
+ */
+export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTrack, DEV = false) {
+    // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
+    const trackId = file.addTrack({
+        type: audioInfo.codec.split('.')[0],
+        hdlr: 'soun',
+        name: 'SoundHandle',
+        timescale: audioInfo.timescale,
+
+        duration: audioInfo.duration,
+        media_duration: audioInfo.duration,
+        language: audioInfo.language,
+        width: 0,
+        height: 0,
+
+        channel_count: audioInfo.audio.channel_count,
+        samplerate: audioInfo.audio.sample_rate,
+        samplesize: audioInfo.audio.sample_size,
+    });
+
+    return {
+        writable: samplesToMp4FileWritable(file, trackId, audioInfo, DEV),
         trackId,
     }
 }
