@@ -111,7 +111,7 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
     copyEdits(trak, srcInfo);
     file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
 
-    if (DEV) console.log('write samples to file: addTrack', trackId, trak, srcInfo.nb_samples);
+    if (DEV) console.log('write samples to file: addTrack', `#${trackId}`, trak, srcInfo.nb_samples);
 
     let samplecnt = 0;
     return new WritableStream<Sample>({
@@ -120,7 +120,7 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
         write(sample) {
                 samplecnt++;
                 const res = file.addSample(trackId, sample.data, {
-                    //sample_description_index: sample.description_index,
+                    sample_description_index: sample.description_index,
                     duration: sample.duration,
                     cts: sample.cts,
                     dts: sample.dts,
@@ -132,11 +132,10 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
                     degradation_priority: sample.degradation_priority,
                     subsamples: sample.subsamples,
                 });
-                if (DEV) console.log('write audio: addSample', samplecnt, sample, res);
+                if (DEV) console.log('write samples to file: addSample', `#${trackId}`, samplecnt, sample, res);
         },
         close() {
-            //file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
-            if (DEV) console.log('write audio: close', file);
+            if (DEV) console.log('write samples to file: close', `#${trackId}`, file);
         },
     });
 }
