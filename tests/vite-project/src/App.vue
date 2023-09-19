@@ -53,6 +53,9 @@ async function execWorker() {
     return;
   }
 
+  if (worker) {
+    worker.terminate();
+  }
   worker = new TheWorker();
 
   worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
