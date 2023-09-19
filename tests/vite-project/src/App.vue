@@ -68,12 +68,12 @@ async function execWorker() {
     buffers.add(ev.data.buffer);
   } else if (ev.data.type === 'complete') {
     console.log('worker complete', ev.data);
-    worker?.terminate();
+    if (!devchk.value?.checked) worker?.terminate();
     worker = null;
     await showBuffer();
   } else if (ev.data.type === 'error') {
     console.error('worker error (via message)', ev.data);
-    worker?.terminate();
+    if (!devchk.value?.checked) worker?.terminate();
     worker = null;
     alert(ev.data.error);
   }

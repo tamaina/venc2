@@ -11,6 +11,7 @@ export * from './encode';
 import { writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './mux';
 export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
+import { getBoxBuffer } from './box';
 export * from './type';
 
 const preventer = {
@@ -81,10 +82,18 @@ export class EasyVideoEncoder extends EventTarget {
         };
         const encoderConfig = {
             ...order.videoEncoderConfig,
-            codec: (order.videoCodecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
             ...outputSize,
+            codec: (order.videoCodecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
+            framerate: Math.round(fps * 100) / 100,
         };
-        await VideoEncoder.isConfigSupported(encoderConfig);
+        await VideoEncoder.isConfigSupported(encoderConfig)
+            .then(res => {
+                if (DEV) console.log('start: isConfigSupported', JSON.stringify(res));
+            })
+            .catch(e => {
+                console.error('start: isConfigSupported error', e);
+                throw e;
+            });
 
         const dstFile = createFile();
         dstFile.init({
@@ -163,11 +172,8 @@ export class EasyVideoEncoder extends EventTarget {
                         if (DEV) console.log('send box: set start position', trackId, fileSize);
                     }
                 }
-                const ds = new DataStream();
-                ds.endianness = DataStream.BIG_ENDIAN;
-                box.write(ds);
-                const buffer = ds.buffer;
-                fileSize += ds.buffer.byteLength;
+                const buffer = getBoxBuffer(box);
+                fileSize += buffer.byteLength;
                 dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
                 if (box.data) {
                     box.data = undefined;

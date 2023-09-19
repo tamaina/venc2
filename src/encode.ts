@@ -29,14 +29,22 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
     return new TransformStream<VideoFrame, VideoEncoderOutputChunk>({
         start(controller) {
             encoder = new VideoEncoder({
-                output: (chunk, config) => {
+                output: (chunk, metadata) => {
                     enqueuecnt++;
-                    if (config && Object.keys(config).length) {
-                        controller.enqueue({ type: 'metadata', data: config });
-                        if (DEV) console.log('encode: encoded: metadata', config);
+                    if (metadata && Object.keys(metadata).length) {
+                        controller.enqueue({ type: 'metadata', data: metadata });
+                        if (DEV) {
+                            console.log(
+                                'encode: encoded: metadata',
+                                metadata,
+                                Array.from(new Uint8Array(metadata.decoderConfig?.description as ArrayBuffer ?? new ArrayBuffer(0)))
+                                    .map(n => n.toString(16).padStart(2, '0') as any)
+                                    .join(' ')
+                            );
+                        }
                     }
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
-                    if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize, config);
+                    if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize, metadata);
 
                     if (enqueuecnt === sharedData.getResultSamples()) {
                         if (DEV) console.log('encode: encoded: [terminate] done', framecnt, sharedData.getResultSamples());
