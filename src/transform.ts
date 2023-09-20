@@ -159,7 +159,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
             srcFrame.close();
             const dstFrame = new VideoFrame(canvas, {
                 timestamp: srcFrame.timestamp,
-				//duration: srcFrame.duration ?? undefined,
+				duration: srcFrame.duration ?? undefined,
             });
             if (DEV) {
                 performance.mark('resize end');
