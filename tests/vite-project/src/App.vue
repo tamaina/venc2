@@ -89,7 +89,9 @@ worker.onerror = (e: any) => {
       type: 'encode',
       file,
       videoEncoderConfig: {
-        hardwareAcceleration: 'prefer-hardware',
+        hardwareAcceleration: 'prefer-software',
+        bitrate: 2_000_000,
+        bitrateMode: 'variable',
       },
       resizeConfig: {
         maxWidth: size.value,

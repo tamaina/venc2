@@ -80,12 +80,18 @@ export class EasyVideoEncoder extends EventTarget {
             width: floorWithSignificance(_outputSize.width, 2),
             height: floorWithSignificance(_outputSize.height, 2),
         };
+        const targetVideoCodec = order.videoEncoderConfig.codec ?? (order.videoCodecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1];
         const encoderConfig = {
             ...order.videoEncoderConfig,
             ...outputSize,
-            codec: (order.videoCodecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1],
+            codec: targetVideoCodec.startsWith('vp08') ? 'vp8' : targetVideoCodec,
             framerate: Math.round(fps * 100) / 100,
-        };
+            ...(targetVideoCodec.startsWith('avc') ? {
+                avc: {
+                    format: 'avc',
+                },
+            } : {})
+        } as VideoEncoderConfig;
         await VideoEncoder.isConfigSupported(encoderConfig)
             .then(res => {
                 if (DEV) console.log('start: isConfigSupported', JSON.stringify(res));
