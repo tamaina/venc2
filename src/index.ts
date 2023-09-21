@@ -12,6 +12,7 @@ import { writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './
 export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
 import { getBoxBuffer } from './box';
+import { avc1PLFromVideoInfo } from './specs/h264';
 export * from './type';
 
 const preventer = {
@@ -80,7 +81,15 @@ export class EasyVideoEncoder extends EventTarget {
             width: floorWithSignificance(_outputSize.width, 2),
             height: floorWithSignificance(_outputSize.height, 2),
         };
-        const targetVideoCodec = order.videoEncoderConfig.codec ?? (order.videoCodecEntries?.find((entry) => entry[0] >= fps) ?? [null, 'avc1.4d002a'])[1];
+        const targetVideoCodec = order.videoEncoderConfig.codec ??
+            // avc1(h264) and fallback
+            avc1PLFromVideoInfo({
+                width: outputSize.width,
+                height: outputSize.height,
+                profile: order.avc1Profile ?? 'constrained_baseline',
+                fps,
+                prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
+            });
         const encoderConfig = {
             ...order.videoEncoderConfig,
             ...outputSize,
@@ -92,6 +101,7 @@ export class EasyVideoEncoder extends EventTarget {
                 },
             } : {})
         } as VideoEncoderConfig;
+        if (DEV) console.log('start: encoderConfig', encoderConfig);
         await VideoEncoder.isConfigSupported(encoderConfig)
             .then(res => {
                 if (DEV) console.log('start: isConfigSupported', JSON.stringify(res));

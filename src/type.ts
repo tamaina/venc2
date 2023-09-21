@@ -1,20 +1,16 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
+import { avc1ProfileToProfileIdTable } from './specs/h264';
 
 export type VencWorkerOrder = {
     type?: 'encode',
     identifier?: any;
     file: Blob;
 
-    /**
-     * [number(max fps), codec][]
-     * 
-     * Example: [[32, 'avc1.4d001f'], [64, 'avc1.4d0020'], [Infinity, 'avc1.4d0028']]
-     * If not set, encoding codec will be set to `avc1.4d002a`.
-     */
-    videoCodecEntries?: [number, string][];
     videoDecoderConfig?: Partial<VideoDecoderConfig>;
     videoEncoderConfig: Partial<VideoEncoderConfig>;
     resizeConfig: Partial<BrowserImageResizerConfigWithOffscreenCanvasOutput>;
+
+    avc1Profile?: keyof typeof avc1ProfileToProfileIdTable;
 
     DEV?: boolean;
 };
