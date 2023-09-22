@@ -1,5 +1,5 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
-import { avc1ProfileToProfileIdTable } from './specs/h264';
+import { avc1ProfileToProfileIdTable } from './specs/avc1';
 
 export type VideoKeyframeConfig = {
     // TODO!!

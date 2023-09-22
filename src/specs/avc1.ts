@@ -3,11 +3,11 @@
 export const avc1ProfileToProfileIdTable = {
     'constrained_baseline': '4240',
     'baseline':             '4200',
-    'main':                 '4d00',
-    'constrained_main':     '4d40',
     'extended':             '5800',
-    'high':                 '6400',
+    'constrained_main':     '4d40',
+    'main':                 '4d00',
     'constrained_high':     '640c',
+    'high':                 '6400',
     'high_progressive':     '6408',
     /**
      * 10bit and 422/444 are not supported by JS Canvas,
@@ -60,7 +60,7 @@ export function avc1GetProfileToNalFactor(profile: keyof typeof avc1ProfileToPro
     // profile_idcのバリエーションはavc1ProfileIdcToFactorTableで定義されたものしか存在しない
     const factor = avc1ProfileIdcToFactorTable.find(({ profileIdc }) => profileIdc === targetProfileIdc);
     if (!factor) throw new Error(`profile ${profile} is not supported`);
-    return factor[2];
+    return factor.cpbBrNalFactor;
 }
 
 class Avc1LevelLimit {
@@ -125,14 +125,15 @@ export type Avc1VideoInfoToGuessLevel = {
  * https://github.com/FFmpeg/FFmpeg/blob/ea063171903638541a8debded3a828456dd73fc9/libavcodec/h264_levels.c#L79C37-L79C37
  */
 export function avc1GuessLevelIdcFromInformations(
-    { profile, width, height, fps, prefferedAllowingMaxBitrate, maxDecFrameBuffering }: Avc1VideoInfoToGuessLevel
+    { profile, width, height, fps, prefferedAllowingMaxBitrate, maxDecFrameBuffering }: Avc1VideoInfoToGuessLevel,
+    DEV = false,
 ) {
     const profileIdc = avc1ProfileToProfileIdTable[profile];
     if (!profileIdc) {
-        throw new Error(`profile ${profile} is not supported`);
+        throw new Error(`avc1 guess lv: profile ${profile} is not supported`);
     }
     if (!Math.max(width, 0) || !Math.max(height, 0) || !Math.max(fps, 0)) {
-        throw new Error('width, heighta and fps must be positive number');
+        throw new Error('avc1 guess lv: width, heighta and fps must be positive number');
     }
     const acceptCs3f = profileIdc.startsWith('42') || profileIdc.startsWith('4d') || profileIdc.startsWith('58');
     const factor = avc1GetProfileToNalFactor(profile);
@@ -148,26 +149,30 @@ export function avc1GuessLevelIdcFromInformations(
 
     let antiprefferedLevelIdc: number | undefined = undefined;
     for (let i = 0; i < avc1LevelLimitsTable.length; i++) {
-        const limit = avc1LevelLimitsTable[i];
-        if (limit.cs3fFlag && !acceptCs3f) continue;
+        const level = avc1LevelLimitsTable[i];
+        if (level.cs3fFlag && !acceptCs3f) continue;
 
-        if (whMBs > limit.maxFS) continue;
-        if (wwMBs > 8 * limit.maxFS) continue;
-        if (hhMBs > 8 * limit.maxFS) continue;
-        if (whMBPS > limit.maxMBPS) continue;
+        if (whMBs > level.maxFS) continue;
+        if (wwMBs > 8 * level.maxFS) continue;
+        if (hhMBs > 8 * level.maxFS) continue;
+        if (whMBPS > level.maxMBPS) continue;
 
         if (maxDecFrameBuffering) {
-            if (whDpbMbs > limit.maxDpbMbs) continue;
+            if (whDpbMbs > level.maxDpbMbs) continue;
         }
-
+        if (DEV) console.log('avc1 guess lv: level choosing: bitrate', level.name, (prefferedAllowingMaxBitrate ?? 0) / 1000, level.maxBR, factor, (level.maxBR * factor) / 1000);
         if (prefferedAllowingMaxBitrate &&
-            prefferedAllowingMaxBitrate > limit.maxBR * factor) {
-            antiprefferedLevelIdc = limit.levelIdc;
+            prefferedAllowingMaxBitrate > level.maxBR * factor) {
+            antiprefferedLevelIdc = level.levelIdc;
             continue;
         }
-        return limit.levelIdc;
+        if (DEV) console.log('avc1 guess lv: level choosing: level chosen', level.name, level.levelIdc);
+        return level.levelIdc;
     }
-    if (antiprefferedLevelIdc) return antiprefferedLevelIdc;
+    if (antiprefferedLevelIdc) {
+        if (DEV) console.log('avc1 guess lv: level choosing: anti-preffered level chosen', antiprefferedLevelIdc);
+        return antiprefferedLevelIdc;
+    }
     throw new Error(`suitable level is not found`);
 }
 
@@ -182,13 +187,14 @@ function avc1LevelId(levelx10: number) {
 
 export function avc1PL<E extends keyof typeof avc1ProfileToProfileIdTable>(
     profile: E,
-    levelx10: number
+    levelx10: number,
 ): `avc1.${typeof avc1ProfileToProfileIdTable[E]}${string}` {
     return `avc1.${avc1ProfileToProfileIdTable[profile]}${avc1LevelId(levelx10)}`;
 }
 
 export function avc1PLFromVideoInfo(
     videoInfo: Avc1VideoInfoToGuessLevel,
+    DEV = false,
 ): string {
-    return avc1PL(videoInfo.profile, avc1GuessLevelIdcFromInformations(videoInfo));
+    return avc1PL(videoInfo.profile, avc1GuessLevelIdcFromInformations(videoInfo, DEV));
 }

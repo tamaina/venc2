@@ -12,7 +12,7 @@ import { writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './
 export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
 import { getBoxBuffer } from './box';
-import { avc1PLFromVideoInfo } from './specs/h264';
+import { avc1PLFromVideoInfo } from './specs/avc1';
 export * from './type';
 
 const preventer = {
@@ -89,7 +89,7 @@ export class EasyVideoEncoder extends EventTarget {
                 profile: order.avc1Profile ?? 'constrained_baseline',
                 fps,
                 prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
-            });
+            }, DEV);
         const encoderConfig = {
             ...order.videoEncoderConfig,
             ...outputSize,

@@ -68,14 +68,16 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
         },
         transform(frame, controller) {
             framecnt++;
-            if (DEV) console.log('encode: frame', framecnt, frame, encoder.encodeQueueSize);
-
             const keyFrame = (() => {
                 // TODO!!!!
                 return frame.isKeyFrame;
             })();
 
-            encoder.encode(frame.frame, { keyFrame });
+            if (DEV) console.log('encode: frame', framecnt, frame, keyFrame, encoder.encodeQueueSize);
+
+            encoder.encode(frame.frame, {
+                keyFrame,
+            });
             frame.frame.close();
 
 			// safety

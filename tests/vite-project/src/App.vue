@@ -4,8 +4,10 @@ import { getMP4Info } from '../../../src/demux';
 import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
+import { avc1ProfileToProfileIdTable } from '../../../src/specs/avc1';
 
 const sizeInput = ref<HTMLInputElement>();
+const bitrateInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
 const devchk = ref<HTMLInputElement>();
 const video = ref<HTMLVideoElement>();
@@ -13,6 +15,8 @@ const a = ref<HTMLAnchorElement>();
 const progress = ref<HTMLProgressElement>();
 
 const size = ref(sizeInput.value?.valueAsNumber || 1920);
+const bitrate = ref(bitrateInput.value?.valueAsNumber || 1000);
+const profile = ref<keyof typeof avc1ProfileToProfileIdTable>('main');
 
 const main = new EasyVideoEncoder();
 
@@ -88,11 +92,11 @@ worker.onerror = (e: any) => {
     worker.postMessage({
       type: 'encode',
       file,
-      avc1Profile: 'main',
+      avc1Profile: profile.value,
       videoEncoderConfig: {
         hardwareAcceleration: 'prefer-hardware',
         bitrateMode: 'variable',
-        bitrate: 500_000,
+        bitrate: bitrate.value * 1000,
         latencyMode: 'quality',
       },
       resizeConfig: {
@@ -128,7 +132,13 @@ function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
     main.start({
       file,
-      videoEncoderConfig: {},
+      avc1Profile: profile.value,
+      videoEncoderConfig: {
+        hardwareAcceleration: 'prefer-hardware',
+        bitrateMode: 'variable',
+        bitrate: bitrate.value * 1000,
+        latencyMode: 'quality',
+      },
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,
@@ -148,7 +158,12 @@ function execMain() {
     <div class="control">
       <input type="file" ref="input" accept="video/*" />
       <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
-        @change="size = sizeInput?.valueAsNumber || 1920" />
+        @change="size = sizeInput?.valueAsNumber || 1920" style="width: 4.1em; font-family: monospace;" />
+      <input type="number" min="0" step="1" placeholder="kbps" value="1000" ref="bitrateInput"
+        @change="bitrate = bitrateInput?.valueAsNumber || 1000" style="width: 4.1em; font-family: monospace;" />
+      <select v-model="profile">
+        <option v-for="(p, k) in avc1ProfileToProfileIdTable" :value="k" v-text="k" />
+      </select>
       <div>
         <input type="checkbox" ref="devchk" id="devchk" />
         <label for="devchk">DEV</label>
