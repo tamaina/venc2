@@ -72,7 +72,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
 
             const keyFrame = (() => {
                 // TODO!!!!
-                return framecnt === 1 || frame.isKeyFrame;
+                return frame.isKeyFrame;
             })();
 
             encoder.encode(frame.frame, { keyFrame });
