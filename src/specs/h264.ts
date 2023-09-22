@@ -148,7 +148,7 @@ export function avc1GuessLevelIdcFromInformations(
 
     let antiprefferedLevelIdc: number | undefined = undefined;
     for (let i = 0; i < avc1LevelLimitsTable.length; i++) {
-        const limit = avc1LevelLimitsTable[avc1LevelLimitsTable.length - 1 - i];
+        const limit = avc1LevelLimitsTable[i];
         if (limit.cs3fFlag && !acceptCs3f) continue;
 
         if (whMBs > limit.maxFS) continue;
