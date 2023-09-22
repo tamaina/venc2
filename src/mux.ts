@@ -17,7 +17,7 @@ export function writeEncodedVideoChunksToMP4File(
     encoderConfig:
     VideoEncoderConfig,
     videoInfo: MP4VideoTrack,
-    sharedData: { getResultSamples: () => number },
+    sharedData: { getResultSamples: () => number; shiftDuration?: number },
     trackAddedCallback: (result: number) => void,
     promiseToStartChunks: Promise<void>,
     DEV = false
@@ -91,7 +91,9 @@ export function writeEncodedVideoChunksToMP4File(
                     const sample = file.addSample(trackId, b, {
                         cts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
                         dts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
-                        duration: Math.max(0, Math.round((((videoInfo.duration / videoInfo.timescale) * 1e6 - prevChunk.timestamp) * videoInfo.timescale) / 1e6)),
+                        duration: Math.max(0, Math.round(
+                            (((videoInfo.duration / videoInfo.timescale) * 1e6 + (sharedData.shiftDuration ?? 0) - prevChunk.timestamp) * videoInfo.timescale) / 1e6
+                        )),
                     })
                     controller.enqueue(sample);
                     if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);

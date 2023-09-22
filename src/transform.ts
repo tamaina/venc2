@@ -10,7 +10,11 @@ const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
  * 
  * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
  */
-export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedData: { dropFrames: number; getResultSamples: () => number }, DEV = false) {
+export function generateVideoSortTransformer(
+	videoInfo: MP4VideoTrack,
+	sharedData: { dropFrames: number; getResultSamples: () => number; shiftDuration?: number; },
+	DEV = false
+) {
 	let expectedNextTimestamp = 0;
 	const cache = new Map<number, VideoFrame>();
 	let recievedcnt = 0;
@@ -119,6 +123,9 @@ export function generateVideoSortTransformer(videoInfo: MP4VideoTrack, sharedDat
 					}
 				}
 				expectedNextTimestamp = Math.min(...cache.keys());
+				if (!('shiftDuration' in sharedData)) {
+					sharedData.shiftDuration = expectedNextTimestamp;
+				}
 				if (DEV) console.log('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
 			}
 			send(controller, frame);
