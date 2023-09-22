@@ -1,6 +1,12 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
 import { avc1ProfileToProfileIdTable } from './specs/h264';
 
+export type VideoKeyframeConfig = {
+    // TODO!!
+    type: 'ms' | 'frame';
+    interval: number;
+};
+
 export type VencWorkerOrder = {
     type?: 'encode',
     identifier?: any;
@@ -10,9 +16,15 @@ export type VencWorkerOrder = {
     videoEncoderConfig: Partial<VideoEncoderConfig>;
     resizeConfig: Partial<BrowserImageResizerConfigWithOffscreenCanvasOutput>;
 
+    videoKeyframeConfig?: VideoKeyframeConfig;
     avc1Profile?: keyof typeof avc1ProfileToProfileIdTable;
 
     DEV?: boolean;
+};
+
+export type VideoFrameAndIsKeyFrame = {
+    frame: VideoFrame;
+    isKeyFrame: boolean;
 };
 
 export type VencWorkerRequest = VencWorkerOrder;

@@ -1,4 +1,4 @@
-import { VideoEncoderOutputChunk } from "./type";
+import { VideoEncoderOutputChunk, VideoFrameAndIsKeyFrame } from "./type";
 
 // VideoEncoderが持つキューの最大数
 const ENCODE_QUEUE_MAX = 32;
@@ -26,7 +26,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
 	};
 	const allowWriteEval = () => framecnt <= enqueuecnt + ENCODE_QUEUE_MAX;
 
-    return new TransformStream<VideoFrame, VideoEncoderOutputChunk>({
+    return new TransformStream<VideoFrameAndIsKeyFrame, VideoEncoderOutputChunk>({
         start(controller) {
             encoder = new VideoEncoder({
                 output: (chunk, metadata) => {
@@ -70,8 +70,13 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
             framecnt++;
             if (DEV) console.log('encode: frame', framecnt, frame, encoder.encodeQueueSize);
 
-            encoder.encode(frame);
-            frame.close();
+            const keyFrame = (() => {
+                // TODO!!!!
+                return framecnt === 1 || frame.isKeyFrame;
+            })();
+
+            encoder.encode(frame.frame, { keyFrame });
+            frame.frame.close();
 
 			// safety
 			emitResolve();

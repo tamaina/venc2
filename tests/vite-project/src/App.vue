@@ -93,6 +93,7 @@ worker.onerror = (e: any) => {
         hardwareAcceleration: 'prefer-hardware',
         bitrateMode: 'variable',
         bitrate: 500_000,
+        latencyMode: 'quality',
       },
       resizeConfig: {
         maxWidth: size.value,

@@ -1,4 +1,5 @@
 import { MP4VideoTrack, Sample } from '@webav/mp4box.js';
+import { VideoFrameAndIsKeyFrame } from './type';
 
 // VideoDecoderが持つキューの最大数
 const DECODE_QUEUE_MAX = 32;
@@ -35,7 +36,7 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
  * **Set preventClose: true** when using the stream with pipeThrough.
  * 
  * @param file Source file (mp4)
- * @returns TransformStream<Sample, VideoFrame>
+ * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>
  */
 export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, orderConfig: Partial<VideoDecoderConfig>, DEV = false) {
 	let samplecnt = 0;
@@ -68,14 +69,19 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 	};
 	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
 
-	return new TransformStream<EncodedVideoChunk, VideoFrame>({
+	const keyFrames = new Set<number>();
+
+	return new TransformStream<EncodedVideoChunk, VideoFrameAndIsKeyFrame>({
 		async start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
 					if (frame) {
 						framecnt++;
-						if (DEV) console.log('decode: enqueue frame', frame.timestamp, framecnt, videoInfo.nb_samples);
-						controller.enqueue(frame);
+						if (DEV) console.log('decode: enqueue frame', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples);
+						controller.enqueue({
+							frame,
+							isKeyFrame: keyFrames.has(framecnt),
+						});
 					}
 					if (allowWriteEval()) emitResolve();
 					if (framecnt === videoInfo.nb_samples) {
@@ -93,7 +99,9 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 		},
 		transform(vchunk, controller) {
 			samplecnt++;
-
+			if (vchunk.type === 'key') {
+				keyFrames.add(samplecnt);
+			}
 			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
 			decoder.decode(vchunk);
 			if (DEV) console.log('decode: recieving vchunk', samplecnt, framecnt, decoder.decodeQueueSize);

@@ -1,5 +1,6 @@
 import { BrowserImageResizerConfigWithOffscreenCanvasOutput, readAndCompressImage } from "@misskey-dev/browser-image-resizer";
 import { MP4VideoTrack } from "@webav/mp4box.js";
+import { VideoFrameAndIsKeyFrame } from "./type";
 
 const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
 /**
@@ -24,52 +25,55 @@ export function generateVideoSortTransformer(
 		return duration;
 	}
 
-	const cache = new Map<number, VideoFrame>();
+	const cache = new Map<number, VideoFrameAndIsKeyFrame>();
 	let recievedcnt = 0;
 	let enqueuecnt = 0;
 
 	function dropByCache(timestamp: number) {
-		cache.get(timestamp)?.close();
+		cache.get(timestamp)?.frame.close();
 		cache.delete(timestamp);
 		sharedData.dropFrames++;
 	}
-	function enqueue(frame: VideoFrame, controller: TransformStreamDefaultController<VideoFrame>) {
-		controller.enqueue(new VideoFrame(frame, {
-			timestamp: frame.timestamp,
-			duration: getDuration(frame.timestamp),
-			visibleRect: frame.visibleRect ?? undefined,
-		}));
-		frame.close();
+	function enqueue(f: VideoFrameAndIsKeyFrame, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
+		controller.enqueue({
+			frame: new VideoFrame(f.frame, {
+				timestamp: f.frame.timestamp,
+				duration: getDuration(f.frame.timestamp),
+				visibleRect: f.frame.visibleRect ?? undefined,
+			}),
+			isKeyFrame: f.isKeyFrame,
+		});
+		f.frame.close();
 		enqueuecnt++;
 	}
-	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrame>) {
+	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
 		const frame = cache.get(timestamp)!;
 		enqueue(frame, controller);
 		cache.delete(timestamp);
 	}
 
-	function send(controller: TransformStreamDefaultController<VideoFrame>, incoming: VideoFrame, _timestamps?: Set<number>) {
+	function send(controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>, incoming: VideoFrameAndIsKeyFrame, _timestamps?: Set<number>) {
 		if (DEV) console.log('sort: send: trying to send', expectedNextTimestamp, incoming, cache.keys());
 
 		// 前のフレームをenqueueしてしまうと次の処理でframeがcloseされてしまう可能性があるため、
 		// バッファに入れておいてまとめてexpectedNextTimestampに当てはまるフレームが来るまでenqueueする
 		const timestamps = _timestamps ?? new Set<number>();
 
-		cache.set(incoming.timestamp, incoming);
+		cache.set(incoming.frame.timestamp, incoming);
 
 		for (const margin of TIMESTAMP_MARGINS) {
 			const timestamp = expectedNextTimestamp + margin;
-			if (incoming?.timestamp === timestamp) {
-				timestamps.add(incoming.timestamp);
-				expectedNextTimestamp = timestamp + (incoming.duration ?? 0);
+			if (incoming?.frame.timestamp === timestamp) {
+				timestamps.add(incoming.frame.timestamp);
+				expectedNextTimestamp = timestamp + (incoming.frame.duration ?? 0);
 				break;
 			}
 			if (cache.size && cache.has(timestamp)) {
 				timestamps.add(timestamp);
 				const frame = cache.get(timestamp)!;
 
-				if (frame.duration) {
-					expectedNextTimestamp = timestamp + frame.duration;
+				if (frame.frame.duration) {
+					expectedNextTimestamp = timestamp + frame.frame.duration;
 					send(controller, frame, timestamps);
 					return;
 				}
@@ -88,23 +92,23 @@ export function generateVideoSortTransformer(
 		}
 	}
 
-	return new TransformStream<VideoFrame, VideoFrame>({
+	return new TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>({
 		start() {},
 		transform(frame, controller) {
 			recievedcnt++
-			if (DEV) console.log('sort: recieving frame', frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, enqueuecnt, cache.size);
 
-			if (frame.timestamp < expectedNextTimestamp) {
-				console.error('sort: recieving frame: drop frame', frame.timestamp, expectedNextTimestamp);
+			if (frame.frame.timestamp < expectedNextTimestamp) {
+				console.error('sort: recieving frame: drop frame', frame.frame.timestamp, expectedNextTimestamp);
 				sharedData.dropFrames++;
-				frame.close();
+				frame.frame.close();
 				return;
 			}
 
 			if (recievedcnt === videoInfo.nb_samples) {
 				// 最後のフレームを受信した場合片付ける
 				cache.set(expectedNextTimestamp, frame);
-				if (DEV) console.log('sort: recieving frame: last frame', frame.timestamp, cache);
+				if (DEV) console.log('sort: recieving frame: last frame', frame.frame.timestamp, cache);
 				for (const timestamp of Array.from(cache.keys()).sort((a, b) => a - b)) {
 					// キャッシュを全てenqueueする
 					if (timestamp < expectedNextTimestamp) {
@@ -113,7 +117,7 @@ export function generateVideoSortTransformer(
 					} else {
 						if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
 						const f = cache.get(timestamp)!;
-						expectedNextTimestamp = timestamp + (f.duration ?? 0);
+						expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
 						enqueue(f, controller);
 						cache.delete(timestamp);
 					}
@@ -128,7 +132,7 @@ export function generateVideoSortTransformer(
 				// 最小のtimestampを探してexpectedNextTimestampとする
 				// （14にしているのは、Chromeだと15以上にすると動かなくなるため）
 				// 最初のtimestampが0でない場合もこの処理が必要
-				console.error('sort: recieving frame: cache is too large', frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
+				console.error('sort: recieving frame: cache is too large', frame.frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
 				for (const timestamp of cache.keys()) {
 					if (timestamp < expectedNextTimestamp) {
 						dropByCache(timestamp);
@@ -158,12 +162,12 @@ export function floorWithSignificance(value: number, significance: number) {
  * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @param config Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>
- * @returns TransformStream<VideoFrame, VideoFrame>
+ * @returns TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>
  * 
  */
 export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, DEV = false) {
     let framecnt = 0;
-    return new TransformStream<VideoFrame, VideoFrame>({
+    return new TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>({
         start() {},
         async transform(srcFrame, controller) {
             framecnt++;
@@ -171,20 +175,20 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
                 performance.mark('resize start');
                 console.log('resize: recieved', framecnt, srcFrame);
             }
-            const canvas = await readAndCompressImage(srcFrame, {
+            const canvas = await readAndCompressImage(srcFrame.frame, {
                 ...config,
                 mimeType: null,
             });
-            srcFrame.close();
+            srcFrame.frame.close();
             const dstFrame = new VideoFrame(canvas, {
-                timestamp: srcFrame.timestamp,
-				duration: srcFrame.duration ?? undefined,
+                timestamp: srcFrame.frame.timestamp,
+				duration: srcFrame.frame.duration ?? undefined,
             });
             if (DEV) {
                 performance.mark('resize end');
                 console.log('resize: transform', framecnt, performance.measure('resize', 'resize start').duration, dstFrame);
             }
-            controller.enqueue(dstFrame);
+            controller.enqueue({ frame: dstFrame, isKeyFrame: srcFrame.isKeyFrame });
         },
         flush(controller) {
             if (DEV) console.log('resize: [terminate]  cache is too large flush')
