@@ -44,7 +44,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                         }
                     }
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
-                    if (DEV) console.log('encode: encoded', framecnt, chunk, encoder.encodeQueueSize, metadata);
+                    if (DEV) console.log('encode: encoded', chunk.timestamp, enqueuecnt - 1, framecnt, chunk, encoder.encodeQueueSize, metadata);
 
                     if (enqueuecnt === sharedData.getResultSamples()) {
                         if (DEV) console.log('encode: encoded: [terminate] done', framecnt, sharedData.getResultSamples());

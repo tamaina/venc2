@@ -26,8 +26,6 @@ export function writeEncodedVideoChunksToMP4File(
     let trackId: number;
     let trak: BoxParser.trakBox;
     let samplecnt = 0;
-    let prevChunk: EncodedVideoChunk;
-    let currentChunk: EncodedVideoChunk | null;
 
     return new TransformStream<VideoEncoderOutputChunk, Sample>({
         start() {
@@ -63,41 +61,24 @@ export function writeEncodedVideoChunksToMP4File(
                 return;
             } else if (data.type === 'encodedVideoChunk') {
                 samplecnt++;
-                if (!prevChunk) {
-                    prevChunk = data.data as EncodedVideoChunk;
-                    return;
-                }
 
-                currentChunk = data.data as EncodedVideoChunk;
-                const b = new ArrayBuffer(prevChunk.byteLength);
-                prevChunk.copyTo(b);
+                const chunk = data.data as EncodedVideoChunk;
+                const b = new ArrayBuffer(chunk.byteLength);
+                chunk.copyTo(b);
                 const times = {
-                    cts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
-                    dts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
-                    duration: Math.round(((currentChunk.timestamp - prevChunk.timestamp) * videoInfo.timescale) / 1e6),
+                    cts: Math.round((chunk.timestamp * videoInfo.timescale) / 1e6),
+                    dts: Math.round((chunk.timestamp * videoInfo.timescale) / 1e6),
+                    duration: Math.round(((chunk.duration ?? 1) * videoInfo.timescale) / 1e6),
                 };
                 const sample = file.addSample(trackId, b, {
                     ...times,
-                    is_sync: prevChunk.type === 'key',
+                    is_sync: chunk.type === 'key',
                 });
-                prevChunk = currentChunk;
-                currentChunk = null;
-                if (DEV) console.log('write: addSample', samplecnt - 1, times, sample);
+                if (DEV) console.log('write: addSample', samplecnt, times, sample);
                 controller.enqueue(sample);
 
                 if (samplecnt === sharedData.getResultSamples()) {
-                    const b = new ArrayBuffer(prevChunk.byteLength);
-                    prevChunk.copyTo(b);
-                    const sample = file.addSample(trackId, b, {
-                        cts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
-                        dts: Math.round((prevChunk.timestamp * videoInfo.timescale) / 1e6),
-                        duration: Math.max(0, Math.round(
-                            (((videoInfo.duration / videoInfo.timescale) * 1e6 + (sharedData.shiftDuration ?? 0) - prevChunk.timestamp) * videoInfo.timescale) / 1e6
-                        )),
-                    })
-                    controller.enqueue(sample);
                     if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
-                    controller.terminate();
                 }
             }
         },

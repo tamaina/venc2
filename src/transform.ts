@@ -16,6 +16,14 @@ export function generateVideoSortTransformer(
 	DEV = false
 ) {
 	let expectedNextTimestamp = 0;
+	let prevTimestamp = 0;
+
+	function getDuration(timestamp: number) {
+		const duration = timestamp - prevTimestamp;
+		prevTimestamp = timestamp;
+		return duration;
+	}
+
 	const cache = new Map<number, VideoFrame>();
 	let recievedcnt = 0;
 	let enqueuecnt = 0;
@@ -25,10 +33,19 @@ export function generateVideoSortTransformer(
 		cache.delete(timestamp);
 		sharedData.dropFrames++;
 	}
-	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrame>) {
-		controller.enqueue(cache.get(timestamp)!);
-		cache.delete(timestamp);
+	function enqueue(frame: VideoFrame, controller: TransformStreamDefaultController<VideoFrame>) {
+		controller.enqueue(new VideoFrame(frame, {
+			timestamp: frame.timestamp,
+			duration: getDuration(frame.timestamp),
+			visibleRect: frame.visibleRect ?? undefined,
+		}));
+		frame.close();
 		enqueuecnt++;
+	}
+	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrame>) {
+		const frame = cache.get(timestamp)!;
+		enqueue(frame, controller);
+		cache.delete(timestamp);
 	}
 
 	function send(controller: TransformStreamDefaultController<VideoFrame>, incoming: VideoFrame, _timestamps?: Set<number>) {
@@ -86,6 +103,7 @@ export function generateVideoSortTransformer(
 
 			if (recievedcnt === videoInfo.nb_samples) {
 				// 最後のフレームを受信した場合片付ける
+				cache.set(expectedNextTimestamp, frame);
 				if (DEV) console.log('sort: recieving frame: last frame', frame.timestamp, cache);
 				for (const timestamp of Array.from(cache.keys()).sort((a, b) => a - b)) {
 					// キャッシュを全てenqueueする
@@ -94,17 +112,11 @@ export function generateVideoSortTransformer(
 						dropByCache(timestamp);
 					} else {
 						if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
-						enqueueByCache(timestamp, controller);
+						const f = cache.get(timestamp)!;
+						expectedNextTimestamp = timestamp + (f.duration ?? 0);
+						enqueue(f, controller);
+						cache.delete(timestamp);
 					}
-				}
-				if (frame.timestamp >= expectedNextTimestamp) {
-					if (DEV) console.log('sort: recieving frame: enqueue last frame', frame.timestamp);
-					controller.enqueue(frame);
-					enqueuecnt++;
-				} else {
-					if (DEV) console.error('sort: recieving frame: drop last frame', frame.timestamp, expectedNextTimestamp);
-					frame.close();
-					sharedData.dropFrames++;
 				}
 				if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData.dropFrames, sharedData.getResultSamples());
 				controller.terminate();
