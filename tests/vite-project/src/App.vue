@@ -88,9 +88,11 @@ worker.onerror = (e: any) => {
     worker.postMessage({
       type: 'encode',
       file,
+      avc1Profile: 'main',
       videoEncoderConfig: {
-        hardwareAcceleration: 'prefer-software',
+        hardwareAcceleration: 'prefer-hardware',
         bitrateMode: 'variable',
+        bitrate: 500_000,
       },
       resizeConfig: {
         maxWidth: size.value,

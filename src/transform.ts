@@ -12,7 +12,7 @@ const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
  */
 export function generateVideoSortTransformer(
 	videoInfo: MP4VideoTrack,
-	sharedData: { dropFrames: number; getResultSamples: () => number; shiftDuration?: number; },
+	sharedData: { dropFrames: number; getResultSamples: () => number; startTimeShift?: number; },
 	DEV = false
 ) {
 	let expectedNextTimestamp = 0;
@@ -135,8 +135,8 @@ export function generateVideoSortTransformer(
 					}
 				}
 				expectedNextTimestamp = Math.min(...cache.keys());
-				if (!('shiftDuration' in sharedData)) {
-					sharedData.shiftDuration = expectedNextTimestamp;
+				if (!('startTimeShift' in sharedData)) {
+					sharedData.startTimeShift = expectedNextTimestamp;
 				}
 				if (DEV) console.log('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
 			}

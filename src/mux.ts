@@ -17,7 +17,7 @@ export function writeEncodedVideoChunksToMP4File(
     encoderConfig:
     VideoEncoderConfig,
     videoInfo: MP4VideoTrack,
-    sharedData: { getResultSamples: () => number; shiftDuration?: number },
+    sharedData: { getResultSamples: () => number },
     trackAddedCallback: (result: number) => void,
     promiseToStartChunks: Promise<void>,
     DEV = false
@@ -26,6 +26,7 @@ export function writeEncodedVideoChunksToMP4File(
     let trackId: number;
     let trak: BoxParser.trakBox;
     let samplecnt = 0;
+    let nextDtsTime = 0;
 
     return new TransformStream<VideoEncoderOutputChunk, Sample>({
         start() {
@@ -67,7 +68,7 @@ export function writeEncodedVideoChunksToMP4File(
                 chunk.copyTo(b);
                 const times = {
                     cts: Math.round((chunk.timestamp * videoInfo.timescale) / 1e6),
-                    dts: Math.round((chunk.timestamp * videoInfo.timescale) / 1e6),
+                    dts: Math.round((nextDtsTime * videoInfo.timescale) / 1e6),
                     duration: Math.round(((chunk.duration ?? 1) * videoInfo.timescale) / 1e6),
                 };
                 const sample = file.addSample(trackId, b, {
@@ -79,7 +80,9 @@ export function writeEncodedVideoChunksToMP4File(
 
                 if (samplecnt === sharedData.getResultSamples()) {
                     if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
+                    return;
                 }
+                nextDtsTime += (chunk.duration ?? 1);
             }
         },
         flush(controller) {
