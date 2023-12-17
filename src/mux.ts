@@ -75,7 +75,7 @@ export function writeEncodedVideoChunksToMP4File(
                     ...times,
                     is_sync: chunk.type === 'key',
                 });
-                if (DEV) console.log('write: addSample', samplecnt, times, sample);
+                if (DEV) console.log('write: addSample', samplecnt, sharedData.getResultSamples(), times, sample);
                 controller.enqueue(sample);
 
                 if (samplecnt === sharedData.getResultSamples()) {

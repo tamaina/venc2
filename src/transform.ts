@@ -35,15 +35,24 @@ export function generateVideoSortTransformer(
 		sharedData.dropFrames++;
 	}
 	function enqueue(f: VideoFrameAndIsKeyFrame, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
-		controller.enqueue({
-			frame: new VideoFrame(f.frame, {
+		if (f.frame.duration !== getDuration(f.frame.timestamp)) {
+			const frame = new VideoFrame(f.frame, {
 				timestamp: f.frame.timestamp,
 				duration: getDuration(f.frame.timestamp),
 				visibleRect: f.frame.visibleRect ?? undefined,
-			}),
-			isKeyFrame: f.isKeyFrame,
-		});
-		f.frame.close();
+			});
+			controller.enqueue({
+				frame,
+				isKeyFrame: f.isKeyFrame,
+			});
+			f.frame.close();
+		} else {
+			// durationが正しい場合はそのままenqueueする
+			// Chromeではどういうわけかnew VideoFrameで処理がストップする
+			// （特に最終フレームが来てキャッシュの放出をしている間）
+			// 原因はよくわからないがnew VideoFrameを極力使わないようにすることで処理のストップを回避できる
+			controller.enqueue(f);
+		}
 		enqueuecnt++;
 	}
 	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
@@ -96,7 +105,12 @@ export function generateVideoSortTransformer(
 		start() {},
 		transform(frame, controller) {
 			recievedcnt++
-			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, enqueuecnt, sharedData.dropFrames, cache.size);
+			if (cache.has(frame.frame.timestamp)) {
+				console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp, expectedNextTimestamp);
+				cache.delete(frame.frame.timestamp);
+				sharedData.dropFrames++;
+			}
 
 			if (frame.frame.timestamp < expectedNextTimestamp) {
 				console.error('sort: recieving frame: drop frame', frame.frame.timestamp, expectedNextTimestamp);
@@ -109,13 +123,14 @@ export function generateVideoSortTransformer(
 				// 最後のフレームを受信した場合片付ける
 				cache.set(expectedNextTimestamp, frame);
 				if (DEV) console.log('sort: recieving frame: last frame', frame.frame.timestamp, cache);
-				for (const timestamp of Array.from(cache.keys()).sort((a, b) => a - b)) {
+				const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
+				if (DEV) console.log('sort: recieving frame: last frame: sorted', stamps);
+				for (const timestamp of stamps) {
 					// キャッシュを全てenqueueする
 					if (timestamp < expectedNextTimestamp) {
 						if (DEV) console.error('sort: recieving frame: drop frame', timestamp, expectedNextTimestamp);
 						dropByCache(timestamp);
 					} else {
-						if (DEV) console.log('sort: recieving frame: enqueue cache', timestamp);
 						const f = cache.get(timestamp)!;
 						expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
 						enqueue(f, controller);
@@ -127,10 +142,9 @@ export function generateVideoSortTransformer(
 				return;
 			}
 
-			if (cache.size >= 12) {
+			if (cache.size >= 13) {
 				// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
 				// 最小のtimestampを探してexpectedNextTimestampとする
-				// （12にしているのは、Chromeだと14以上にすると動かなくなるため）
 				// 最初のtimestampが0でない場合もこの処理が必要
 				console.error('sort: recieving frame: cache is too large', frame.frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
 				for (const timestamp of cache.keys()) {
