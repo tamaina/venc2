@@ -124,7 +124,6 @@ export function generateVideoSortTransformer(
 				cache.set(expectedNextTimestamp, frame);
 				if (DEV) console.log('sort: recieving frame: last frame', frame.frame.timestamp, cache);
 				const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
-				if (DEV) console.log('sort: recieving frame: last frame: sorted', stamps);
 				for (const timestamp of stamps) {
 					// キャッシュを全てenqueueする
 					if (timestamp < expectedNextTimestamp) {
