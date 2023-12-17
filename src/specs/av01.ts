@@ -144,6 +144,7 @@ export function av01GuessLevelFromInformations(
     DEV = false,
 ) {
     let maxBrMbps: number | typeof VOID = VOID;
+    let antiprefferedLevel: Av01LevelLimit | undefined = undefined;
 
     const picSize = width * height;
     const displayRate = picSize * fps;
@@ -160,7 +161,11 @@ export function av01GuessLevelFromInformations(
 
         if (maxBrMbps === VOID) continue;
         if (prefferedAllowingMaxBitrate) {
-            if (prefferedAllowingMaxBitrate > 1000000.0 * maxBrMbps) continue;
+            if (DEV) console.log(`av01 guess lv: maxBrMbps: ${maxBrMbps}Mbps, prefferedAllowingMaxBitrate: ${prefferedAllowingMaxBitrate / 1000000}Mbps`);
+            if (prefferedAllowingMaxBitrate > 1000000 * maxBrMbps) {
+                antiprefferedLevel = level;
+                continue;
+            };
         }
 
         if (tiles ?? 0 > level.maxTiles) continue;
@@ -169,6 +174,10 @@ export function av01GuessLevelFromInformations(
         return level;
     }
 
+    if (antiprefferedLevel) {
+        if (DEV) console.log('av01 guess lv: level choosing: anti-preffered level chosen', antiprefferedLevel);
+        return antiprefferedLevel;
+    }
     throw new Error(`av01 guess lv: suitable level is not found`);
 }
 
