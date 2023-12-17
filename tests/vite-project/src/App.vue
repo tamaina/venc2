@@ -18,6 +18,9 @@ const progress = ref<HTMLProgressElement>();
 const codec = ref<'avc1' | 'av01'>('avc1');
 const size = ref(sizeInput.value?.valueAsNumber || 1920);
 const bitrate = ref(bitrateInput.value?.valueAsNumber || 1000);
+const hardwareAcceleration = ref<'prefer-hardware' | 'prefer-software' | 'no-preference'>('no-preference');
+const bitrateMode = ref<'constant' | 'quantizer' | 'variable'>('constant');
+const latencyMode = ref<'quality' | 'realtime'>('quality');
 
 //#region avc1
 const avc1Profile = ref<keyof typeof avc1ProfileToProfileIdTable>('main');
@@ -133,10 +136,10 @@ async function execWorker() {
       file,
       codecRequest: getCodecRequest(),
       videoEncoderConfig: {
-        hardwareAcceleration: 'prefer-hardware',
-        bitrateMode: 'variable',
+        hardwareAcceleration: hardwareAcceleration.value,
+        bitrateMode: bitrateMode.value,
         bitrate: bitrate.value * 1000,
-        latencyMode: 'quality',
+        latencyMode: latencyMode.value,
       },
       resizeConfig: {
         maxWidth: size.value,
@@ -173,10 +176,10 @@ function execMain() {
       file,
       codecRequest: getCodecRequest(),
       videoEncoderConfig: {
-        hardwareAcceleration: 'prefer-hardware',
-        bitrateMode: 'variable',
+        hardwareAcceleration: hardwareAcceleration.value,
+        bitrateMode: bitrateMode.value,
         bitrate: bitrate.value * 1000,
-        latencyMode: 'quality',
+        latencyMode: latencyMode.value,
       },
       resizeConfig: {
         maxWidth: size.value,
@@ -207,6 +210,20 @@ function execMain() {
           @change="bitrate = bitrateInput?.valueAsNumber || 1000" style="width: 4.1em; font-family: monospace;" />
         kbps
       </div>
+      <select v-model="hardwareAcceleration">
+        <option value="no-preference">no-preference</option>
+        <option value="prefer-hardware">prefer-hardware</option>
+        <option value="prefer-software">prefer-software</option>
+      </select>
+      <select v-model="bitrateMode">
+        <option value="constant">constant</option>
+        <option value="quantizer">quantizer</option>
+        <option value="variable">variable</option>
+      </select>
+      <select v-model="latencyMode">
+        <option value="quality">latency: quality</option>
+        <option value="realtime">latency: realtime</option>
+      </select>
     </div>
 
     <div class="panel codec">
