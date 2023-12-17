@@ -28,6 +28,7 @@ const avc1Profile = ref<keyof typeof avc1ProfileToProfileIdTable>('main');
 
 //#region av01
 const av01Profile = ref<keyof typeof av01ProfileToProfileIdTable>('Main');
+const av01SeqTier = ref<string>('M');
 const av01Depth = ref<'8' | '10' | '12'>('8');
 const av01MonoChrome = ref<HTMLInputElement>();
 const av01ChromaSubsampling = ref<keyof typeof av01ChromaSubsamplingTable>('4:2:0');
@@ -42,6 +43,7 @@ function getCodecRequest(): CodecRequests {
     return {
       type: 'av01',
       profile: av01Profile.value,
+      seqTier: av01SeqTier.value,
       depth: av01Depth.value,
       additional: {
         monoChrome: av01MonoChrome.value?.checked ?? false,
@@ -244,6 +246,11 @@ function execMain() {
       <template v-else-if="codec === 'av01'">
         <select v-model="av01Profile">
           <option v-for="(p, k) in av01ProfileToProfileIdTable" :value="k" v-text="k" />
+        </select>
+        <select v-model="av01SeqTier">
+          <option value="M">M</option>
+          <option value="H">H</option>
+          <option value="V">V</option>
         </select>
         <select v-model="av01Depth">
           <option value="8">8bit</option>
