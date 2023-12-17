@@ -1,5 +1,6 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
 import { avc1ProfileToProfileIdTable } from './specs/avc1';
+import { Av01VideoAdditionalInfoToBuildCodecsParameterString, av01ProfileToProfileIdTable } from './specs/av01';
 
 export type VideoKeyframeConfig = {
     // TODO!!
@@ -12,12 +13,13 @@ export type VencWorkerOrder = {
     identifier?: any;
     file: Blob;
 
+    codecRequest?: CodecRequests;
+
     videoDecoderConfig?: Partial<VideoDecoderConfig>;
     videoEncoderConfig: Partial<VideoEncoderConfig>;
     resizeConfig: Partial<BrowserImageResizerConfigWithOffscreenCanvasOutput>;
 
     videoKeyframeConfig?: VideoKeyframeConfig;
-    avc1Profile?: keyof typeof avc1ProfileToProfileIdTable;
 
     DEV?: boolean;
 };
@@ -68,3 +70,23 @@ type VideoEncoderOutputMetadata = {
     data: EncodedVideoChunkMetadata,
 }
 export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | VideoEncoderOutputMetadata;
+
+export type CodecRequests = {
+    type: 'avc1';
+    profile?: keyof typeof avc1ProfileToProfileIdTable;
+} | {
+    type: 'av01';
+    profile: keyof typeof av01ProfileToProfileIdTable;
+
+    /**
+     * Color depth, like 8, 10 and 12.
+     */
+    depth?: number | '8' | '10' | '12',
+
+    /**
+     * Sequence tier: 'M' or 'H', maybe related to temporal and spatial scalability.
+     */
+    seqTier?: 'M' | 'H',
+
+    additional?: Av01VideoAdditionalInfoToBuildCodecsParameterString;
+};

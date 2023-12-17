@@ -13,6 +13,7 @@ export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
 import { getBoxBuffer } from './box';
 import { avc1PLFromVideoInfo } from './specs/avc1';
+import { av01PL } from './specs/av01';
 export * from './type';
 
 const preventer = {
@@ -81,15 +82,36 @@ export class EasyVideoEncoder extends EventTarget {
             width: floorWithSignificance(_outputSize.width, 2),
             height: floorWithSignificance(_outputSize.height, 2),
         };
-        const targetVideoCodec = order.videoEncoderConfig.codec ??
+        const targetVideoCodec = (() => {
+            if (order.videoEncoderConfig.codec) return order.videoEncoderConfig.codec;
+            if (order.codecRequest) {
+                if (order.codecRequest.type === 'av01') {
+                    // av01(av1)
+                    return av01PL(
+                        {
+                            width: outputSize.width,
+                            height: outputSize.height,
+                            profile: order.codecRequest?.profile ?? 'Main',
+                            fps,
+                            prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
+                        },
+                        order.codecRequest.depth ?? 8,
+                        order.codecRequest.seqTier ?? 'M',
+                        order.codecRequest.additional,
+                        DEV,
+                    );
+                }
+            }
+
             // avc1(h264) and fallback
-            avc1PLFromVideoInfo({
+            return avc1PLFromVideoInfo({
                 width: outputSize.width,
                 height: outputSize.height,
-                profile: order.avc1Profile ?? 'constrained_baseline',
+                profile: order.codecRequest?.profile ?? 'constrained_baseline',
                 fps,
                 prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
             }, DEV);
+        })();
         const encoderConfig = {
             ...order.videoEncoderConfig,
             ...outputSize,
@@ -102,15 +124,18 @@ export class EasyVideoEncoder extends EventTarget {
             } : {})
         } as VideoEncoderConfig;
         if (DEV) console.log('start: encoderConfig', encoderConfig);
-        await VideoEncoder.isConfigSupported(encoderConfig)
-            .then(res => {
-                if (DEV) console.log('start: isConfigSupported', JSON.stringify(res));
-            })
-            .catch(e => {
-                console.error('start: isConfigSupported error', e);
-                throw e;
-            });
 
+        try {
+            const encoderSupport = await VideoEncoder.isConfigSupported(encoderConfig);
+            if (DEV) console.log('start: isConfigSupported', JSON.parse(JSON.stringify(encoderSupport)));
+            if (!encoderSupport || !encoderSupport.supported) {
+                console.error('Your encoding config is not supported.', encoderSupport);
+                throw new Error(`Your encoding config is not supported. ${JSON.stringify(encoderSupport)}`);
+            }
+        } catch (e) {
+            dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
+            throw e;
+        }
         const dstFile = createFile();
         dstFile.init({
             brands: Array.from(new Set([

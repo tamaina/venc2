@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { getMP4Info } from '../../../src/demux';
-import type { VencWorkerOrder, VencWorkerMessage } from '../../../src/type';
+import type { VencWorkerOrder, VencWorkerMessage, CodecRequests } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
 import { avc1ProfileToProfileIdTable } from '../../../src/specs/avc1';
+import { av01ChromaSubsamplingTable, av01ProfileToProfileIdTable, av01ColorPrimariesTable, av01TransferCharacteristicsTable, av01MatrixCoefficientsTable } from '../../../src/specs/av01';
 
 const sizeInput = ref<HTMLInputElement>();
 const bitrateInput = ref<HTMLInputElement>();
@@ -14,9 +15,47 @@ const video = ref<HTMLVideoElement>();
 const a = ref<HTMLAnchorElement>();
 const progress = ref<HTMLProgressElement>();
 
+const codec = ref<'avc1' | 'av01'>('avc1');
 const size = ref(sizeInput.value?.valueAsNumber || 1920);
 const bitrate = ref(bitrateInput.value?.valueAsNumber || 1000);
-const profile = ref<keyof typeof avc1ProfileToProfileIdTable>('main');
+
+//#region avc1
+const avc1Profile = ref<keyof typeof avc1ProfileToProfileIdTable>('main');
+//#endregion
+
+//#region av01
+const av01Profile = ref<keyof typeof av01ProfileToProfileIdTable>('Main');
+const av01Depth = ref<'8' | '10' | '12'>('8');
+const av01MonoChrome = ref<HTMLInputElement>();
+const av01ChromaSubsampling = ref<keyof typeof av01ChromaSubsamplingTable>('4:2:0');
+const av01ColorPrimaries = ref<keyof typeof av01ColorPrimariesTable>('BT_709');
+const av01TransferCharacteristics = ref<keyof typeof av01TransferCharacteristicsTable>('BT_709');
+const av01MatrixCoefficients = ref<keyof typeof av01MatrixCoefficientsTable>('BT_709');
+const av01FullRange = ref<HTMLInputElement>();
+//#endregion
+
+function getCodecRequest(): CodecRequests {
+  if (codec.value === 'av01') {
+    return {
+      type: 'av01',
+      profile: av01Profile.value,
+      depth: av01Depth.value,
+      additional: {
+        monoChrome: av01MonoChrome.value?.checked ?? false,
+        chromaSubsampling: av01ChromaSubsampling.value,
+        colorPrimary: av01ColorPrimaries.value,
+        transferCharacteristics: av01TransferCharacteristics.value,
+        matrixCoefficients: av01MatrixCoefficients.value,
+        videoFullRange: av01FullRange.value?.checked ?? false,
+      },
+    };
+  }
+
+  return {
+    type: 'avc1',
+    profile: avc1Profile.value,
+  }
+}
 
 const main = new EasyVideoEncoder();
 
@@ -63,36 +102,36 @@ async function execWorker() {
   worker = new TheWorker();
 
   worker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
-  if (ev.data.type === 'progress') {
-    progress.value!.max = ev.data.samplesNumber;
-    progress.value!.value = ev.data.samplesCount;
-    return;
-  } else if (ev.data.type === 'segment') {
-    if (devchk.value?.checked) console.log('worker segment', ev.data.buffer);
-    buffers.add(ev.data.buffer);
-  } else if (ev.data.type === 'complete') {
-    console.log('worker complete', ev.data);
-    if (!devchk.value?.checked) worker?.terminate();
-    worker = null;
-    await showBuffer();
-  } else if (ev.data.type === 'error') {
-    console.error('worker error (via message)', ev.data);
-    if (!devchk.value?.checked) worker?.terminate();
-    worker = null;
-    alert(ev.data.error);
+    if (ev.data.type === 'progress') {
+      progress.value!.max = ev.data.samplesNumber;
+      progress.value!.value = ev.data.samplesCount;
+      return;
+    } else if (ev.data.type === 'segment') {
+      if (devchk.value?.checked) console.log('worker segment', ev.data.buffer);
+      buffers.add(ev.data.buffer);
+    } else if (ev.data.type === 'complete') {
+      console.log('worker complete', ev.data);
+      if (!devchk.value?.checked) worker?.terminate();
+      worker = null;
+      await showBuffer();
+    } else if (ev.data.type === 'error') {
+      console.error('worker error (via message)', ev.data);
+      if (!devchk.value?.checked) worker?.terminate();
+      worker = null;
+      alert(ev.data.error);
+    }
   }
-}
 
-worker.onerror = (e: any) => {
-  console.error('worker error (via worker.onerror)', e);
-  alert(e);
-}
+  worker.onerror = (e: any) => {
+    console.error('worker error (via worker.onerror)', e);
+    alert(e);
+  }
 
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
       type: 'encode',
       file,
-      avc1Profile: profile.value,
+      codecRequest: getCodecRequest(),
       videoEncoderConfig: {
         hardwareAcceleration: 'prefer-hardware',
         bitrateMode: 'variable',
@@ -132,7 +171,7 @@ function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
     main.start({
       file,
-      avc1Profile: profile.value,
+      codecRequest: getCodecRequest(),
       videoEncoderConfig: {
         hardwareAcceleration: 'prefer-hardware',
         bitrateMode: 'variable',
@@ -155,22 +194,69 @@ function execMain() {
       <h1>Easy Video Encoder for browsers (tentative)</h1>
       <a href="https://github.com/tamaina/venc2">https://github.com/tamaina/venc2</a>
     </div>
-    <div class="control">
+
+    <div class="panel">
       <input type="file" ref="input" accept="video/*" />
-      <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
-        @change="size = sizeInput?.valueAsNumber || 1920" style="width: 4.1em; font-family: monospace;" />
-      <input type="number" min="0" step="1" placeholder="kbps" value="1000" ref="bitrateInput"
-        @change="bitrate = bitrateInput?.valueAsNumber || 1000" style="width: 4.1em; font-family: monospace;" />
-      <select v-model="profile">
-        <option v-for="(p, k) in avc1ProfileToProfileIdTable" :value="k" v-text="k" />
-      </select>
+      <div>
+        W=
+        <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
+          @change="size = sizeInput?.valueAsNumber || 1920" style="width: 4.1em; font-family: monospace;" />
+      </div>
+      <div>
+        <input type="number" min="0" step="1" placeholder="kbps" value="1000" ref="bitrateInput"
+          @change="bitrate = bitrateInput?.valueAsNumber || 1000" style="width: 4.1em; font-family: monospace;" />
+        kbps
+      </div>
+    </div>
+
+    <div class="panel codec">
+      <button @click="codec = 'avc1'">avc1 (H264)</button>
+      <button @click="codec = 'av01'">av01</button>
       <div>
         <input type="checkbox" ref="devchk" id="devchk" />
         <label for="devchk">DEV</label>
       </div>
     </div>
 
-    <div class="do">
+    <div class="panel control">
+      <template v-if="codec === 'avc1'">
+        <select v-model="avc1Profile">
+          <option v-for="(p, k) in avc1ProfileToProfileIdTable" :value="k" v-text="k" />
+        </select>
+      </template>
+      <template v-else-if="codec === 'av01'">
+        <select v-model="av01Profile">
+          <option v-for="(p, k) in av01ProfileToProfileIdTable" :value="k" v-text="k" />
+        </select>
+        <select v-model="av01Depth">
+          <option value="8">8bit</option>
+          <option value="10">10bit</option>
+          <option value="12">12bit</option>
+        </select>
+        <div>
+          <input type="checkbox" ref="av01MonoChrome" id="av01MonoChrome" />
+          <label for="av01MonoChrome">MonoChrome</label>
+        </div>
+        <select v-model="av01ChromaSubsampling">
+          <option v-for="(p, k) in av01ChromaSubsamplingTable" :value="k" v-text="k" />
+        </select>
+        <select v-model="av01ColorPrimaries">
+          <option v-for="(p, k) in av01ColorPrimariesTable" :value="k" v-text="`CP_${k}`" />
+        </select>
+        <select v-model="av01TransferCharacteristics">
+          <option v-for="(p, k) in av01TransferCharacteristicsTable" :value="k" v-text="`TC_${k}`" />
+        </select>
+        <select v-model="av01MatrixCoefficients">
+          <option v-for="(p, k) in av01MatrixCoefficientsTable" :value="k" v-text="`MC_${k}`" />
+        </select>
+        <div>
+          <input type="checkbox" ref="av01FullRange" id="av01FullRange" />
+          <label for="av01FullRange">FullRange</label>
+        </div>
+      </template>
+    </div>
+
+    <div class="panel do">
       <button @click="execWorker()">Worker</button>
       <button @click="execMain()">Main</button>
     </div>
@@ -202,20 +288,16 @@ h1 {
   line-height: 1.1;
 }
 
-.control {
+.panel {
   display: flex;
   flex-wrap: wrap;
   flex-direction: row;
   justify-content: center;
-  padding: 20px 10px;
+  margin: .4em;
 }
 
-.control > * {
+.panel > * {
   margin: 4px;
-}
-
-.do {
-  padding: 20px 10px;
 }
 
 #myapp {

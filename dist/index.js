@@ -287,7 +287,7 @@ var require_mp4box_all = __commonJS({
     if (typeof exports !== "undefined") {
       exports.MP4BoxStream = MP4BoxStream;
     }
-    var DataStream2 = function(arrayBuffer, byteOffset, endianness) {
+    var DataStream3 = function(arrayBuffer, byteOffset, endianness) {
       this._byteOffset = byteOffset || 0;
       if (arrayBuffer instanceof ArrayBuffer) {
         this.buffer = arrayBuffer;
@@ -300,13 +300,13 @@ var require_mp4box_all = __commonJS({
         this.buffer = new ArrayBuffer(arrayBuffer || 0);
       }
       this.position = 0;
-      this.endianness = endianness == null ? DataStream2.LITTLE_ENDIAN : endianness;
+      this.endianness = endianness == null ? DataStream3.LITTLE_ENDIAN : endianness;
     };
-    DataStream2.prototype = {};
-    DataStream2.prototype.getPosition = function() {
+    DataStream3.prototype = {};
+    DataStream3.prototype.getPosition = function() {
       return this.position;
     };
-    DataStream2.prototype._realloc = function(extra) {
+    DataStream3.prototype._realloc = function(extra) {
       if (!this._dynamicSize) {
         return;
       }
@@ -331,7 +331,7 @@ var require_mp4box_all = __commonJS({
       this.buffer = buf;
       this._byteLength = req;
     };
-    DataStream2.prototype._trimAlloc = function() {
+    DataStream3.prototype._trimAlloc = function() {
       if (this._byteLength == this._buffer.byteLength) {
         return;
       }
@@ -341,18 +341,18 @@ var require_mp4box_all = __commonJS({
       dst.set(src);
       this.buffer = buf;
     };
-    DataStream2.BIG_ENDIAN = false;
-    DataStream2.LITTLE_ENDIAN = true;
-    DataStream2.prototype._byteLength = 0;
+    DataStream3.BIG_ENDIAN = false;
+    DataStream3.LITTLE_ENDIAN = true;
+    DataStream3.prototype._byteLength = 0;
     Object.defineProperty(
-      DataStream2.prototype,
+      DataStream3.prototype,
       "byteLength",
       { get: function() {
         return this._byteLength - this._byteOffset;
       } }
     );
     Object.defineProperty(
-      DataStream2.prototype,
+      DataStream3.prototype,
       "buffer",
       {
         get: function() {
@@ -367,7 +367,7 @@ var require_mp4box_all = __commonJS({
       }
     );
     Object.defineProperty(
-      DataStream2.prototype,
+      DataStream3.prototype,
       "byteOffset",
       {
         get: function() {
@@ -381,7 +381,7 @@ var require_mp4box_all = __commonJS({
       }
     );
     Object.defineProperty(
-      DataStream2.prototype,
+      DataStream3.prototype,
       "dataView",
       {
         get: function() {
@@ -395,51 +395,51 @@ var require_mp4box_all = __commonJS({
         }
       }
     );
-    DataStream2.prototype.seek = function(pos) {
+    DataStream3.prototype.seek = function(pos) {
       var npos = Math.max(0, Math.min(this.byteLength, pos));
       this.position = isNaN(npos) || !isFinite(npos) ? 0 : npos;
     };
-    DataStream2.prototype.isEof = function() {
+    DataStream3.prototype.isEof = function() {
       return this.position >= this._byteLength;
     };
-    DataStream2.prototype.mapUint8Array = function(length) {
+    DataStream3.prototype.mapUint8Array = function(length) {
       this._realloc(length * 1);
       var arr = new Uint8Array(this._buffer, this.byteOffset + this.position, length);
       this.position += length * 1;
       return arr;
     };
-    DataStream2.prototype.readInt32Array = function(length, e) {
+    DataStream3.prototype.readInt32Array = function(length, e) {
       length = length == null ? this.byteLength - this.position / 4 : length;
       var arr = new Int32Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
         this.byteOffset + this.position,
         length * arr.BYTES_PER_ELEMENT
       );
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readInt16Array = function(length, e) {
+    DataStream3.prototype.readInt16Array = function(length, e) {
       length = length == null ? this.byteLength - this.position / 2 : length;
       var arr = new Int16Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
         this.byteOffset + this.position,
         length * arr.BYTES_PER_ELEMENT
       );
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readInt8Array = function(length) {
+    DataStream3.prototype.readInt8Array = function(length) {
       length = length == null ? this.byteLength - this.position : length;
       var arr = new Int8Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
@@ -449,38 +449,38 @@ var require_mp4box_all = __commonJS({
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readUint32Array = function(length, e) {
+    DataStream3.prototype.readUint32Array = function(length, e) {
       length = length == null ? this.byteLength - this.position / 4 : length;
       var arr = new Uint32Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
         this.byteOffset + this.position,
         length * arr.BYTES_PER_ELEMENT
       );
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readUint16Array = function(length, e) {
+    DataStream3.prototype.readUint16Array = function(length, e) {
       length = length == null ? this.byteLength - this.position / 2 : length;
       var arr = new Uint16Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
         this.byteOffset + this.position,
         length * arr.BYTES_PER_ELEMENT
       );
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readUint8Array = function(length) {
+    DataStream3.prototype.readUint8Array = function(length) {
       length = length == null ? this.byteLength - this.position : length;
       var arr = new Uint8Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
@@ -490,95 +490,95 @@ var require_mp4box_all = __commonJS({
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readFloat64Array = function(length, e) {
+    DataStream3.prototype.readFloat64Array = function(length, e) {
       length = length == null ? this.byteLength - this.position / 8 : length;
       var arr = new Float64Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
         this.byteOffset + this.position,
         length * arr.BYTES_PER_ELEMENT
       );
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readFloat32Array = function(length, e) {
+    DataStream3.prototype.readFloat32Array = function(length, e) {
       length = length == null ? this.byteLength - this.position / 4 : length;
       var arr = new Float32Array(length);
-      DataStream2.memcpy(
+      DataStream3.memcpy(
         arr.buffer,
         0,
         this.buffer,
         this.byteOffset + this.position,
         length * arr.BYTES_PER_ELEMENT
       );
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += arr.byteLength;
       return arr;
     };
-    DataStream2.prototype.readInt32 = function(e) {
+    DataStream3.prototype.readInt32 = function(e) {
       var v = this._dataView.getInt32(this.position, e == null ? this.endianness : e);
       this.position += 4;
       return v;
     };
-    DataStream2.prototype.readInt16 = function(e) {
+    DataStream3.prototype.readInt16 = function(e) {
       var v = this._dataView.getInt16(this.position, e == null ? this.endianness : e);
       this.position += 2;
       return v;
     };
-    DataStream2.prototype.readInt8 = function() {
+    DataStream3.prototype.readInt8 = function() {
       var v = this._dataView.getInt8(this.position);
       this.position += 1;
       return v;
     };
-    DataStream2.prototype.readUint32 = function(e) {
+    DataStream3.prototype.readUint32 = function(e) {
       var v = this._dataView.getUint32(this.position, e == null ? this.endianness : e);
       this.position += 4;
       return v;
     };
-    DataStream2.prototype.readUint16 = function(e) {
+    DataStream3.prototype.readUint16 = function(e) {
       var v = this._dataView.getUint16(this.position, e == null ? this.endianness : e);
       this.position += 2;
       return v;
     };
-    DataStream2.prototype.readUint8 = function() {
+    DataStream3.prototype.readUint8 = function() {
       var v = this._dataView.getUint8(this.position);
       this.position += 1;
       return v;
     };
-    DataStream2.prototype.readFloat32 = function(e) {
+    DataStream3.prototype.readFloat32 = function(e) {
       var v = this._dataView.getFloat32(this.position, e == null ? this.endianness : e);
       this.position += 4;
       return v;
     };
-    DataStream2.prototype.readFloat64 = function(e) {
+    DataStream3.prototype.readFloat64 = function(e) {
       var v = this._dataView.getFloat64(this.position, e == null ? this.endianness : e);
       this.position += 8;
       return v;
     };
-    DataStream2.endianness = new Int8Array(new Int16Array([1]).buffer)[0] > 0;
-    DataStream2.memcpy = function(dst, dstOffset, src, srcOffset, byteLength) {
+    DataStream3.endianness = new Int8Array(new Int16Array([1]).buffer)[0] > 0;
+    DataStream3.memcpy = function(dst, dstOffset, src, srcOffset, byteLength) {
       var dstU8 = new Uint8Array(dst, dstOffset, byteLength);
       var srcU8 = new Uint8Array(src, srcOffset, byteLength);
       dstU8.set(srcU8);
     };
-    DataStream2.arrayToNative = function(array, arrayIsLittleEndian) {
+    DataStream3.arrayToNative = function(array, arrayIsLittleEndian) {
       if (arrayIsLittleEndian == this.endianness) {
         return array;
       } else {
         return this.flipArrayEndianness(array);
       }
     };
-    DataStream2.nativeToEndian = function(array, littleEndian) {
+    DataStream3.nativeToEndian = function(array, littleEndian) {
       if (this.endianness == littleEndian) {
         return array;
       } else {
         return this.flipArrayEndianness(array);
       }
     };
-    DataStream2.flipArrayEndianness = function(array) {
+    DataStream3.flipArrayEndianness = function(array) {
       var u8 = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
       for (var i2 = 0; i2 < array.byteLength; i2 += array.BYTES_PER_ELEMENT) {
         for (var j = i2 + array.BYTES_PER_ELEMENT - 1, k = i2; j > k; j--, k++) {
@@ -589,7 +589,7 @@ var require_mp4box_all = __commonJS({
       }
       return array;
     };
-    DataStream2.prototype.failurePosition = 0;
+    DataStream3.prototype.failurePosition = 0;
     String.fromCharCodeUint8 = function(uint8arr) {
       var arr = [];
       for (var i2 = 0; i2 < uint8arr.length; i2++) {
@@ -597,14 +597,14 @@ var require_mp4box_all = __commonJS({
       }
       return String.fromCharCode.apply(null, arr);
     };
-    DataStream2.prototype.readString = function(length, encoding) {
+    DataStream3.prototype.readString = function(length, encoding) {
       if (encoding == null || encoding == "ASCII") {
         return String.fromCharCodeUint8.apply(null, [this.mapUint8Array(length == null ? this.byteLength - this.position : length)]);
       } else {
         return new TextDecoder(encoding).decode(this.mapUint8Array(length));
       }
     };
-    DataStream2.prototype.readCString = function(length) {
+    DataStream3.prototype.readCString = function(length) {
       var blen = this.byteLength - this.position;
       var u8 = new Uint8Array(this._buffer, this._byteOffset + this.position);
       var len = blen;
@@ -622,22 +622,22 @@ var require_mp4box_all = __commonJS({
       return s;
     };
     var MAX_SIZE = Math.pow(2, 32);
-    DataStream2.prototype.readInt64 = function() {
+    DataStream3.prototype.readInt64 = function() {
       return this.readInt32() * MAX_SIZE + this.readUint32();
     };
-    DataStream2.prototype.readUint64 = function() {
+    DataStream3.prototype.readUint64 = function() {
       return this.readUint32() * MAX_SIZE + this.readUint32();
     };
-    DataStream2.prototype.readInt64 = function() {
+    DataStream3.prototype.readInt64 = function() {
       return this.readUint32() * MAX_SIZE + this.readUint32();
     };
-    DataStream2.prototype.readUint24 = function() {
+    DataStream3.prototype.readUint24 = function() {
       return (this.readUint8() << 16) + (this.readUint8() << 8) + this.readUint8();
     };
     if (typeof exports !== "undefined") {
-      exports.DataStream = DataStream2;
+      exports.DataStream = DataStream3;
     }
-    DataStream2.prototype.save = function(filename) {
+    DataStream3.prototype.save = function(filename) {
       var blob = new Blob([this.buffer]);
       if (window.URL && URL.createObjectURL) {
         var url = window.URL.createObjectURL(blob);
@@ -652,9 +652,9 @@ var require_mp4box_all = __commonJS({
         throw "DataStream.save: Can't create object URL.";
       }
     };
-    DataStream2.prototype._dynamicSize = true;
+    DataStream3.prototype._dynamicSize = true;
     Object.defineProperty(
-      DataStream2.prototype,
+      DataStream3.prototype,
       "dynamicSize",
       {
         get: function() {
@@ -668,7 +668,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     );
-    DataStream2.prototype.shift = function(offset) {
+    DataStream3.prototype.shift = function(offset) {
       var buf = new ArrayBuffer(this._byteLength - offset);
       var dst = new Uint8Array(buf);
       var src = new Uint8Array(this._buffer, offset, dst.length);
@@ -676,10 +676,10 @@ var require_mp4box_all = __commonJS({
       this.buffer = buf;
       this.position -= offset;
     };
-    DataStream2.prototype.writeInt32Array = function(arr, e) {
+    DataStream3.prototype.writeInt32Array = function(arr, e) {
       this._realloc(arr.length * 4);
       if (arr instanceof Int32Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -693,10 +693,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeInt16Array = function(arr, e) {
+    DataStream3.prototype.writeInt16Array = function(arr, e) {
       this._realloc(arr.length * 2);
       if (arr instanceof Int16Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -710,10 +710,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeInt8Array = function(arr) {
+    DataStream3.prototype.writeInt8Array = function(arr) {
       this._realloc(arr.length * 1);
       if (arr instanceof Int8Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -727,10 +727,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeUint32Array = function(arr, e) {
+    DataStream3.prototype.writeUint32Array = function(arr, e) {
       this._realloc(arr.length * 4);
       if (arr instanceof Uint32Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -744,10 +744,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeUint16Array = function(arr, e) {
+    DataStream3.prototype.writeUint16Array = function(arr, e) {
       this._realloc(arr.length * 2);
       if (arr instanceof Uint16Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -761,10 +761,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeUint8Array = function(arr) {
+    DataStream3.prototype.writeUint8Array = function(arr) {
       this._realloc(arr.length * 1);
       if (arr instanceof Uint8Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -778,10 +778,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeFloat64Array = function(arr, e) {
+    DataStream3.prototype.writeFloat64Array = function(arr, e) {
       this._realloc(arr.length * 8);
       if (arr instanceof Float64Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -795,10 +795,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeFloat32Array = function(arr, e) {
+    DataStream3.prototype.writeFloat32Array = function(arr, e) {
       this._realloc(arr.length * 4);
       if (arr instanceof Float32Array && this.byteOffset + this.position % arr.BYTES_PER_ELEMENT === 0) {
-        DataStream2.memcpy(
+        DataStream3.memcpy(
           this._buffer,
           this.byteOffset + this.position,
           arr.buffer,
@@ -812,47 +812,47 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    DataStream2.prototype.writeInt32 = function(v, e) {
+    DataStream3.prototype.writeInt32 = function(v, e) {
       this._realloc(4);
       this._dataView.setInt32(this.position, v, e == null ? this.endianness : e);
       this.position += 4;
     };
-    DataStream2.prototype.writeInt16 = function(v, e) {
+    DataStream3.prototype.writeInt16 = function(v, e) {
       this._realloc(2);
       this._dataView.setInt16(this.position, v, e == null ? this.endianness : e);
       this.position += 2;
     };
-    DataStream2.prototype.writeInt8 = function(v) {
+    DataStream3.prototype.writeInt8 = function(v) {
       this._realloc(1);
       this._dataView.setInt8(this.position, v);
       this.position += 1;
     };
-    DataStream2.prototype.writeUint32 = function(v, e) {
+    DataStream3.prototype.writeUint32 = function(v, e) {
       this._realloc(4);
       this._dataView.setUint32(this.position, v, e == null ? this.endianness : e);
       this.position += 4;
     };
-    DataStream2.prototype.writeUint16 = function(v, e) {
+    DataStream3.prototype.writeUint16 = function(v, e) {
       this._realloc(2);
       this._dataView.setUint16(this.position, v, e == null ? this.endianness : e);
       this.position += 2;
     };
-    DataStream2.prototype.writeUint8 = function(v) {
+    DataStream3.prototype.writeUint8 = function(v) {
       this._realloc(1);
       this._dataView.setUint8(this.position, v);
       this.position += 1;
     };
-    DataStream2.prototype.writeFloat32 = function(v, e) {
+    DataStream3.prototype.writeFloat32 = function(v, e) {
       this._realloc(4);
       this._dataView.setFloat32(this.position, v, e == null ? this.endianness : e);
       this.position += 4;
     };
-    DataStream2.prototype.writeFloat64 = function(v, e) {
+    DataStream3.prototype.writeFloat64 = function(v, e) {
       this._realloc(8);
       this._dataView.setFloat64(this.position, v, e == null ? this.endianness : e);
       this.position += 8;
     };
-    DataStream2.prototype.writeUCS2String = function(str, endianness, lengthOverride) {
+    DataStream3.prototype.writeUCS2String = function(str, endianness, lengthOverride) {
       if (lengthOverride == null) {
         lengthOverride = str.length;
       }
@@ -863,7 +863,7 @@ var require_mp4box_all = __commonJS({
         this.writeUint16(0);
       }
     };
-    DataStream2.prototype.writeString = function(s, encoding, length) {
+    DataStream3.prototype.writeString = function(s, encoding, length) {
       var i2 = 0;
       if (encoding == null || encoding == "ASCII") {
         if (length != null) {
@@ -883,7 +883,7 @@ var require_mp4box_all = __commonJS({
         this.writeUint8Array(new TextEncoder(encoding).encode(s.substring(0, length)));
       }
     };
-    DataStream2.prototype.writeCString = function(s, length) {
+    DataStream3.prototype.writeCString = function(s, length) {
       var i2 = 0;
       if (length != null) {
         var len = Math.min(s.length, length);
@@ -900,13 +900,13 @@ var require_mp4box_all = __commonJS({
         this.writeUint8(0);
       }
     };
-    DataStream2.prototype.writeStruct = function(structDefinition, struct) {
+    DataStream3.prototype.writeStruct = function(structDefinition, struct) {
       for (var i2 = 0; i2 < structDefinition.length; i2 += 2) {
         var t = structDefinition[i2 + 1];
         this.writeType(t, struct[structDefinition[i2]], struct);
       }
     };
-    DataStream2.prototype.writeType = function(t, v, struct) {
+    DataStream3.prototype.writeType = function(t, v, struct) {
       var tp;
       if (typeof t == "function") {
         return t(this, v);
@@ -952,40 +952,40 @@ var require_mp4box_all = __commonJS({
           this.writeFloat64(v, this.endianness);
           break;
         case "uint16be":
-          this.writeUint16(v, DataStream2.BIG_ENDIAN);
+          this.writeUint16(v, DataStream3.BIG_ENDIAN);
           break;
         case "int16be":
-          this.writeInt16(v, DataStream2.BIG_ENDIAN);
+          this.writeInt16(v, DataStream3.BIG_ENDIAN);
           break;
         case "uint32be":
-          this.writeUint32(v, DataStream2.BIG_ENDIAN);
+          this.writeUint32(v, DataStream3.BIG_ENDIAN);
           break;
         case "int32be":
-          this.writeInt32(v, DataStream2.BIG_ENDIAN);
+          this.writeInt32(v, DataStream3.BIG_ENDIAN);
           break;
         case "float32be":
-          this.writeFloat32(v, DataStream2.BIG_ENDIAN);
+          this.writeFloat32(v, DataStream3.BIG_ENDIAN);
           break;
         case "float64be":
-          this.writeFloat64(v, DataStream2.BIG_ENDIAN);
+          this.writeFloat64(v, DataStream3.BIG_ENDIAN);
           break;
         case "uint16le":
-          this.writeUint16(v, DataStream2.LITTLE_ENDIAN);
+          this.writeUint16(v, DataStream3.LITTLE_ENDIAN);
           break;
         case "int16le":
-          this.writeInt16(v, DataStream2.LITTLE_ENDIAN);
+          this.writeInt16(v, DataStream3.LITTLE_ENDIAN);
           break;
         case "uint32le":
-          this.writeUint32(v, DataStream2.LITTLE_ENDIAN);
+          this.writeUint32(v, DataStream3.LITTLE_ENDIAN);
           break;
         case "int32le":
-          this.writeInt32(v, DataStream2.LITTLE_ENDIAN);
+          this.writeInt32(v, DataStream3.LITTLE_ENDIAN);
           break;
         case "float32le":
-          this.writeFloat32(v, DataStream2.LITTLE_ENDIAN);
+          this.writeFloat32(v, DataStream3.LITTLE_ENDIAN);
           break;
         case "float64le":
-          this.writeFloat64(v, DataStream2.LITTLE_ENDIAN);
+          this.writeFloat64(v, DataStream3.LITTLE_ENDIAN);
           break;
         case "cstring":
           this.writeCString(v, lengthOverride);
@@ -997,10 +997,10 @@ var require_mp4box_all = __commonJS({
           this.writeUCS2String(v, this.endianness, lengthOverride);
           break;
         case "u16stringle":
-          this.writeUCS2String(v, DataStream2.LITTLE_ENDIAN, lengthOverride);
+          this.writeUCS2String(v, DataStream3.LITTLE_ENDIAN, lengthOverride);
           break;
         case "u16stringbe":
-          this.writeUCS2String(v, DataStream2.BIG_ENDIAN, lengthOverride);
+          this.writeUCS2String(v, DataStream3.BIG_ENDIAN, lengthOverride);
           break;
         default:
           if (t.length == 3) {
@@ -1020,67 +1020,67 @@ var require_mp4box_all = __commonJS({
         this.position = pos + lengthOverride;
       }
     };
-    DataStream2.prototype.writeUint64 = function(v) {
+    DataStream3.prototype.writeUint64 = function(v) {
       var h = Math.floor(v / MAX_SIZE);
       this.writeUint32(h);
       this.writeUint32(v & 4294967295);
     };
-    DataStream2.prototype.writeUint24 = function(v) {
+    DataStream3.prototype.writeUint24 = function(v) {
       this.writeUint8((v & 16711680) >> 16);
       this.writeUint8((v & 65280) >> 8);
       this.writeUint8(v & 255);
     };
-    DataStream2.prototype.adjustUint32 = function(position, value) {
+    DataStream3.prototype.adjustUint32 = function(position, value) {
       var pos = this.position;
       this.seek(position);
       this.writeUint32(value);
       this.seek(pos);
     };
-    DataStream2.prototype.mapInt32Array = function(length, e) {
+    DataStream3.prototype.mapInt32Array = function(length, e) {
       this._realloc(length * 4);
       var arr = new Int32Array(this._buffer, this.byteOffset + this.position, length);
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += length * 4;
       return arr;
     };
-    DataStream2.prototype.mapInt16Array = function(length, e) {
+    DataStream3.prototype.mapInt16Array = function(length, e) {
       this._realloc(length * 2);
       var arr = new Int16Array(this._buffer, this.byteOffset + this.position, length);
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += length * 2;
       return arr;
     };
-    DataStream2.prototype.mapInt8Array = function(length) {
+    DataStream3.prototype.mapInt8Array = function(length) {
       this._realloc(length * 1);
       var arr = new Int8Array(this._buffer, this.byteOffset + this.position, length);
       this.position += length * 1;
       return arr;
     };
-    DataStream2.prototype.mapUint32Array = function(length, e) {
+    DataStream3.prototype.mapUint32Array = function(length, e) {
       this._realloc(length * 4);
       var arr = new Uint32Array(this._buffer, this.byteOffset + this.position, length);
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += length * 4;
       return arr;
     };
-    DataStream2.prototype.mapUint16Array = function(length, e) {
+    DataStream3.prototype.mapUint16Array = function(length, e) {
       this._realloc(length * 2);
       var arr = new Uint16Array(this._buffer, this.byteOffset + this.position, length);
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += length * 2;
       return arr;
     };
-    DataStream2.prototype.mapFloat64Array = function(length, e) {
+    DataStream3.prototype.mapFloat64Array = function(length, e) {
       this._realloc(length * 8);
       var arr = new Float64Array(this._buffer, this.byteOffset + this.position, length);
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += length * 8;
       return arr;
     };
-    DataStream2.prototype.mapFloat32Array = function(length, e) {
+    DataStream3.prototype.mapFloat32Array = function(length, e) {
       this._realloc(length * 4);
       var arr = new Float32Array(this._buffer, this.byteOffset + this.position, length);
-      DataStream2.arrayToNative(arr, e == null ? this.endianness : e);
+      DataStream3.arrayToNative(arr, e == null ? this.endianness : e);
       this.position += length * 4;
       return arr;
     };
@@ -1092,7 +1092,7 @@ var require_mp4box_all = __commonJS({
         this.bufferIndex = 0;
       }
     };
-    MultiBufferStream.prototype = new DataStream2(new ArrayBuffer(), 0, DataStream2.BIG_ENDIAN);
+    MultiBufferStream.prototype = new DataStream3(new ArrayBuffer(), 0, DataStream3.BIG_ENDIAN);
     MultiBufferStream.prototype.initialized = function() {
       var firstBuffer;
       if (this.bufferIndex > -1) {
@@ -1493,7 +1493,7 @@ var require_mp4box_all = __commonJS({
     if (typeof exports !== "undefined") {
       exports.MPEG4DescriptorParser = MPEG4DescriptorParser;
     }
-    var BoxParser = {
+    var BoxParser2 = {
       ERR_INVALID_DATA: -1,
       ERR_NOT_ENOUGH_DATA: 0,
       OK: 1,
@@ -1541,18 +1541,18 @@ var require_mp4box_all = __commonJS({
       UUIDBoxes: {},
       UUIDs: [],
       initialize: function() {
-        BoxParser.FullBox.prototype = new BoxParser.Box();
-        BoxParser.ContainerBox.prototype = new BoxParser.Box();
-        BoxParser.SampleEntry.prototype = new BoxParser.Box();
-        BoxParser.TrackGroupTypeBox.prototype = new BoxParser.FullBox();
-        BoxParser.BASIC_BOXES.forEach(function(type) {
-          BoxParser.createBoxCtor(type);
+        BoxParser2.FullBox.prototype = new BoxParser2.Box();
+        BoxParser2.ContainerBox.prototype = new BoxParser2.Box();
+        BoxParser2.SampleEntry.prototype = new BoxParser2.Box();
+        BoxParser2.TrackGroupTypeBox.prototype = new BoxParser2.FullBox();
+        BoxParser2.BASIC_BOXES.forEach(function(type) {
+          BoxParser2.createBoxCtor(type);
         });
-        BoxParser.FULL_BOXES.forEach(function(type) {
-          BoxParser.createFullBoxCtor(type);
+        BoxParser2.FULL_BOXES.forEach(function(type) {
+          BoxParser2.createFullBoxCtor(type);
         });
-        BoxParser.CONTAINER_BOXES.forEach(function(types) {
-          BoxParser.createContainerBoxCtor(types[0], null, types[1]);
+        BoxParser2.CONTAINER_BOXES.forEach(function(types) {
+          BoxParser2.createContainerBoxCtor(types[0], null, types[1]);
         });
       },
       Box: function(_type, _size, _uuid) {
@@ -1561,16 +1561,16 @@ var require_mp4box_all = __commonJS({
         this.uuid = _uuid;
       },
       FullBox: function(type, size, uuid) {
-        BoxParser.Box.call(this, type, size, uuid);
+        BoxParser2.Box.call(this, type, size, uuid);
         this.flags = 0;
         this.version = 0;
       },
       ContainerBox: function(type, size, uuid) {
-        BoxParser.Box.call(this, type, size, uuid);
+        BoxParser2.Box.call(this, type, size, uuid);
         this.boxes = [];
       },
       SampleEntry: function(type, size, hdr_size, start) {
-        BoxParser.ContainerBox.call(this, type, size);
+        BoxParser2.ContainerBox.call(this, type, size);
         this.hdr_size = hdr_size;
         this.start = start;
       },
@@ -1578,23 +1578,23 @@ var require_mp4box_all = __commonJS({
         this.grouping_type = type;
       },
       TrackGroupTypeBox: function(type, size) {
-        BoxParser.FullBox.call(this, type, size);
+        BoxParser2.FullBox.call(this, type, size);
       },
       createBoxCtor: function(type, parseMethod) {
-        BoxParser.boxCodes.push(type);
-        BoxParser[type + "Box"] = function(size) {
-          BoxParser.Box.call(this, type, size);
+        BoxParser2.boxCodes.push(type);
+        BoxParser2[type + "Box"] = function(size) {
+          BoxParser2.Box.call(this, type, size);
         };
-        BoxParser[type + "Box"].prototype = new BoxParser.Box();
+        BoxParser2[type + "Box"].prototype = new BoxParser2.Box();
         if (parseMethod)
-          BoxParser[type + "Box"].prototype.parse = parseMethod;
+          BoxParser2[type + "Box"].prototype.parse = parseMethod;
       },
       createFullBoxCtor: function(type, parseMethod) {
-        BoxParser[type + "Box"] = function(size) {
-          BoxParser.FullBox.call(this, type, size);
+        BoxParser2[type + "Box"] = function(size) {
+          BoxParser2.FullBox.call(this, type, size);
         };
-        BoxParser[type + "Box"].prototype = new BoxParser.FullBox();
-        BoxParser[type + "Box"].prototype.parse = function(stream) {
+        BoxParser2[type + "Box"].prototype = new BoxParser2.FullBox();
+        BoxParser2[type + "Box"].prototype.parse = function(stream) {
           this.parseFullHeader(stream);
           if (parseMethod) {
             parseMethod.call(this, stream);
@@ -1611,102 +1611,102 @@ var require_mp4box_all = __commonJS({
         }
       },
       createContainerBoxCtor: function(type, parseMethod, subBoxNames) {
-        BoxParser[type + "Box"] = function(size) {
-          BoxParser.ContainerBox.call(this, type, size);
-          BoxParser.addSubBoxArrays.call(this, subBoxNames);
+        BoxParser2[type + "Box"] = function(size) {
+          BoxParser2.ContainerBox.call(this, type, size);
+          BoxParser2.addSubBoxArrays.call(this, subBoxNames);
         };
-        BoxParser[type + "Box"].prototype = new BoxParser.ContainerBox();
+        BoxParser2[type + "Box"].prototype = new BoxParser2.ContainerBox();
         if (parseMethod)
-          BoxParser[type + "Box"].prototype.parse = parseMethod;
+          BoxParser2[type + "Box"].prototype.parse = parseMethod;
       },
       createMediaSampleEntryCtor: function(mediaType, parseMethod, subBoxNames) {
-        BoxParser.sampleEntryCodes[mediaType] = [];
-        BoxParser[mediaType + "SampleEntry"] = function(type, size) {
-          BoxParser.SampleEntry.call(this, type, size);
-          BoxParser.addSubBoxArrays.call(this, subBoxNames);
+        BoxParser2.sampleEntryCodes[mediaType] = [];
+        BoxParser2[mediaType + "SampleEntry"] = function(type, size) {
+          BoxParser2.SampleEntry.call(this, type, size);
+          BoxParser2.addSubBoxArrays.call(this, subBoxNames);
         };
-        BoxParser[mediaType + "SampleEntry"].prototype = new BoxParser.SampleEntry();
+        BoxParser2[mediaType + "SampleEntry"].prototype = new BoxParser2.SampleEntry();
         if (parseMethod)
-          BoxParser[mediaType + "SampleEntry"].prototype.parse = parseMethod;
+          BoxParser2[mediaType + "SampleEntry"].prototype.parse = parseMethod;
       },
       createSampleEntryCtor: function(mediaType, type, parseMethod, subBoxNames) {
-        BoxParser.sampleEntryCodes[mediaType].push(type);
-        BoxParser[type + "SampleEntry"] = function(size) {
-          BoxParser[mediaType + "SampleEntry"].call(this, type, size);
-          BoxParser.addSubBoxArrays.call(this, subBoxNames);
+        BoxParser2.sampleEntryCodes[mediaType].push(type);
+        BoxParser2[type + "SampleEntry"] = function(size) {
+          BoxParser2[mediaType + "SampleEntry"].call(this, type, size);
+          BoxParser2.addSubBoxArrays.call(this, subBoxNames);
         };
-        BoxParser[type + "SampleEntry"].prototype = new BoxParser[mediaType + "SampleEntry"]();
+        BoxParser2[type + "SampleEntry"].prototype = new BoxParser2[mediaType + "SampleEntry"]();
         if (parseMethod)
-          BoxParser[type + "SampleEntry"].prototype.parse = parseMethod;
+          BoxParser2[type + "SampleEntry"].prototype.parse = parseMethod;
       },
       createEncryptedSampleEntryCtor: function(mediaType, type, parseMethod) {
-        BoxParser.createSampleEntryCtor.call(this, mediaType, type, parseMethod, ["sinf"]);
+        BoxParser2.createSampleEntryCtor.call(this, mediaType, type, parseMethod, ["sinf"]);
       },
       createSampleGroupCtor: function(type, parseMethod) {
-        BoxParser[type + "SampleGroupEntry"] = function(size) {
-          BoxParser.SampleGroupEntry.call(this, type, size);
+        BoxParser2[type + "SampleGroupEntry"] = function(size) {
+          BoxParser2.SampleGroupEntry.call(this, type, size);
         };
-        BoxParser[type + "SampleGroupEntry"].prototype = new BoxParser.SampleGroupEntry();
+        BoxParser2[type + "SampleGroupEntry"].prototype = new BoxParser2.SampleGroupEntry();
         if (parseMethod)
-          BoxParser[type + "SampleGroupEntry"].prototype.parse = parseMethod;
+          BoxParser2[type + "SampleGroupEntry"].prototype.parse = parseMethod;
       },
       createTrackGroupCtor: function(type, parseMethod) {
-        BoxParser[type + "TrackGroupTypeBox"] = function(size) {
-          BoxParser.TrackGroupTypeBox.call(this, type, size);
+        BoxParser2[type + "TrackGroupTypeBox"] = function(size) {
+          BoxParser2.TrackGroupTypeBox.call(this, type, size);
         };
-        BoxParser[type + "TrackGroupTypeBox"].prototype = new BoxParser.TrackGroupTypeBox();
+        BoxParser2[type + "TrackGroupTypeBox"].prototype = new BoxParser2.TrackGroupTypeBox();
         if (parseMethod)
-          BoxParser[type + "TrackGroupTypeBox"].prototype.parse = parseMethod;
+          BoxParser2[type + "TrackGroupTypeBox"].prototype.parse = parseMethod;
       },
       createUUIDBox: function(uuid, isFullBox, isContainerBox, parseMethod) {
-        BoxParser.UUIDs.push(uuid);
-        BoxParser.UUIDBoxes[uuid] = function(size) {
+        BoxParser2.UUIDs.push(uuid);
+        BoxParser2.UUIDBoxes[uuid] = function(size) {
           if (isFullBox) {
-            BoxParser.FullBox.call(this, "uuid", size, uuid);
+            BoxParser2.FullBox.call(this, "uuid", size, uuid);
           } else {
             if (isContainerBox) {
-              BoxParser.ContainerBox.call(this, "uuid", size, uuid);
+              BoxParser2.ContainerBox.call(this, "uuid", size, uuid);
             } else {
-              BoxParser.Box.call(this, "uuid", size, uuid);
+              BoxParser2.Box.call(this, "uuid", size, uuid);
             }
           }
         };
-        BoxParser.UUIDBoxes[uuid].prototype = isFullBox ? new BoxParser.FullBox() : isContainerBox ? new BoxParser.ContainerBox() : new BoxParser.Box();
+        BoxParser2.UUIDBoxes[uuid].prototype = isFullBox ? new BoxParser2.FullBox() : isContainerBox ? new BoxParser2.ContainerBox() : new BoxParser2.Box();
         if (parseMethod) {
           if (isFullBox) {
-            BoxParser.UUIDBoxes[uuid].prototype.parse = function(stream) {
+            BoxParser2.UUIDBoxes[uuid].prototype.parse = function(stream) {
               this.parseFullHeader(stream);
               if (parseMethod) {
                 parseMethod.call(this, stream);
               }
             };
           } else {
-            BoxParser.UUIDBoxes[uuid].prototype.parse = parseMethod;
+            BoxParser2.UUIDBoxes[uuid].prototype.parse = parseMethod;
           }
         }
       }
     };
-    BoxParser.initialize();
-    BoxParser.TKHD_FLAG_ENABLED = 1;
-    BoxParser.TKHD_FLAG_IN_MOVIE = 2;
-    BoxParser.TKHD_FLAG_IN_PREVIEW = 4;
-    BoxParser.TFHD_FLAG_BASE_DATA_OFFSET = 1;
-    BoxParser.TFHD_FLAG_SAMPLE_DESC = 2;
-    BoxParser.TFHD_FLAG_SAMPLE_DUR = 8;
-    BoxParser.TFHD_FLAG_SAMPLE_SIZE = 16;
-    BoxParser.TFHD_FLAG_SAMPLE_FLAGS = 32;
-    BoxParser.TFHD_FLAG_DUR_EMPTY = 65536;
-    BoxParser.TFHD_FLAG_DEFAULT_BASE_IS_MOOF = 131072;
-    BoxParser.TRUN_FLAGS_DATA_OFFSET = 1;
-    BoxParser.TRUN_FLAGS_FIRST_FLAG = 4;
-    BoxParser.TRUN_FLAGS_DURATION = 256;
-    BoxParser.TRUN_FLAGS_SIZE = 512;
-    BoxParser.TRUN_FLAGS_FLAGS = 1024;
-    BoxParser.TRUN_FLAGS_CTS_OFFSET = 2048;
-    BoxParser.Box.prototype.add = function(name) {
-      return this.addBox(new BoxParser[name + "Box"]());
+    BoxParser2.initialize();
+    BoxParser2.TKHD_FLAG_ENABLED = 1;
+    BoxParser2.TKHD_FLAG_IN_MOVIE = 2;
+    BoxParser2.TKHD_FLAG_IN_PREVIEW = 4;
+    BoxParser2.TFHD_FLAG_BASE_DATA_OFFSET = 1;
+    BoxParser2.TFHD_FLAG_SAMPLE_DESC = 2;
+    BoxParser2.TFHD_FLAG_SAMPLE_DUR = 8;
+    BoxParser2.TFHD_FLAG_SAMPLE_SIZE = 16;
+    BoxParser2.TFHD_FLAG_SAMPLE_FLAGS = 32;
+    BoxParser2.TFHD_FLAG_DUR_EMPTY = 65536;
+    BoxParser2.TFHD_FLAG_DEFAULT_BASE_IS_MOOF = 131072;
+    BoxParser2.TRUN_FLAGS_DATA_OFFSET = 1;
+    BoxParser2.TRUN_FLAGS_FIRST_FLAG = 4;
+    BoxParser2.TRUN_FLAGS_DURATION = 256;
+    BoxParser2.TRUN_FLAGS_SIZE = 512;
+    BoxParser2.TRUN_FLAGS_FLAGS = 1024;
+    BoxParser2.TRUN_FLAGS_CTS_OFFSET = 2048;
+    BoxParser2.Box.prototype.add = function(name) {
+      return this.addBox(new BoxParser2[name + "Box"]());
     };
-    BoxParser.Box.prototype.addBox = function(box2) {
+    BoxParser2.Box.prototype.addBox = function(box2) {
       this.boxes.push(box2);
       if (this[box2.type + "s"]) {
         this[box2.type + "s"].push(box2);
@@ -1715,11 +1715,11 @@ var require_mp4box_all = __commonJS({
       }
       return box2;
     };
-    BoxParser.Box.prototype.set = function(prop, value) {
+    BoxParser2.Box.prototype.set = function(prop, value) {
       this[prop] = value;
       return this;
     };
-    BoxParser.Box.prototype.addEntry = function(value, _prop) {
+    BoxParser2.Box.prototype.addEntry = function(value, _prop) {
       var prop = _prop || "entries";
       if (!this[prop]) {
         this[prop] = [];
@@ -1728,12 +1728,12 @@ var require_mp4box_all = __commonJS({
       return this;
     };
     if (typeof exports !== "undefined") {
-      exports.BoxParser = BoxParser;
+      exports.BoxParser = BoxParser2;
     }
-    BoxParser.parseUUID = function(stream) {
-      return BoxParser.parseHex16(stream);
+    BoxParser2.parseUUID = function(stream) {
+      return BoxParser2.parseHex16(stream);
     };
-    BoxParser.parseHex16 = function(stream) {
+    BoxParser2.parseHex16 = function(stream) {
       var hex16 = "";
       for (var i2 = 0; i2 < 16; i2++) {
         var hex = stream.readUint8().toString(16);
@@ -1741,7 +1741,7 @@ var require_mp4box_all = __commonJS({
       }
       return hex16;
     };
-    BoxParser.parseOneBox = function(stream, headerOnly, parentSize) {
+    BoxParser2.parseOneBox = function(stream, headerOnly, parentSize) {
       var box2;
       var start = stream.getPosition();
       var hdr_size = 0;
@@ -1749,11 +1749,11 @@ var require_mp4box_all = __commonJS({
       var uuid;
       if (stream.getEndPosition() - start < 8) {
         Log2.debug("BoxParser", "Not enough data in stream to parse the type and size of the box");
-        return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
+        return { code: BoxParser2.ERR_NOT_ENOUGH_DATA };
       }
       if (parentSize && parentSize < 8) {
         Log2.debug("BoxParser", "Not enough bytes left in the parent box to parse a new box");
-        return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
+        return { code: BoxParser2.ERR_NOT_ENOUGH_DATA };
       }
       var size = stream.readUint32();
       var type = stream.readString(4);
@@ -1764,9 +1764,9 @@ var require_mp4box_all = __commonJS({
         if (stream.getEndPosition() - stream.getPosition() < 16 || parentSize - hdr_size < 16) {
           stream.seek(start);
           Log2.debug("BoxParser", "Not enough bytes left in the parent box to parse a UUID box");
-          return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
+          return { code: BoxParser2.ERR_NOT_ENOUGH_DATA };
         }
-        uuid = BoxParser.parseUUID(stream);
+        uuid = BoxParser2.parseUUID(stream);
         hdr_size += 16;
         box_type = uuid;
       }
@@ -1774,7 +1774,7 @@ var require_mp4box_all = __commonJS({
         if (stream.getEndPosition() - stream.getPosition() < 8 || parentSize && parentSize - hdr_size < 8) {
           stream.seek(start);
           Log2.warn("BoxParser", 'Not enough data in stream to parse the extended size of the "' + type + '" box');
-          return { code: BoxParser.ERR_NOT_ENOUGH_DATA };
+          return { code: BoxParser2.ERR_NOT_ENOUGH_DATA };
         }
         size = stream.readUint64();
         hdr_size += 8;
@@ -1784,40 +1784,40 @@ var require_mp4box_all = __commonJS({
         } else {
           if (type !== "mdat") {
             Log2.error("BoxParser", "Unlimited box size not supported for type: '" + type + "'");
-            box2 = new BoxParser.Box(type, size);
-            return { code: BoxParser.OK, box: box2, size: box2.size };
+            box2 = new BoxParser2.Box(type, size);
+            return { code: BoxParser2.OK, box: box2, size: box2.size };
           }
         }
       }
       if (size !== 0 && size < hdr_size) {
         Log2.error("BoxParser", "Box of type " + type + " has an invalid size " + size + " (too small to be a box)");
-        return { code: BoxParser.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
+        return { code: BoxParser2.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
       }
       if (size !== 0 && parentSize && size > parentSize) {
         Log2.error("BoxParser", "Box of type '" + type + "' has a size " + size + " greater than its container size " + parentSize);
-        return { code: BoxParser.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
+        return { code: BoxParser2.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
       }
       if (size !== 0 && start + size > stream.getEndPosition()) {
         stream.seek(start);
         Log2.info("BoxParser", "Not enough data in stream to parse the entire '" + type + "' box");
-        return { code: BoxParser.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
+        return { code: BoxParser2.ERR_NOT_ENOUGH_DATA, type, size, hdr_size, start };
       }
       if (headerOnly) {
-        return { code: BoxParser.OK, type, size, hdr_size, start };
+        return { code: BoxParser2.OK, type, size, hdr_size, start };
       } else {
-        if (BoxParser[type + "Box"]) {
-          box2 = new BoxParser[type + "Box"](size);
+        if (BoxParser2[type + "Box"]) {
+          box2 = new BoxParser2[type + "Box"](size);
         } else {
           if (type !== "uuid") {
             Log2.warn("BoxParser", "Unknown box type: '" + type + "'");
-            box2 = new BoxParser.Box(type, size);
+            box2 = new BoxParser2.Box(type, size);
             box2.has_unparsed_data = true;
           } else {
-            if (BoxParser.UUIDBoxes[uuid]) {
-              box2 = new BoxParser.UUIDBoxes[uuid](size);
+            if (BoxParser2.UUIDBoxes[uuid]) {
+              box2 = new BoxParser2.UUIDBoxes[uuid](size);
             } else {
               Log2.warn("BoxParser", "Unknown uuid type: '" + uuid + "'");
-              box2 = new BoxParser.Box(type, size);
+              box2 = new BoxParser2.Box(type, size);
               box2.uuid = uuid;
               box2.has_unparsed_data = true;
             }
@@ -1826,7 +1826,7 @@ var require_mp4box_all = __commonJS({
       }
       box2.hdr_size = hdr_size;
       box2.start = start;
-      if (box2.write === BoxParser.Box.prototype.write && box2.type !== "mdat") {
+      if (box2.write === BoxParser2.Box.prototype.write && box2.type !== "mdat") {
         Log2.info("BoxParser", "'" + box_type + "' box writing not yet implemented, keeping unparsed data in memory for later write");
         box2.parseDataAndRewind(stream);
       }
@@ -1840,9 +1840,9 @@ var require_mp4box_all = __commonJS({
         if (box2.size !== 0)
           stream.seek(box2.start + box2.size);
       }
-      return { code: BoxParser.OK, box: box2, size: box2.size };
+      return { code: BoxParser2.OK, box: box2, size: box2.size };
     };
-    BoxParser.Box.prototype.parse = function(stream) {
+    BoxParser2.Box.prototype.parse = function(stream) {
       if (this.type != "mdat") {
         this.data = stream.readUint8Array(this.size - this.hdr_size);
       } else {
@@ -1853,31 +1853,31 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.Box.prototype.parseDataAndRewind = function(stream) {
+    BoxParser2.Box.prototype.parseDataAndRewind = function(stream) {
       this.data = stream.readUint8Array(this.size - this.hdr_size);
       stream.position -= this.size - this.hdr_size;
     };
-    BoxParser.FullBox.prototype.parseDataAndRewind = function(stream) {
+    BoxParser2.FullBox.prototype.parseDataAndRewind = function(stream) {
       this.parseFullHeader(stream);
       this.data = stream.readUint8Array(this.size - this.hdr_size);
       this.hdr_size -= 4;
       stream.position -= this.size - this.hdr_size;
     };
-    BoxParser.FullBox.prototype.parseFullHeader = function(stream) {
+    BoxParser2.FullBox.prototype.parseFullHeader = function(stream) {
       this.version = stream.readUint8();
       this.flags = stream.readUint24();
       this.hdr_size += 4;
     };
-    BoxParser.FullBox.prototype.parse = function(stream) {
+    BoxParser2.FullBox.prototype.parse = function(stream) {
       this.parseFullHeader(stream);
       this.data = stream.readUint8Array(this.size - this.hdr_size);
     };
-    BoxParser.ContainerBox.prototype.parse = function(stream) {
+    BoxParser2.ContainerBox.prototype.parse = function(stream) {
       var ret2;
       var box2;
       while (stream.getPosition() < this.start + this.size) {
-        ret2 = BoxParser.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
+        ret2 = BoxParser2.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
           box2 = ret2.box;
           this.boxes.push(box2);
           if (this.subBoxNames && this.subBoxNames.indexOf(box2.type) != -1) {
@@ -1895,7 +1895,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.Box.prototype.parseLanguage = function(stream) {
+    BoxParser2.Box.prototype.parseLanguage = function(stream) {
       this.language = stream.readUint16();
       var chars = [];
       chars[0] = this.language >> 10 & 31;
@@ -1903,37 +1903,37 @@ var require_mp4box_all = __commonJS({
       chars[2] = this.language & 31;
       this.languageString = String.fromCharCode(chars[0] + 96, chars[1] + 96, chars[2] + 96);
     };
-    BoxParser.SAMPLE_ENTRY_TYPE_VISUAL = "Visual";
-    BoxParser.SAMPLE_ENTRY_TYPE_AUDIO = "Audio";
-    BoxParser.SAMPLE_ENTRY_TYPE_HINT = "Hint";
-    BoxParser.SAMPLE_ENTRY_TYPE_METADATA = "Metadata";
-    BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE = "Subtitle";
-    BoxParser.SAMPLE_ENTRY_TYPE_SYSTEM = "System";
-    BoxParser.SAMPLE_ENTRY_TYPE_TEXT = "Text";
-    BoxParser.SampleEntry.prototype.parseHeader = function(stream) {
+    BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL = "Visual";
+    BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO = "Audio";
+    BoxParser2.SAMPLE_ENTRY_TYPE_HINT = "Hint";
+    BoxParser2.SAMPLE_ENTRY_TYPE_METADATA = "Metadata";
+    BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE = "Subtitle";
+    BoxParser2.SAMPLE_ENTRY_TYPE_SYSTEM = "System";
+    BoxParser2.SAMPLE_ENTRY_TYPE_TEXT = "Text";
+    BoxParser2.SampleEntry.prototype.parseHeader = function(stream) {
       stream.readUint8Array(6);
       this.data_reference_index = stream.readUint16();
       this.hdr_size += 8;
     };
-    BoxParser.SampleEntry.prototype.parse = function(stream) {
+    BoxParser2.SampleEntry.prototype.parse = function(stream) {
       this.parseHeader(stream);
       this.data = stream.readUint8Array(this.size - this.hdr_size);
     };
-    BoxParser.SampleEntry.prototype.parseDataAndRewind = function(stream) {
+    BoxParser2.SampleEntry.prototype.parseDataAndRewind = function(stream) {
       this.parseHeader(stream);
       this.data = stream.readUint8Array(this.size - this.hdr_size);
       this.hdr_size -= 8;
       stream.position -= this.size - this.hdr_size;
     };
-    BoxParser.SampleEntry.prototype.parseFooter = function(stream) {
-      BoxParser.ContainerBox.prototype.parse.call(this, stream);
+    BoxParser2.SampleEntry.prototype.parseFooter = function(stream) {
+      BoxParser2.ContainerBox.prototype.parse.call(this, stream);
     };
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_HINT);
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_METADATA);
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE);
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SYSTEM);
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_TEXT);
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, function(stream) {
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_HINT);
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_METADATA);
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE);
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SYSTEM);
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_TEXT);
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, function(stream) {
       var compressorname_length;
       this.parseHeader(stream);
       stream.readUint16();
@@ -1954,7 +1954,7 @@ var require_mp4box_all = __commonJS({
       stream.readUint16();
       this.parseFooter(stream);
     });
-    BoxParser.createMediaSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, function(stream) {
+    BoxParser2.createMediaSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, function(stream) {
       this.parseHeader(stream);
       stream.readUint32Array(2);
       this.channel_count = stream.readUint16();
@@ -1964,45 +1964,45 @@ var require_mp4box_all = __commonJS({
       this.samplerate = stream.readUint32() / (1 << 16);
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "avc1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "avc2");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "avc3");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "avc4");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "av01");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "dav1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "hvc1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "hev1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "hvt1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "lhe1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "dvh1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "dvhe");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "vvc1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "vvi1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "vvs1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "vvcN");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "vp08");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "vp09");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "avs3");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "j2ki");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "mjp2");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "mjpg");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "uncv");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "mp4a");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "ac-3");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "ac-4");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "ec-3");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "Opus");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "mha1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "mha2");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "mhm1");
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "mhm2");
-    BoxParser.createEncryptedSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_VISUAL, "encv");
-    BoxParser.createEncryptedSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_AUDIO, "enca");
-    BoxParser.createEncryptedSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE, "encu");
-    BoxParser.createEncryptedSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SYSTEM, "encs");
-    BoxParser.createEncryptedSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_TEXT, "enct");
-    BoxParser.createEncryptedSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_METADATA, "encm");
-    BoxParser.createBoxCtor("a1lx", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "avc1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "avc2");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "avc3");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "avc4");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "av01");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "dav1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "hvc1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "hev1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "hvt1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "lhe1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "dvh1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "dvhe");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "vvc1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "vvi1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "vvs1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "vvcN");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "vp08");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "vp09");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "avs3");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "j2ki");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "mjp2");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "mjpg");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "uncv");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "mp4a");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "ac-3");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "ac-4");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "ec-3");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "Opus");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "mha1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "mha2");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "mhm1");
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "mhm2");
+    BoxParser2.createEncryptedSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_VISUAL, "encv");
+    BoxParser2.createEncryptedSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_AUDIO, "enca");
+    BoxParser2.createEncryptedSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE, "encu");
+    BoxParser2.createEncryptedSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SYSTEM, "encs");
+    BoxParser2.createEncryptedSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_TEXT, "enct");
+    BoxParser2.createEncryptedSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_METADATA, "encm");
+    BoxParser2.createBoxCtor("a1lx", function(stream) {
       var large_size = stream.readUint8() & 1;
       var FieldLength = ((large_size & 1) + 1) * 16;
       this.layer_size = [];
@@ -2014,15 +2014,15 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("a1op", function(stream) {
+    BoxParser2.createBoxCtor("a1op", function(stream) {
       this.op_index = stream.readUint8();
     });
-    BoxParser.createFullBoxCtor("auxC", function(stream) {
+    BoxParser2.createFullBoxCtor("auxC", function(stream) {
       this.aux_type = stream.readCString();
       var aux_subtype_length = this.size - this.hdr_size - (this.aux_type.length + 1);
       this.aux_subtype = stream.readUint8Array(aux_subtype_length);
     });
-    BoxParser.createBoxCtor("av1C", function(stream) {
+    BoxParser2.createBoxCtor("av1C", function(stream) {
       var i2;
       var toparse;
       var tmp = stream.readUint8();
@@ -2065,7 +2065,7 @@ var require_mp4box_all = __commonJS({
       var configOBUs_length = this.size - this.hdr_size - 4;
       this.configOBUs = stream.readUint8Array(configOBUs_length);
     });
-    BoxParser.createBoxCtor("avcC", function(stream) {
+    BoxParser2.createBoxCtor("avcC", function(stream) {
       var i2;
       var toparse;
       this.configurationVersion = stream.readUint8();
@@ -2095,19 +2095,19 @@ var require_mp4box_all = __commonJS({
         this.ext = stream.readUint8Array(toparse);
       }
     });
-    BoxParser.createBoxCtor("btrt", function(stream) {
+    BoxParser2.createBoxCtor("btrt", function(stream) {
       this.bufferSizeDB = stream.readUint32();
       this.maxBitrate = stream.readUint32();
       this.avgBitrate = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("ccst", function(stream) {
+    BoxParser2.createFullBoxCtor("ccst", function(stream) {
       var flags = stream.readUint8();
       this.all_ref_pics_intra = (flags & 128) == 128;
       this.intra_pred_used = (flags & 64) == 64;
       this.max_ref_per_pic = (flags & 63) >> 2;
       stream.readUint24();
     });
-    BoxParser.createBoxCtor("cdef", function(stream) {
+    BoxParser2.createBoxCtor("cdef", function(stream) {
       var i2;
       this.channel_count = stream.readUint16();
       this.channel_indexes = [];
@@ -2119,7 +2119,7 @@ var require_mp4box_all = __commonJS({
         this.channel_associations.push(stream.readUint16());
       }
     });
-    BoxParser.createBoxCtor("clap", function(stream) {
+    BoxParser2.createBoxCtor("clap", function(stream) {
       this.cleanApertureWidthN = stream.readUint32();
       this.cleanApertureWidthD = stream.readUint32();
       this.cleanApertureHeightN = stream.readUint32();
@@ -2129,11 +2129,11 @@ var require_mp4box_all = __commonJS({
       this.vertOffN = stream.readUint32();
       this.vertOffD = stream.readUint32();
     });
-    BoxParser.createBoxCtor("clli", function(stream) {
+    BoxParser2.createBoxCtor("clli", function(stream) {
       this.max_content_light_level = stream.readUint16();
       this.max_pic_average_light_level = stream.readUint16();
     });
-    BoxParser.createFullBoxCtor("cmex", function(stream) {
+    BoxParser2.createFullBoxCtor("cmex", function(stream) {
       if (this.flags & 1) {
         this.pos_x = stream.readInt32();
       }
@@ -2161,7 +2161,7 @@ var require_mp4box_all = __commonJS({
         this.id = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("cmin", function(stream) {
+    BoxParser2.createFullBoxCtor("cmin", function(stream) {
       this.focal_length_x = stream.readInt32();
       this.principal_point_x = stream.readInt32();
       this.principal_point_y = stream.readInt32();
@@ -2170,7 +2170,7 @@ var require_mp4box_all = __commonJS({
         this.skew_factor = stream.readInt32();
       }
     });
-    BoxParser.createBoxCtor("cmpd", function(stream) {
+    BoxParser2.createBoxCtor("cmpd", function(stream) {
       this.component_count = stream.readUint16();
       this.component_types = [];
       this.component_type_urls = [];
@@ -2182,7 +2182,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("co64", function(stream) {
+    BoxParser2.createFullBoxCtor("co64", function(stream) {
       var entry_count2;
       var i2;
       entry_count2 = stream.readUint32();
@@ -2193,11 +2193,11 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("CoLL", function(stream) {
+    BoxParser2.createFullBoxCtor("CoLL", function(stream) {
       this.maxCLL = stream.readUint16();
       this.maxFALL = stream.readUint16();
     });
-    BoxParser.createBoxCtor("colr", function(stream) {
+    BoxParser2.createBoxCtor("colr", function(stream) {
       this.colour_type = stream.readString(4);
       if (this.colour_type === "nclx") {
         this.colour_primaries = stream.readUint16();
@@ -2211,11 +2211,11 @@ var require_mp4box_all = __commonJS({
         this.ICC_profile = stream.readUint8Array(this.size - 4);
       }
     });
-    BoxParser.createFullBoxCtor("cprt", function(stream) {
+    BoxParser2.createFullBoxCtor("cprt", function(stream) {
       this.parseLanguage(stream);
       this.notice = stream.readCString();
     });
-    BoxParser.createFullBoxCtor("cslg", function(stream) {
+    BoxParser2.createFullBoxCtor("cslg", function(stream) {
       var entry_count2;
       if (this.version === 0) {
         this.compositionToDTSShift = stream.readInt32();
@@ -2225,7 +2225,7 @@ var require_mp4box_all = __commonJS({
         this.compositionEndTime = stream.readInt32();
       }
     });
-    BoxParser.createFullBoxCtor("ctts", function(stream) {
+    BoxParser2.createFullBoxCtor("ctts", function(stream) {
       var entry_count2;
       var i2;
       entry_count2 = stream.readUint32();
@@ -2247,7 +2247,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("dac3", function(stream) {
+    BoxParser2.createBoxCtor("dac3", function(stream) {
       var tmp_byte1 = stream.readUint8();
       var tmp_byte2 = stream.readUint8();
       var tmp_byte3 = stream.readUint8();
@@ -2258,7 +2258,7 @@ var require_mp4box_all = __commonJS({
       this.lfeon = tmp_byte2 >> 2 & 1;
       this.bit_rate_code = tmp_byte2 & 3 | tmp_byte3 >> 5 & 7;
     });
-    BoxParser.createBoxCtor("dec3", function(stream) {
+    BoxParser2.createBoxCtor("dec3", function(stream) {
       var tmp_16 = stream.readUint16();
       this.data_rate = tmp_16 >> 3;
       this.num_ind_sub = tmp_16 & 7;
@@ -2280,7 +2280,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("dfLa", function(stream) {
+    BoxParser2.createFullBoxCtor("dfLa", function(stream) {
       var BLOCKTYPE_MASK = 127;
       var LASTMETADATABLOCKFLAG_MASK = 128;
       var boxesFound = [];
@@ -2315,16 +2315,16 @@ var require_mp4box_all = __commonJS({
       } while (true);
       this.numMetadataBlocks = boxesFound.length + " (" + boxesFound.join(", ") + ")";
     });
-    BoxParser.createBoxCtor("dimm", function(stream) {
+    BoxParser2.createBoxCtor("dimm", function(stream) {
       this.bytessent = stream.readUint64();
     });
-    BoxParser.createBoxCtor("dmax", function(stream) {
+    BoxParser2.createBoxCtor("dmax", function(stream) {
       this.time = stream.readUint32();
     });
-    BoxParser.createBoxCtor("dmed", function(stream) {
+    BoxParser2.createBoxCtor("dmed", function(stream) {
       this.bytessent = stream.readUint64();
     });
-    BoxParser.createBoxCtor("dOps", function(stream) {
+    BoxParser2.createBoxCtor("dOps", function(stream) {
       this.Version = stream.readUint8();
       this.OutputChannelCount = stream.readUint8();
       this.PreSkip = stream.readUint16();
@@ -2340,14 +2340,14 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("dref", function(stream) {
+    BoxParser2.createFullBoxCtor("dref", function(stream) {
       var ret2;
       var box2;
       this.entries = [];
       var entry_count2 = stream.readUint32();
       for (var i2 = 0; i2 < entry_count2; i2++) {
-        ret2 = BoxParser.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
+        ret2 = BoxParser2.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
           box2 = ret2.box;
           this.entries.push(box2);
         } else {
@@ -2355,13 +2355,13 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("drep", function(stream) {
+    BoxParser2.createBoxCtor("drep", function(stream) {
       this.bytessent = stream.readUint64();
     });
-    BoxParser.createFullBoxCtor("elng", function(stream) {
+    BoxParser2.createFullBoxCtor("elng", function(stream) {
       this.extended_language = stream.readString(this.size - this.hdr_size);
     });
-    BoxParser.createFullBoxCtor("elst", function(stream) {
+    BoxParser2.createFullBoxCtor("elst", function(stream) {
       this.entries = [];
       var entry_count2 = stream.readUint32();
       for (var i2 = 0; i2 < entry_count2; i2++) {
@@ -2378,7 +2378,7 @@ var require_mp4box_all = __commonJS({
         entry.media_rate_fraction = stream.readInt16();
       }
     });
-    BoxParser.createFullBoxCtor("emsg", function(stream) {
+    BoxParser2.createFullBoxCtor("emsg", function(stream) {
       if (this.version == 1) {
         this.timescale = stream.readUint32();
         this.presentation_time = stream.readUint64();
@@ -2400,12 +2400,12 @@ var require_mp4box_all = __commonJS({
       }
       this.message_data = stream.readUint8Array(message_size);
     });
-    BoxParser.createEntityToGroupCtor = function(type, parseMethod) {
-      BoxParser[type + "Box"] = function(size) {
-        BoxParser.FullBox.call(this, type, size);
+    BoxParser2.createEntityToGroupCtor = function(type, parseMethod) {
+      BoxParser2[type + "Box"] = function(size) {
+        BoxParser2.FullBox.call(this, type, size);
       };
-      BoxParser[type + "Box"].prototype = new BoxParser.FullBox();
-      BoxParser[type + "Box"].prototype.parse = function(stream) {
+      BoxParser2[type + "Box"].prototype = new BoxParser2.FullBox();
+      BoxParser2[type + "Box"].prototype.parse = function(stream) {
         this.parseFullHeader(stream);
         if (parseMethod) {
           parseMethod.call(this, stream);
@@ -2420,38 +2420,38 @@ var require_mp4box_all = __commonJS({
         }
       };
     };
-    BoxParser.createEntityToGroupCtor("aebr");
-    BoxParser.createEntityToGroupCtor("afbr");
-    BoxParser.createEntityToGroupCtor("albc");
-    BoxParser.createEntityToGroupCtor("altr");
-    BoxParser.createEntityToGroupCtor("brst");
-    BoxParser.createEntityToGroupCtor("dobr");
-    BoxParser.createEntityToGroupCtor("eqiv");
-    BoxParser.createEntityToGroupCtor("favc");
-    BoxParser.createEntityToGroupCtor("fobr");
-    BoxParser.createEntityToGroupCtor("iaug");
-    BoxParser.createEntityToGroupCtor("pano");
-    BoxParser.createEntityToGroupCtor("slid");
-    BoxParser.createEntityToGroupCtor("ster");
-    BoxParser.createEntityToGroupCtor("tsyn");
-    BoxParser.createEntityToGroupCtor("wbbr");
-    BoxParser.createEntityToGroupCtor("prgr");
-    BoxParser.createFullBoxCtor("esds", function(stream) {
+    BoxParser2.createEntityToGroupCtor("aebr");
+    BoxParser2.createEntityToGroupCtor("afbr");
+    BoxParser2.createEntityToGroupCtor("albc");
+    BoxParser2.createEntityToGroupCtor("altr");
+    BoxParser2.createEntityToGroupCtor("brst");
+    BoxParser2.createEntityToGroupCtor("dobr");
+    BoxParser2.createEntityToGroupCtor("eqiv");
+    BoxParser2.createEntityToGroupCtor("favc");
+    BoxParser2.createEntityToGroupCtor("fobr");
+    BoxParser2.createEntityToGroupCtor("iaug");
+    BoxParser2.createEntityToGroupCtor("pano");
+    BoxParser2.createEntityToGroupCtor("slid");
+    BoxParser2.createEntityToGroupCtor("ster");
+    BoxParser2.createEntityToGroupCtor("tsyn");
+    BoxParser2.createEntityToGroupCtor("wbbr");
+    BoxParser2.createEntityToGroupCtor("prgr");
+    BoxParser2.createFullBoxCtor("esds", function(stream) {
       var esd_data = stream.readUint8Array(this.size - this.hdr_size);
       this.data = esd_data;
       if (typeof MPEG4DescriptorParser !== "undefined") {
         var esd_parser = new MPEG4DescriptorParser();
-        this.esd = esd_parser.parseOneDescriptor(new DataStream2(esd_data.buffer, 0, DataStream2.BIG_ENDIAN));
+        this.esd = esd_parser.parseOneDescriptor(new DataStream3(esd_data.buffer, 0, DataStream3.BIG_ENDIAN));
       }
     });
-    BoxParser.createBoxCtor("fiel", function(stream) {
+    BoxParser2.createBoxCtor("fiel", function(stream) {
       this.fieldCount = stream.readUint8();
       this.fieldOrdering = stream.readUint8();
     });
-    BoxParser.createBoxCtor("frma", function(stream) {
+    BoxParser2.createBoxCtor("frma", function(stream) {
       this.data_format = stream.readString(4);
     });
-    BoxParser.createBoxCtor("ftyp", function(stream) {
+    BoxParser2.createBoxCtor("ftyp", function(stream) {
       var toparse = this.size - this.hdr_size;
       this.major_brand = stream.readString(4);
       this.minor_version = stream.readUint32();
@@ -2464,7 +2464,7 @@ var require_mp4box_all = __commonJS({
         i2++;
       }
     });
-    BoxParser.createFullBoxCtor("hdlr", function(stream) {
+    BoxParser2.createFullBoxCtor("hdlr", function(stream) {
       if (this.version === 0) {
         stream.readUint32();
         this.handler = stream.readString(4);
@@ -2475,7 +2475,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("hvcC", function(stream) {
+    BoxParser2.createBoxCtor("hvcC", function(stream) {
       var i2, j;
       var nb_nalus;
       var length;
@@ -2516,7 +2516,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("iinf", function(stream) {
+    BoxParser2.createFullBoxCtor("iinf", function(stream) {
       var ret2;
       if (this.version === 0) {
         this.entry_count = stream.readUint16();
@@ -2525,8 +2525,8 @@ var require_mp4box_all = __commonJS({
       }
       this.item_infos = [];
       for (var i2 = 0; i2 < this.entry_count; i2++) {
-        ret2 = BoxParser.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
+        ret2 = BoxParser2.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
           if (ret2.box.type !== "infe") {
             Log2.error("BoxParser", "Expected 'infe' box, got " + ret2.box.type);
           }
@@ -2536,7 +2536,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("iloc", function(stream) {
+    BoxParser2.createFullBoxCtor("iloc", function(stream) {
       var byte;
       byte = stream.readUint8();
       this.offset_size = byte >> 4 & 15;
@@ -2635,12 +2635,12 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("imir", function(stream) {
+    BoxParser2.createBoxCtor("imir", function(stream) {
       var tmp = stream.readUint8();
       this.reserved = tmp >> 7;
       this.axis = tmp & 1;
     });
-    BoxParser.createFullBoxCtor("infe", function(stream) {
+    BoxParser2.createFullBoxCtor("infe", function(stream) {
       if (this.version === 0 || this.version === 1) {
         this.item_ID = stream.readUint16();
         this.item_protection_index = stream.readUint16();
@@ -2671,7 +2671,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("ipma", function(stream) {
+    BoxParser2.createFullBoxCtor("ipma", function(stream) {
       var i2, j;
       entry_count = stream.readUint32();
       this.associations = [];
@@ -2698,20 +2698,20 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("iref", function(stream) {
+    BoxParser2.createFullBoxCtor("iref", function(stream) {
       var ret2;
       var entryCount;
       var box2;
       this.references = [];
       while (stream.getPosition() < this.start + this.size) {
-        ret2 = BoxParser.parseOneBox(stream, true, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
+        ret2 = BoxParser2.parseOneBox(stream, true, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
           if (this.version === 0) {
-            box2 = new BoxParser.SingleItemTypeReferenceBox(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
+            box2 = new BoxParser2.SingleItemTypeReferenceBox(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
           } else {
-            box2 = new BoxParser.SingleItemTypeReferenceBoxLarge(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
+            box2 = new BoxParser2.SingleItemTypeReferenceBoxLarge(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
           }
-          if (box2.write === BoxParser.Box.prototype.write && box2.type !== "mdat") {
+          if (box2.write === BoxParser2.Box.prototype.write && box2.type !== "mdat") {
             Log2.warn("BoxParser", box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
             box2.parseDataAndRewind(stream);
           }
@@ -2722,18 +2722,18 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("irot", function(stream) {
+    BoxParser2.createBoxCtor("irot", function(stream) {
       this.angle = stream.readUint8() & 3;
     });
-    BoxParser.createFullBoxCtor("ispe", function(stream) {
+    BoxParser2.createFullBoxCtor("ispe", function(stream) {
       this.image_width = stream.readUint32();
       this.image_height = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("kind", function(stream) {
+    BoxParser2.createFullBoxCtor("kind", function(stream) {
       this.schemeURI = stream.readCString();
       this.value = stream.readCString();
     });
-    BoxParser.createFullBoxCtor("leva", function(stream) {
+    BoxParser2.createFullBoxCtor("leva", function(stream) {
       var count = stream.readUint8();
       this.levels = [];
       for (var i2 = 0; i2 < count; i2++) {
@@ -2763,14 +2763,14 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("lsel", function(stream) {
+    BoxParser2.createBoxCtor("lsel", function(stream) {
       this.layer_id = stream.readUint16();
     });
-    BoxParser.createBoxCtor("maxr", function(stream) {
+    BoxParser2.createBoxCtor("maxr", function(stream) {
       this.period = stream.readUint32();
       this.bytes = stream.readUint32();
     });
-    BoxParser.createBoxCtor("mdcv", function(stream) {
+    BoxParser2.createBoxCtor("mdcv", function(stream) {
       this.display_primaries = [];
       this.display_primaries[0] = {};
       this.display_primaries[0].x = stream.readUint16();
@@ -2787,7 +2787,7 @@ var require_mp4box_all = __commonJS({
       this.max_display_mastering_luminance = stream.readUint32();
       this.min_display_mastering_luminance = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("mdhd", function(stream) {
+    BoxParser2.createFullBoxCtor("mdhd", function(stream) {
       if (this.version == 1) {
         this.creation_time = stream.readUint64();
         this.modification_time = stream.readUint64();
@@ -2802,7 +2802,7 @@ var require_mp4box_all = __commonJS({
       this.parseLanguage(stream);
       stream.readUint16();
     });
-    BoxParser.createFullBoxCtor("mehd", function(stream) {
+    BoxParser2.createFullBoxCtor("mehd", function(stream) {
       if (this.flags & 1) {
         Log2.warn("BoxParser", "mehd box incorrectly uses flags set to 1, converting version to 1");
         this.version = 1;
@@ -2813,17 +2813,17 @@ var require_mp4box_all = __commonJS({
         this.fragment_duration = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("meta", function(stream) {
+    BoxParser2.createFullBoxCtor("meta", function(stream) {
       this.boxes = [];
-      BoxParser.ContainerBox.prototype.parse.call(this, stream);
+      BoxParser2.ContainerBox.prototype.parse.call(this, stream);
     });
-    BoxParser.createFullBoxCtor("mfhd", function(stream) {
+    BoxParser2.createFullBoxCtor("mfhd", function(stream) {
       this.sequence_number = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("mfro", function(stream) {
+    BoxParser2.createFullBoxCtor("mfro", function(stream) {
       this._size = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("mvhd", function(stream) {
+    BoxParser2.createFullBoxCtor("mvhd", function(stream) {
       if (this.version == 1) {
         this.creation_time = stream.readUint64();
         this.modification_time = stream.readUint64();
@@ -2843,32 +2843,32 @@ var require_mp4box_all = __commonJS({
       stream.readUint32Array(6);
       this.next_track_id = stream.readUint32();
     });
-    BoxParser.createBoxCtor("npck", function(stream) {
+    BoxParser2.createBoxCtor("npck", function(stream) {
       this.packetssent = stream.readUint32();
     });
-    BoxParser.createBoxCtor("nump", function(stream) {
+    BoxParser2.createBoxCtor("nump", function(stream) {
       this.packetssent = stream.readUint64();
     });
-    BoxParser.createFullBoxCtor("padb", function(stream) {
+    BoxParser2.createFullBoxCtor("padb", function(stream) {
       var sample_count = stream.readUint32();
       this.padbits = [];
       for (var i2 = 0; i2 < Math.floor((sample_count + 1) / 2); i2++) {
         this.padbits = stream.readUint8();
       }
     });
-    BoxParser.createBoxCtor("pasp", function(stream) {
+    BoxParser2.createBoxCtor("pasp", function(stream) {
       this.hSpacing = stream.readUint32();
       this.vSpacing = stream.readUint32();
     });
-    BoxParser.createBoxCtor("payl", function(stream) {
+    BoxParser2.createBoxCtor("payl", function(stream) {
       this.text = stream.readString(this.size - this.hdr_size);
     });
-    BoxParser.createBoxCtor("payt", function(stream) {
+    BoxParser2.createBoxCtor("payt", function(stream) {
       this.payloadID = stream.readUint32();
       var count = stream.readUint8();
       this.rtpmap_string = stream.readString(count);
     });
-    BoxParser.createFullBoxCtor("pdin", function(stream) {
+    BoxParser2.createFullBoxCtor("pdin", function(stream) {
       var count = (this.size - this.hdr_size) / 8;
       this.rate = [];
       this.initial_delay = [];
@@ -2877,14 +2877,14 @@ var require_mp4box_all = __commonJS({
         this.initial_delay[i2] = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("pitm", function(stream) {
+    BoxParser2.createFullBoxCtor("pitm", function(stream) {
       if (this.version === 0) {
         this.item_id = stream.readUint16();
       } else {
         this.item_id = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("pixi", function(stream) {
+    BoxParser2.createFullBoxCtor("pixi", function(stream) {
       var i2;
       this.num_channels = stream.readUint8();
       this.bits_per_channels = [];
@@ -2892,10 +2892,10 @@ var require_mp4box_all = __commonJS({
         this.bits_per_channels[i2] = stream.readUint8();
       }
     });
-    BoxParser.createBoxCtor("pmax", function(stream) {
+    BoxParser2.createBoxCtor("pmax", function(stream) {
       this.bytes = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("prdi", function(stream) {
+    BoxParser2.createFullBoxCtor("prdi", function(stream) {
       this.step_count = stream.readUint16();
       this.item_count = [];
       if (this.flags & 2) {
@@ -2904,7 +2904,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("prft", function(stream) {
+    BoxParser2.createFullBoxCtor("prft", function(stream) {
       this.ref_track_id = stream.readUint32();
       this.ntp_timestamp = stream.readUint64();
       if (this.version === 0) {
@@ -2913,13 +2913,13 @@ var require_mp4box_all = __commonJS({
         this.media_time = stream.readUint64();
       }
     });
-    BoxParser.createFullBoxCtor("pssh", function(stream) {
-      this.system_id = BoxParser.parseHex16(stream);
+    BoxParser2.createFullBoxCtor("pssh", function(stream) {
+      this.system_id = BoxParser2.parseHex16(stream);
       if (this.version > 0) {
         var count = stream.readUint32();
         this.kid = [];
         for (var i2 = 0; i2 < count; i2++) {
-          this.kid[i2] = BoxParser.parseHex16(stream);
+          this.kid[i2] = BoxParser2.parseHex16(stream);
         }
       }
       var datasize = stream.readUint32();
@@ -2927,24 +2927,24 @@ var require_mp4box_all = __commonJS({
         this.data = stream.readUint8Array(datasize);
       }
     });
-    BoxParser.createFullBoxCtor("clef", function(stream) {
+    BoxParser2.createFullBoxCtor("clef", function(stream) {
       this.width = stream.readUint32();
       this.height = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("enof", function(stream) {
+    BoxParser2.createFullBoxCtor("enof", function(stream) {
       this.width = stream.readUint32();
       this.height = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("prof", function(stream) {
+    BoxParser2.createFullBoxCtor("prof", function(stream) {
       this.width = stream.readUint32();
       this.height = stream.readUint32();
     });
-    BoxParser.createContainerBoxCtor("tapt", null, ["clef", "prof", "enof"]);
-    BoxParser.createBoxCtor("rtp ", function(stream) {
+    BoxParser2.createContainerBoxCtor("tapt", null, ["clef", "prof", "enof"]);
+    BoxParser2.createBoxCtor("rtp ", function(stream) {
       this.descriptionformat = stream.readString(4);
       this.sdptext = stream.readString(this.size - this.hdr_size - 4);
     });
-    BoxParser.createFullBoxCtor("saio", function(stream) {
+    BoxParser2.createFullBoxCtor("saio", function(stream) {
       if (this.flags & 1) {
         this.aux_info_type = stream.readUint32();
         this.aux_info_type_parameter = stream.readUint32();
@@ -2959,7 +2959,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("saiz", function(stream) {
+    BoxParser2.createFullBoxCtor("saiz", function(stream) {
       if (this.flags & 1) {
         this.aux_info_type = stream.readUint32();
         this.aux_info_type_parameter = stream.readUint32();
@@ -2973,39 +2973,39 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_METADATA, "mett", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_METADATA, "mett", function(stream) {
       this.parseHeader(stream);
       this.content_encoding = stream.readCString();
       this.mime_format = stream.readCString();
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_METADATA, "metx", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_METADATA, "metx", function(stream) {
       this.parseHeader(stream);
       this.content_encoding = stream.readCString();
       this.namespace = stream.readCString();
       this.schema_location = stream.readCString();
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE, "sbtt", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE, "sbtt", function(stream) {
       this.parseHeader(stream);
       this.content_encoding = stream.readCString();
       this.mime_format = stream.readCString();
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE, "stpp", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE, "stpp", function(stream) {
       this.parseHeader(stream);
       this.namespace = stream.readCString();
       this.schema_location = stream.readCString();
       this.auxiliary_mime_types = stream.readCString();
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE, "stxt", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE, "stxt", function(stream) {
       this.parseHeader(stream);
       this.content_encoding = stream.readCString();
       this.mime_format = stream.readCString();
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_SUBTITLE, "tx3g", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_SUBTITLE, "tx3g", function(stream) {
       this.parseHeader(stream);
       this.displayFlags = stream.readUint32();
       this.horizontal_justification = stream.readInt8();
@@ -3015,11 +3015,11 @@ var require_mp4box_all = __commonJS({
       this.style_record = stream.readUint8Array(12);
       this.parseFooter(stream);
     });
-    BoxParser.createSampleEntryCtor(BoxParser.SAMPLE_ENTRY_TYPE_METADATA, "wvtt", function(stream) {
+    BoxParser2.createSampleEntryCtor(BoxParser2.SAMPLE_ENTRY_TYPE_METADATA, "wvtt", function(stream) {
       this.parseHeader(stream);
       this.parseFooter(stream);
     });
-    BoxParser.createSampleGroupCtor("alst", function(stream) {
+    BoxParser2.createSampleGroupCtor("alst", function(stream) {
       var i2;
       var roll_count = stream.readUint16();
       this.first_output_sample = stream.readUint16();
@@ -3035,13 +3035,13 @@ var require_mp4box_all = __commonJS({
         this.num_total_samples[i2] = stream.readUint16();
       }
     });
-    BoxParser.createSampleGroupCtor("avll", function(stream) {
+    BoxParser2.createSampleGroupCtor("avll", function(stream) {
       this.layerNumber = stream.readUint8();
       this.accurateStatisticsFlag = stream.readUint8();
       this.avgBitRate = stream.readUint16();
       this.avgFrameRate = stream.readUint16();
     });
-    BoxParser.createSampleGroupCtor("avss", function(stream) {
+    BoxParser2.createSampleGroupCtor("avss", function(stream) {
       this.subSequenceIdentifier = stream.readUint16();
       this.layerNumber = stream.readUint8();
       var tmp_byte = stream.readUint8();
@@ -3065,21 +3065,21 @@ var require_mp4box_all = __commonJS({
         dependencyInfo.subSequenceIdentifier = stream.readUint16();
       }
     });
-    BoxParser.createSampleGroupCtor("dtrt", function(stream) {
+    BoxParser2.createSampleGroupCtor("dtrt", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("mvif", function(stream) {
+    BoxParser2.createSampleGroupCtor("mvif", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("prol", function(stream) {
+    BoxParser2.createSampleGroupCtor("prol", function(stream) {
       this.roll_distance = stream.readInt16();
     });
-    BoxParser.createSampleGroupCtor("rap ", function(stream) {
+    BoxParser2.createSampleGroupCtor("rap ", function(stream) {
       var tmp_byte = stream.readUint8();
       this.num_leading_samples_known = tmp_byte >> 7;
       this.num_leading_samples = tmp_byte & 127;
     });
-    BoxParser.createSampleGroupCtor("rash", function(stream) {
+    BoxParser2.createSampleGroupCtor("rash", function(stream) {
       this.operation_point_count = stream.readUint16();
       if (this.description_length !== 2 + (this.operation_point_count === 1 ? 2 : this.operation_point_count * 6) + 9) {
         Log2.warn("BoxParser", "Mismatch in " + this.grouping_type + " sample group length");
@@ -3100,27 +3100,27 @@ var require_mp4box_all = __commonJS({
         this.discard_priority = stream.readUint8();
       }
     });
-    BoxParser.createSampleGroupCtor("roll", function(stream) {
+    BoxParser2.createSampleGroupCtor("roll", function(stream) {
       this.roll_distance = stream.readInt16();
     });
-    BoxParser.SampleGroupEntry.prototype.parse = function(stream) {
+    BoxParser2.SampleGroupEntry.prototype.parse = function(stream) {
       Log2.warn("BoxParser", "Unknown Sample Group type: " + this.grouping_type);
       this.data = stream.readUint8Array(this.description_length);
     };
-    BoxParser.createSampleGroupCtor("scif", function(stream) {
+    BoxParser2.createSampleGroupCtor("scif", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("scnm", function(stream) {
+    BoxParser2.createSampleGroupCtor("scnm", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("seig", function(stream) {
+    BoxParser2.createSampleGroupCtor("seig", function(stream) {
       this.reserved = stream.readUint8();
       var tmp = stream.readUint8();
       this.crypt_byte_block = tmp >> 4;
       this.skip_byte_block = tmp & 15;
       this.isProtected = stream.readUint8();
       this.Per_Sample_IV_Size = stream.readUint8();
-      this.KID = BoxParser.parseHex16(stream);
+      this.KID = BoxParser2.parseHex16(stream);
       this.constant_IV_size = 0;
       this.constant_IV = 0;
       if (this.isProtected === 1 && this.Per_Sample_IV_Size === 0) {
@@ -3128,27 +3128,27 @@ var require_mp4box_all = __commonJS({
         this.constant_IV = stream.readUint8Array(this.constant_IV_size);
       }
     });
-    BoxParser.createSampleGroupCtor("stsa", function(stream) {
+    BoxParser2.createSampleGroupCtor("stsa", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("sync", function(stream) {
+    BoxParser2.createSampleGroupCtor("sync", function(stream) {
       var tmp_byte = stream.readUint8();
       this.NAL_unit_type = tmp_byte & 63;
     });
-    BoxParser.createSampleGroupCtor("tele", function(stream) {
+    BoxParser2.createSampleGroupCtor("tele", function(stream) {
       var tmp_byte = stream.readUint8();
       this.level_independently_decodable = tmp_byte >> 7;
     });
-    BoxParser.createSampleGroupCtor("tsas", function(stream) {
+    BoxParser2.createSampleGroupCtor("tsas", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("tscl", function(stream) {
+    BoxParser2.createSampleGroupCtor("tscl", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createSampleGroupCtor("vipr", function(stream) {
+    BoxParser2.createSampleGroupCtor("vipr", function(stream) {
       Log2.warn("BoxParser", "Sample Group type: " + this.grouping_type + " not fully parsed");
     });
-    BoxParser.createFullBoxCtor("sbgp", function(stream) {
+    BoxParser2.createFullBoxCtor("sbgp", function(stream) {
       this.grouping_type = stream.readString(4);
       if (this.version === 1) {
         this.grouping_type_parameter = stream.readUint32();
@@ -3164,17 +3164,17 @@ var require_mp4box_all = __commonJS({
         entry.group_description_index = stream.readInt32();
       }
     });
-    BoxParser.createFullBoxCtor("schm", function(stream) {
+    BoxParser2.createFullBoxCtor("schm", function(stream) {
       this.scheme_type = stream.readString(4);
       this.scheme_version = stream.readUint32();
       if (this.flags & 1) {
         this.scheme_uri = stream.readString(this.size - this.hdr_size - 8);
       }
     });
-    BoxParser.createBoxCtor("sdp ", function(stream) {
+    BoxParser2.createBoxCtor("sdp ", function(stream) {
       this.sdptext = stream.readString(this.size - this.hdr_size);
     });
-    BoxParser.createFullBoxCtor("sdtp", function(stream) {
+    BoxParser2.createFullBoxCtor("sdtp", function(stream) {
       var tmp_byte;
       var count = this.size - this.hdr_size;
       this.is_leading = [];
@@ -3189,7 +3189,7 @@ var require_mp4box_all = __commonJS({
         this.sample_has_redundancy[i2] = tmp_byte & 3;
       }
     });
-    BoxParser.createFullBoxCtor(
+    BoxParser2.createFullBoxCtor(
       "senc"
       /*, function(stream) {
       	this.parseFullHeader(stream);
@@ -3214,7 +3214,7 @@ var require_mp4box_all = __commonJS({
       	}
       }*/
     );
-    BoxParser.createFullBoxCtor("sgpd", function(stream) {
+    BoxParser2.createFullBoxCtor("sgpd", function(stream) {
       this.grouping_type = stream.readString(4);
       Log2.debug("BoxParser", "Found Sample Groups of type " + this.grouping_type);
       if (this.version === 1) {
@@ -3229,10 +3229,10 @@ var require_mp4box_all = __commonJS({
       var entry_count2 = stream.readUint32();
       for (var i2 = 0; i2 < entry_count2; i2++) {
         var entry;
-        if (BoxParser[this.grouping_type + "SampleGroupEntry"]) {
-          entry = new BoxParser[this.grouping_type + "SampleGroupEntry"](this.grouping_type);
+        if (BoxParser2[this.grouping_type + "SampleGroupEntry"]) {
+          entry = new BoxParser2[this.grouping_type + "SampleGroupEntry"](this.grouping_type);
         } else {
-          entry = new BoxParser.SampleGroupEntry(this.grouping_type);
+          entry = new BoxParser2.SampleGroupEntry(this.grouping_type);
         }
         this.entries.push(entry);
         if (this.version === 1) {
@@ -3244,7 +3244,7 @@ var require_mp4box_all = __commonJS({
         } else {
           entry.description_length = this.default_length;
         }
-        if (entry.write === BoxParser.SampleGroupEntry.prototype.write) {
+        if (entry.write === BoxParser2.SampleGroupEntry.prototype.write) {
           Log2.info("BoxParser", "SampleGroup for type " + this.grouping_type + " writing not yet implemented, keeping unparsed data in memory for later write");
           entry.data = stream.readUint8Array(entry.description_length);
           stream.position -= entry.description_length;
@@ -3252,7 +3252,7 @@ var require_mp4box_all = __commonJS({
         entry.parse(stream);
       }
     });
-    BoxParser.createFullBoxCtor("sidx", function(stream) {
+    BoxParser2.createFullBoxCtor("sidx", function(stream) {
       this.reference_ID = stream.readUint32();
       this.timescale = stream.readUint32();
       if (this.version === 0) {
@@ -3278,13 +3278,13 @@ var require_mp4box_all = __commonJS({
         ref.SAP_delta_time = tmp_32 & 268435455;
       }
     });
-    BoxParser.SingleItemTypeReferenceBox = function(type, size, hdr_size, start) {
-      BoxParser.Box.call(this, type, size);
+    BoxParser2.SingleItemTypeReferenceBox = function(type, size, hdr_size, start) {
+      BoxParser2.Box.call(this, type, size);
       this.hdr_size = hdr_size;
       this.start = start;
     };
-    BoxParser.SingleItemTypeReferenceBox.prototype = new BoxParser.Box();
-    BoxParser.SingleItemTypeReferenceBox.prototype.parse = function(stream) {
+    BoxParser2.SingleItemTypeReferenceBox.prototype = new BoxParser2.Box();
+    BoxParser2.SingleItemTypeReferenceBox.prototype.parse = function(stream) {
       this.from_item_ID = stream.readUint16();
       var count = stream.readUint16();
       this.references = [];
@@ -3293,13 +3293,13 @@ var require_mp4box_all = __commonJS({
         this.references[i2].to_item_ID = stream.readUint16();
       }
     };
-    BoxParser.SingleItemTypeReferenceBoxLarge = function(type, size, hdr_size, start) {
-      BoxParser.Box.call(this, type, size);
+    BoxParser2.SingleItemTypeReferenceBoxLarge = function(type, size, hdr_size, start) {
+      BoxParser2.Box.call(this, type, size);
       this.hdr_size = hdr_size;
       this.start = start;
     };
-    BoxParser.SingleItemTypeReferenceBoxLarge.prototype = new BoxParser.Box();
-    BoxParser.SingleItemTypeReferenceBoxLarge.prototype.parse = function(stream) {
+    BoxParser2.SingleItemTypeReferenceBoxLarge.prototype = new BoxParser2.Box();
+    BoxParser2.SingleItemTypeReferenceBoxLarge.prototype.parse = function(stream) {
       this.from_item_ID = stream.readUint32();
       var count = stream.readUint16();
       this.references = [];
@@ -3308,7 +3308,7 @@ var require_mp4box_all = __commonJS({
         this.references[i2].to_item_ID = stream.readUint32();
       }
     };
-    BoxParser.createFullBoxCtor("SmDm", function(stream) {
+    BoxParser2.createFullBoxCtor("SmDm", function(stream) {
       this.primaryRChromaticity_x = stream.readUint16();
       this.primaryRChromaticity_y = stream.readUint16();
       this.primaryGChromaticity_x = stream.readUint16();
@@ -3320,11 +3320,11 @@ var require_mp4box_all = __commonJS({
       this.luminanceMax = stream.readUint32();
       this.luminanceMin = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("smhd", function(stream) {
+    BoxParser2.createFullBoxCtor("smhd", function(stream) {
       this.balance = stream.readUint16();
       stream.readUint16();
     });
-    BoxParser.createFullBoxCtor("ssix", function(stream) {
+    BoxParser2.createFullBoxCtor("ssix", function(stream) {
       this.subsegments = [];
       var subsegment_count = stream.readUint32();
       for (var i2 = 0; i2 < subsegment_count; i2++) {
@@ -3340,7 +3340,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stco", function(stream) {
+    BoxParser2.createFullBoxCtor("stco", function(stream) {
       var entry_count2;
       entry_count2 = stream.readUint32();
       this.chunk_offsets = [];
@@ -3350,15 +3350,15 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stdp", function(stream) {
+    BoxParser2.createFullBoxCtor("stdp", function(stream) {
       var count = (this.size - this.hdr_size) / 2;
       this.priority = [];
       for (var i2 = 0; i2 < count; i2++) {
         this.priority[i2] = stream.readUint16();
       }
     });
-    BoxParser.createFullBoxCtor("sthd");
-    BoxParser.createFullBoxCtor("stri", function(stream) {
+    BoxParser2.createFullBoxCtor("sthd");
+    BoxParser2.createFullBoxCtor("stri", function(stream) {
       this.switch_group = stream.readUint16();
       this.alternate_group = stream.readUint16();
       this.sub_track_id = stream.readUint32();
@@ -3368,7 +3368,7 @@ var require_mp4box_all = __commonJS({
         this.attribute_list[i2] = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("stsc", function(stream) {
+    BoxParser2.createFullBoxCtor("stsc", function(stream) {
       var entry_count2;
       var i2;
       entry_count2 = stream.readUint32();
@@ -3383,7 +3383,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stsd", function(stream) {
+    BoxParser2.createFullBoxCtor("stsd", function(stream) {
       var i2;
       var ret2;
       var entryCount;
@@ -3391,17 +3391,17 @@ var require_mp4box_all = __commonJS({
       this.entries = [];
       entryCount = stream.readUint32();
       for (i2 = 1; i2 <= entryCount; i2++) {
-        ret2 = BoxParser.parseOneBox(stream, true, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
-          if (BoxParser[ret2.type + "SampleEntry"]) {
-            box2 = new BoxParser[ret2.type + "SampleEntry"](ret2.size);
+        ret2 = BoxParser2.parseOneBox(stream, true, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
+          if (BoxParser2[ret2.type + "SampleEntry"]) {
+            box2 = new BoxParser2[ret2.type + "SampleEntry"](ret2.size);
             box2.hdr_size = ret2.hdr_size;
             box2.start = ret2.start;
           } else {
             Log2.warn("BoxParser", "Unknown sample entry type: " + ret2.type);
-            box2 = new BoxParser.SampleEntry(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
+            box2 = new BoxParser2.SampleEntry(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
           }
-          if (box2.write === BoxParser.SampleEntry.prototype.write) {
+          if (box2.write === BoxParser2.SampleEntry.prototype.write) {
             Log2.info("BoxParser", "SampleEntry " + box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
             box2.parseDataAndRewind(stream);
           }
@@ -3412,7 +3412,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stsg", function(stream) {
+    BoxParser2.createFullBoxCtor("stsg", function(stream) {
       this.grouping_type = stream.readUint32();
       var count = stream.readUint16();
       this.group_description_index = [];
@@ -3420,7 +3420,7 @@ var require_mp4box_all = __commonJS({
         this.group_description_index[i2] = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("stsh", function(stream) {
+    BoxParser2.createFullBoxCtor("stsh", function(stream) {
       var entry_count2;
       var i2;
       entry_count2 = stream.readUint32();
@@ -3433,7 +3433,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stss", function(stream) {
+    BoxParser2.createFullBoxCtor("stss", function(stream) {
       var i2;
       var entry_count2;
       entry_count2 = stream.readUint32();
@@ -3444,7 +3444,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stsz", function(stream) {
+    BoxParser2.createFullBoxCtor("stsz", function(stream) {
       var i2;
       this.sample_sizes = [];
       if (this.version === 0) {
@@ -3459,7 +3459,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stts", function(stream) {
+    BoxParser2.createFullBoxCtor("stts", function(stream) {
       var entry_count2;
       var i2;
       var delta;
@@ -3478,7 +3478,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("stvi", function(stream) {
+    BoxParser2.createFullBoxCtor("stvi", function(stream) {
       var tmp32 = stream.readUint32();
       this.single_view_allowed = tmp32 & 3;
       this.stereo_scheme = stream.readUint32();
@@ -3488,8 +3488,8 @@ var require_mp4box_all = __commonJS({
       var box2;
       this.boxes = [];
       while (stream.getPosition() < this.start + this.size) {
-        ret2 = BoxParser.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
+        ret2 = BoxParser2.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
           box2 = ret2.box;
           this.boxes.push(box2);
           this[box2.type] = box2;
@@ -3498,10 +3498,10 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createBoxCtor("styp", function(stream) {
-      BoxParser.ftypBox.prototype.parse.call(this, stream);
+    BoxParser2.createBoxCtor("styp", function(stream) {
+      BoxParser2.ftypBox.prototype.parse.call(this, stream);
     });
-    BoxParser.createFullBoxCtor("stz2", function(stream) {
+    BoxParser2.createFullBoxCtor("stz2", function(stream) {
       var i2;
       var sample_size;
       var sample_count;
@@ -3529,7 +3529,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("subs", function(stream) {
+    BoxParser2.createFullBoxCtor("subs", function(stream) {
       var i2, j;
       var entry_count2;
       var subsample_count;
@@ -3557,7 +3557,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("tenc", function(stream) {
+    BoxParser2.createFullBoxCtor("tenc", function(stream) {
       stream.readUint8();
       if (this.version === 0) {
         stream.readUint8();
@@ -3568,54 +3568,54 @@ var require_mp4box_all = __commonJS({
       }
       this.default_isProtected = stream.readUint8();
       this.default_Per_Sample_IV_Size = stream.readUint8();
-      this.default_KID = BoxParser.parseHex16(stream);
+      this.default_KID = BoxParser2.parseHex16(stream);
       if (this.default_isProtected === 1 && this.default_Per_Sample_IV_Size === 0) {
         this.default_constant_IV_size = stream.readUint8();
         this.default_constant_IV = stream.readUint8Array(this.default_constant_IV_size);
       }
     });
-    BoxParser.createFullBoxCtor("tfdt", function(stream) {
+    BoxParser2.createFullBoxCtor("tfdt", function(stream) {
       if (this.version == 1) {
         this.baseMediaDecodeTime = stream.readUint64();
       } else {
         this.baseMediaDecodeTime = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("tfhd", function(stream) {
+    BoxParser2.createFullBoxCtor("tfhd", function(stream) {
       var readBytes = 0;
       this.track_id = stream.readUint32();
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TFHD_FLAG_BASE_DATA_OFFSET) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TFHD_FLAG_BASE_DATA_OFFSET) {
         this.base_data_offset = stream.readUint64();
         readBytes += 8;
       } else {
         this.base_data_offset = 0;
       }
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TFHD_FLAG_SAMPLE_DESC) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TFHD_FLAG_SAMPLE_DESC) {
         this.default_sample_description_index = stream.readUint32();
         readBytes += 4;
       } else {
         this.default_sample_description_index = 0;
       }
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TFHD_FLAG_SAMPLE_DUR) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TFHD_FLAG_SAMPLE_DUR) {
         this.default_sample_duration = stream.readUint32();
         readBytes += 4;
       } else {
         this.default_sample_duration = 0;
       }
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TFHD_FLAG_SAMPLE_SIZE) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TFHD_FLAG_SAMPLE_SIZE) {
         this.default_sample_size = stream.readUint32();
         readBytes += 4;
       } else {
         this.default_sample_size = 0;
       }
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TFHD_FLAG_SAMPLE_FLAGS) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TFHD_FLAG_SAMPLE_FLAGS) {
         this.default_sample_flags = stream.readUint32();
         readBytes += 4;
       } else {
         this.default_sample_flags = 0;
       }
     });
-    BoxParser.createFullBoxCtor("tfra", function(stream) {
+    BoxParser2.createFullBoxCtor("tfra", function(stream) {
       this.track_ID = stream.readUint32();
       stream.readUint24();
       var tmp_byte = stream.readUint8();
@@ -3637,7 +3637,7 @@ var require_mp4box_all = __commonJS({
         this.sample_number = stream["readUint" + 8 * (this.length_size_of_sample_num + 1)]();
       }
     });
-    BoxParser.createFullBoxCtor("tkhd", function(stream) {
+    BoxParser2.createFullBoxCtor("tkhd", function(stream) {
       if (this.version == 1) {
         this.creation_time = stream.readUint64();
         this.modification_time = stream.readUint64();
@@ -3660,43 +3660,43 @@ var require_mp4box_all = __commonJS({
       this.width = stream.readUint32();
       this.height = stream.readUint32();
     });
-    BoxParser.createBoxCtor("tmax", function(stream) {
+    BoxParser2.createBoxCtor("tmax", function(stream) {
       this.time = stream.readUint32();
     });
-    BoxParser.createBoxCtor("tmin", function(stream) {
+    BoxParser2.createBoxCtor("tmin", function(stream) {
       this.time = stream.readUint32();
     });
-    BoxParser.createBoxCtor("totl", function(stream) {
+    BoxParser2.createBoxCtor("totl", function(stream) {
       this.bytessent = stream.readUint32();
     });
-    BoxParser.createBoxCtor("tpay", function(stream) {
+    BoxParser2.createBoxCtor("tpay", function(stream) {
       this.bytessent = stream.readUint32();
     });
-    BoxParser.createBoxCtor("tpyl", function(stream) {
+    BoxParser2.createBoxCtor("tpyl", function(stream) {
       this.bytessent = stream.readUint64();
     });
-    BoxParser.TrackGroupTypeBox.prototype.parse = function(stream) {
+    BoxParser2.TrackGroupTypeBox.prototype.parse = function(stream) {
       this.parseFullHeader(stream);
       this.track_group_id = stream.readUint32();
     };
-    BoxParser.createTrackGroupCtor("msrc");
-    BoxParser.TrackReferenceTypeBox = function(type, size, hdr_size, start) {
-      BoxParser.Box.call(this, type, size);
+    BoxParser2.createTrackGroupCtor("msrc");
+    BoxParser2.TrackReferenceTypeBox = function(type, size, hdr_size, start) {
+      BoxParser2.Box.call(this, type, size);
       this.hdr_size = hdr_size;
       this.start = start;
     };
-    BoxParser.TrackReferenceTypeBox.prototype = new BoxParser.Box();
-    BoxParser.TrackReferenceTypeBox.prototype.parse = function(stream) {
+    BoxParser2.TrackReferenceTypeBox.prototype = new BoxParser2.Box();
+    BoxParser2.TrackReferenceTypeBox.prototype.parse = function(stream) {
       this.track_ids = stream.readUint32Array((this.size - this.hdr_size) / 4);
     };
-    BoxParser.trefBox.prototype.parse = function(stream) {
+    BoxParser2.trefBox.prototype.parse = function(stream) {
       var ret2;
       var box2;
       while (stream.getPosition() < this.start + this.size) {
-        ret2 = BoxParser.parseOneBox(stream, true, this.size - (stream.getPosition() - this.start));
-        if (ret2.code === BoxParser.OK) {
-          box2 = new BoxParser.TrackReferenceTypeBox(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
-          if (box2.write === BoxParser.Box.prototype.write && box2.type !== "mdat") {
+        ret2 = BoxParser2.parseOneBox(stream, true, this.size - (stream.getPosition() - this.start));
+        if (ret2.code === BoxParser2.OK) {
+          box2 = new BoxParser2.TrackReferenceTypeBox(ret2.type, ret2.size, ret2.hdr_size, ret2.start);
+          if (box2.write === BoxParser2.Box.prototype.write && box2.type !== "mdat") {
             Log2.info("BoxParser", "TrackReference " + box2.type + " box writing not yet implemented, keeping unparsed data in memory for later write");
             box2.parseDataAndRewind(stream);
           }
@@ -3707,12 +3707,12 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.createFullBoxCtor("trep", function(stream) {
+    BoxParser2.createFullBoxCtor("trep", function(stream) {
       this.track_ID = stream.readUint32();
       this.boxes = [];
       while (stream.getPosition() < this.start + this.size) {
-        ret = BoxParser.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
-        if (ret.code === BoxParser.OK) {
+        ret = BoxParser2.parseOneBox(stream, false, this.size - (stream.getPosition() - this.start));
+        if (ret.code === BoxParser2.OK) {
           box = ret.box;
           this.boxes.push(box);
         } else {
@@ -3720,27 +3720,27 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("trex", function(stream) {
+    BoxParser2.createFullBoxCtor("trex", function(stream) {
       this.track_id = stream.readUint32();
       this.default_sample_description_index = stream.readUint32();
       this.default_sample_duration = stream.readUint32();
       this.default_sample_size = stream.readUint32();
       this.default_sample_flags = stream.readUint32();
     });
-    BoxParser.createBoxCtor("trpy", function(stream) {
+    BoxParser2.createBoxCtor("trpy", function(stream) {
       this.bytessent = stream.readUint64();
     });
-    BoxParser.createFullBoxCtor("trun", function(stream) {
+    BoxParser2.createFullBoxCtor("trun", function(stream) {
       var readBytes = 0;
       this.sample_count = stream.readUint32();
       readBytes += 4;
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TRUN_FLAGS_DATA_OFFSET) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TRUN_FLAGS_DATA_OFFSET) {
         this.data_offset = stream.readInt32();
         readBytes += 4;
       } else {
         this.data_offset = 0;
       }
-      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser.TRUN_FLAGS_FIRST_FLAG) {
+      if (this.size - this.hdr_size > readBytes && this.flags & BoxParser2.TRUN_FLAGS_FIRST_FLAG) {
         this.first_sample_flags = stream.readUint32();
         readBytes += 4;
       } else {
@@ -3752,16 +3752,16 @@ var require_mp4box_all = __commonJS({
       this.sample_composition_time_offset = [];
       if (this.size - this.hdr_size > readBytes) {
         for (var i2 = 0; i2 < this.sample_count; i2++) {
-          if (this.flags & BoxParser.TRUN_FLAGS_DURATION) {
+          if (this.flags & BoxParser2.TRUN_FLAGS_DURATION) {
             this.sample_duration[i2] = stream.readUint32();
           }
-          if (this.flags & BoxParser.TRUN_FLAGS_SIZE) {
+          if (this.flags & BoxParser2.TRUN_FLAGS_SIZE) {
             this.sample_size[i2] = stream.readUint32();
           }
-          if (this.flags & BoxParser.TRUN_FLAGS_FLAGS) {
+          if (this.flags & BoxParser2.TRUN_FLAGS_FLAGS) {
             this.sample_flags[i2] = stream.readUint32();
           }
-          if (this.flags & BoxParser.TRUN_FLAGS_CTS_OFFSET) {
+          if (this.flags & BoxParser2.TRUN_FLAGS_CTS_OFFSET) {
             if (this.version === 0) {
               this.sample_composition_time_offset[i2] = stream.readUint32();
             } else {
@@ -3771,7 +3771,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("tsel", function(stream) {
+    BoxParser2.createFullBoxCtor("tsel", function(stream) {
       this.switch_group = stream.readUint32();
       var count = (this.size - this.hdr_size - 4) / 4;
       this.attribute_list = [];
@@ -3779,23 +3779,23 @@ var require_mp4box_all = __commonJS({
         this.attribute_list[i2] = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("txtC", function(stream) {
+    BoxParser2.createFullBoxCtor("txtC", function(stream) {
       this.config = stream.readCString();
     });
-    BoxParser.createBoxCtor("tyco", function(stream) {
+    BoxParser2.createBoxCtor("tyco", function(stream) {
       var count = (this.size - this.hdr_size) / 4;
       this.compatible_brands = [];
       for (var i2 = 0; i2 < count; i2++) {
         this.compatible_brands[i2] = stream.readString(4);
       }
     });
-    BoxParser.createFullBoxCtor("udes", function(stream) {
+    BoxParser2.createFullBoxCtor("udes", function(stream) {
       this.lang = stream.readCString();
       this.name = stream.readCString();
       this.description = stream.readCString();
       this.tags = stream.readCString();
     });
-    BoxParser.createFullBoxCtor("uncC", function(stream) {
+    BoxParser2.createFullBoxCtor("uncC", function(stream) {
       var i2;
       this.profile = stream.readUint32();
       this.component_count = stream.readUint16();
@@ -3824,28 +3824,28 @@ var require_mp4box_all = __commonJS({
       this.num_tile_cols_minus_one = stream.readUint32();
       this.num_tile_rows_minus_one = stream.readUint32();
     });
-    BoxParser.createFullBoxCtor("url ", function(stream) {
+    BoxParser2.createFullBoxCtor("url ", function(stream) {
       if (this.flags !== 1) {
         this.location = stream.readCString();
       }
     });
-    BoxParser.createFullBoxCtor("urn ", function(stream) {
+    BoxParser2.createFullBoxCtor("urn ", function(stream) {
       this.name = stream.readCString();
       if (this.size - this.hdr_size - this.name.length - 1 > 0) {
         this.location = stream.readCString();
       }
     });
-    BoxParser.createUUIDBox("a5d40b30e81411ddba2f0800200c9a66", true, false, function(stream) {
+    BoxParser2.createUUIDBox("a5d40b30e81411ddba2f0800200c9a66", true, false, function(stream) {
       this.LiveServerManifest = stream.readString(this.size - this.hdr_size).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     });
-    BoxParser.createUUIDBox("d08a4f1810f34a82b6c832d8aba183d3", true, false, function(stream) {
-      this.system_id = BoxParser.parseHex16(stream);
+    BoxParser2.createUUIDBox("d08a4f1810f34a82b6c832d8aba183d3", true, false, function(stream) {
+      this.system_id = BoxParser2.parseHex16(stream);
       var datasize = stream.readUint32();
       if (datasize > 0) {
         this.data = stream.readUint8Array(datasize);
       }
     });
-    BoxParser.createUUIDBox(
+    BoxParser2.createUUIDBox(
       "a2394f525a9b4f14a2446c427c648df4",
       true,
       false
@@ -3874,12 +3874,12 @@ var require_mp4box_all = __commonJS({
       	}
       }*/
     );
-    BoxParser.createUUIDBox("8974dbce7be74c5184f97148f9882554", true, false, function(stream) {
+    BoxParser2.createUUIDBox("8974dbce7be74c5184f97148f9882554", true, false, function(stream) {
       this.default_AlgorithmID = stream.readUint24();
       this.default_IV_size = stream.readUint8();
-      this.default_KID = BoxParser.parseHex16(stream);
+      this.default_KID = BoxParser2.parseHex16(stream);
     });
-    BoxParser.createUUIDBox("d4807ef2ca3946958e5426cb9e46a79f", true, false, function(stream) {
+    BoxParser2.createUUIDBox("d4807ef2ca3946958e5426cb9e46a79f", true, false, function(stream) {
       this.fragment_count = stream.readUint8();
       this.entries = [];
       for (var i2 = 0; i2 < this.fragment_count; i2++) {
@@ -3898,7 +3898,7 @@ var require_mp4box_all = __commonJS({
         this.entries.push(entry);
       }
     });
-    BoxParser.createUUIDBox("6d1d9b0542d544e680e2141daff757b2", true, false, function(stream) {
+    BoxParser2.createUUIDBox("6d1d9b0542d544e680e2141daff757b2", true, false, function(stream) {
       if (this.version === 1) {
         this.absolute_time = stream.readUint64();
         this.duration = stream.readUint64();
@@ -3907,11 +3907,11 @@ var require_mp4box_all = __commonJS({
         this.duration = stream.readUint32();
       }
     });
-    BoxParser.createFullBoxCtor("vmhd", function(stream) {
+    BoxParser2.createFullBoxCtor("vmhd", function(stream) {
       this.graphicsmode = stream.readUint16();
       this.opcolor = stream.readUint16Array(3);
     });
-    BoxParser.createFullBoxCtor("vpcC", function(stream) {
+    BoxParser2.createFullBoxCtor("vpcC", function(stream) {
       var tmp;
       if (this.version === 1) {
         this.profile = stream.readUint8();
@@ -3939,10 +3939,10 @@ var require_mp4box_all = __commonJS({
         this.codecIntializationData = stream.readUint8Array(this.codecIntializationDataSize);
       }
     });
-    BoxParser.createBoxCtor("vttC", function(stream) {
+    BoxParser2.createBoxCtor("vttC", function(stream) {
       this.text = stream.readString(this.size - this.hdr_size);
     });
-    BoxParser.createFullBoxCtor("vvcC", function(stream) {
+    BoxParser2.createFullBoxCtor("vvcC", function(stream) {
       var i2, j;
       var bitReader = {
         held_bits: void 0,
@@ -4049,71 +4049,71 @@ var require_mp4box_all = __commonJS({
         }
       }
     });
-    BoxParser.createFullBoxCtor("vvnC", function(stream) {
+    BoxParser2.createFullBoxCtor("vvnC", function(stream) {
       var tmp = strm.readUint8();
       this.lengthSizeMinusOne = tmp & 3;
     });
-    BoxParser.SampleEntry.prototype.isVideo = function() {
+    BoxParser2.SampleEntry.prototype.isVideo = function() {
       return false;
     };
-    BoxParser.SampleEntry.prototype.isAudio = function() {
+    BoxParser2.SampleEntry.prototype.isAudio = function() {
       return false;
     };
-    BoxParser.SampleEntry.prototype.isSubtitle = function() {
+    BoxParser2.SampleEntry.prototype.isSubtitle = function() {
       return false;
     };
-    BoxParser.SampleEntry.prototype.isMetadata = function() {
+    BoxParser2.SampleEntry.prototype.isMetadata = function() {
       return false;
     };
-    BoxParser.SampleEntry.prototype.isHint = function() {
+    BoxParser2.SampleEntry.prototype.isHint = function() {
       return false;
     };
-    BoxParser.SampleEntry.prototype.getCodec = function() {
+    BoxParser2.SampleEntry.prototype.getCodec = function() {
       return this.type.replace(".", "");
     };
-    BoxParser.SampleEntry.prototype.getWidth = function() {
+    BoxParser2.SampleEntry.prototype.getWidth = function() {
       return "";
     };
-    BoxParser.SampleEntry.prototype.getHeight = function() {
+    BoxParser2.SampleEntry.prototype.getHeight = function() {
       return "";
     };
-    BoxParser.SampleEntry.prototype.getChannelCount = function() {
+    BoxParser2.SampleEntry.prototype.getChannelCount = function() {
       return "";
     };
-    BoxParser.SampleEntry.prototype.getSampleRate = function() {
+    BoxParser2.SampleEntry.prototype.getSampleRate = function() {
       return "";
     };
-    BoxParser.SampleEntry.prototype.getSampleSize = function() {
+    BoxParser2.SampleEntry.prototype.getSampleSize = function() {
       return "";
     };
-    BoxParser.VisualSampleEntry.prototype.isVideo = function() {
+    BoxParser2.VisualSampleEntry.prototype.isVideo = function() {
       return true;
     };
-    BoxParser.VisualSampleEntry.prototype.getWidth = function() {
+    BoxParser2.VisualSampleEntry.prototype.getWidth = function() {
       return this.width;
     };
-    BoxParser.VisualSampleEntry.prototype.getHeight = function() {
+    BoxParser2.VisualSampleEntry.prototype.getHeight = function() {
       return this.height;
     };
-    BoxParser.AudioSampleEntry.prototype.isAudio = function() {
+    BoxParser2.AudioSampleEntry.prototype.isAudio = function() {
       return true;
     };
-    BoxParser.AudioSampleEntry.prototype.getChannelCount = function() {
+    BoxParser2.AudioSampleEntry.prototype.getChannelCount = function() {
       return this.channel_count;
     };
-    BoxParser.AudioSampleEntry.prototype.getSampleRate = function() {
+    BoxParser2.AudioSampleEntry.prototype.getSampleRate = function() {
       return this.samplerate;
     };
-    BoxParser.AudioSampleEntry.prototype.getSampleSize = function() {
+    BoxParser2.AudioSampleEntry.prototype.getSampleSize = function() {
       return this.samplesize;
     };
-    BoxParser.SubtitleSampleEntry.prototype.isSubtitle = function() {
+    BoxParser2.SubtitleSampleEntry.prototype.isSubtitle = function() {
       return true;
     };
-    BoxParser.MetadataSampleEntry.prototype.isMetadata = function() {
+    BoxParser2.MetadataSampleEntry.prototype.isMetadata = function() {
       return true;
     };
-    BoxParser.decimalToHex = function(d, padding) {
+    BoxParser2.decimalToHex = function(d, padding) {
       var hex = Number(d).toString(16);
       padding = typeof padding === "undefined" || padding === null ? padding = 2 : padding;
       while (hex.length < padding) {
@@ -4121,17 +4121,17 @@ var require_mp4box_all = __commonJS({
       }
       return hex;
     };
-    BoxParser.avc1SampleEntry.prototype.getCodec = BoxParser.avc2SampleEntry.prototype.getCodec = BoxParser.avc3SampleEntry.prototype.getCodec = BoxParser.avc4SampleEntry.prototype.getCodec = function() {
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+    BoxParser2.avc1SampleEntry.prototype.getCodec = BoxParser2.avc2SampleEntry.prototype.getCodec = BoxParser2.avc3SampleEntry.prototype.getCodec = BoxParser2.avc4SampleEntry.prototype.getCodec = function() {
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       if (this.avcC) {
-        return baseCodec + "." + BoxParser.decimalToHex(this.avcC.AVCProfileIndication) + BoxParser.decimalToHex(this.avcC.profile_compatibility) + BoxParser.decimalToHex(this.avcC.AVCLevelIndication);
+        return baseCodec + "." + BoxParser2.decimalToHex(this.avcC.AVCProfileIndication) + BoxParser2.decimalToHex(this.avcC.profile_compatibility) + BoxParser2.decimalToHex(this.avcC.AVCLevelIndication);
       } else {
         return baseCodec;
       }
     };
-    BoxParser.hev1SampleEntry.prototype.getCodec = BoxParser.hvc1SampleEntry.prototype.getCodec = function() {
+    BoxParser2.hev1SampleEntry.prototype.getCodec = BoxParser2.hvc1SampleEntry.prototype.getCodec = function() {
       var i2;
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       if (this.hvcC) {
         baseCodec += ".";
         switch (this.hvcC.general_profile_space) {
@@ -4159,7 +4159,7 @@ var require_mp4box_all = __commonJS({
           reversed <<= 1;
           val >>= 1;
         }
-        baseCodec += BoxParser.decimalToHex(reversed, 0);
+        baseCodec += BoxParser2.decimalToHex(reversed, 0);
         baseCodec += ".";
         if (this.hvcC.general_tier_flag === 0) {
           baseCodec += "L";
@@ -4171,7 +4171,7 @@ var require_mp4box_all = __commonJS({
         var constraint_string = "";
         for (i2 = 5; i2 >= 0; i2--) {
           if (this.hvcC.general_constraint_indicator[i2] || hasByte) {
-            constraint_string = "." + BoxParser.decimalToHex(this.hvcC.general_constraint_indicator[i2], 0) + constraint_string;
+            constraint_string = "." + BoxParser2.decimalToHex(this.hvcC.general_constraint_indicator[i2], 0) + constraint_string;
             hasByte = true;
           }
         }
@@ -4179,9 +4179,9 @@ var require_mp4box_all = __commonJS({
       }
       return baseCodec;
     };
-    BoxParser.vvc1SampleEntry.prototype.getCodec = BoxParser.vvi1SampleEntry.prototype.getCodec = function() {
+    BoxParser2.vvc1SampleEntry.prototype.getCodec = BoxParser2.vvi1SampleEntry.prototype.getCodec = function() {
       var i2;
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       if (this.vvcC) {
         baseCodec += "." + this.vvcC.general_profile_idc;
         if (this.vvcC.general_tier_flag) {
@@ -4232,26 +4232,26 @@ var require_mp4box_all = __commonJS({
       }
       return baseCodec;
     };
-    BoxParser.mp4aSampleEntry.prototype.getCodec = function() {
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+    BoxParser2.mp4aSampleEntry.prototype.getCodec = function() {
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       if (this.esds && this.esds.esd) {
         var oti = this.esds.esd.getOTI();
         var dsi = this.esds.esd.getAudioConfig();
-        return baseCodec + "." + BoxParser.decimalToHex(oti) + (dsi ? "." + dsi : "");
+        return baseCodec + "." + BoxParser2.decimalToHex(oti) + (dsi ? "." + dsi : "");
       } else {
         return baseCodec;
       }
     };
-    BoxParser.stxtSampleEntry.prototype.getCodec = function() {
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+    BoxParser2.stxtSampleEntry.prototype.getCodec = function() {
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       if (this.mime_format) {
         return baseCodec + "." + this.mime_format;
       } else {
         return baseCodec;
       }
     };
-    BoxParser.vp08SampleEntry.prototype.getCodec = BoxParser.vp09SampleEntry.prototype.getCodec = function() {
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+    BoxParser2.vp08SampleEntry.prototype.getCodec = BoxParser2.vp09SampleEntry.prototype.getCodec = function() {
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       var level = this.vpcC.level;
       if (level == 0) {
         level = "00";
@@ -4262,8 +4262,8 @@ var require_mp4box_all = __commonJS({
       }
       return baseCodec + ".0" + this.vpcC.profile + "." + level + "." + bitDepth;
     };
-    BoxParser.av01SampleEntry.prototype.getCodec = function() {
-      var baseCodec = BoxParser.SampleEntry.prototype.getCodec.call(this);
+    BoxParser2.av01SampleEntry.prototype.getCodec = function() {
+      var baseCodec = BoxParser2.SampleEntry.prototype.getCodec.call(this);
       var level = this.av1C.seq_level_idx_0;
       if (level < 10) {
         level = "0" + level;
@@ -4276,7 +4276,7 @@ var require_mp4box_all = __commonJS({
       }
       return baseCodec + "." + this.av1C.seq_profile + "." + level + (this.av1C.seq_tier_0 ? "H" : "M") + "." + bitdepth;
     };
-    BoxParser.Box.prototype.writeHeader = function(stream, msg) {
+    BoxParser2.Box.prototype.writeHeader = function(stream, msg) {
       this.size += 8;
       if (this.size > MAX_SIZE) {
         this.size += 8;
@@ -4299,13 +4299,13 @@ var require_mp4box_all = __commonJS({
         stream.writeUint64(this.size);
       }
     };
-    BoxParser.FullBox.prototype.writeHeader = function(stream) {
+    BoxParser2.FullBox.prototype.writeHeader = function(stream) {
       this.size += 4;
-      BoxParser.Box.prototype.writeHeader.call(this, stream, " v=" + this.version + " f=" + this.flags);
+      BoxParser2.Box.prototype.writeHeader.call(this, stream, " v=" + this.version + " f=" + this.flags);
       stream.writeUint8(this.version);
       stream.writeUint24(this.flags);
     };
-    BoxParser.Box.prototype.write = function(stream) {
+    BoxParser2.Box.prototype.write = function(stream) {
       if (this.type === "mdat") {
         if (this.data) {
           this.size = this.data.length;
@@ -4320,7 +4320,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.ContainerBox.prototype.write = function(stream) {
+    BoxParser2.ContainerBox.prototype.write = function(stream) {
       this.size = 0;
       this.writeHeader(stream);
       for (var i2 = 0; i2 < this.boxes.length; i2++) {
@@ -4332,12 +4332,12 @@ var require_mp4box_all = __commonJS({
       Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
-    BoxParser.TrackReferenceTypeBox.prototype.write = function(stream) {
+    BoxParser2.TrackReferenceTypeBox.prototype.write = function(stream) {
       this.size = this.track_ids.length * 4;
       this.writeHeader(stream);
       stream.writeUint32Array(this.track_ids);
     };
-    BoxParser.avcCBox.prototype.write = function(stream) {
+    BoxParser2.avcCBox.prototype.write = function(stream) {
       var i2;
       this.size = 7;
       for (i2 = 0; i2 < this.SPS.length; i2++) {
@@ -4369,7 +4369,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint8Array(this.ext);
       }
     };
-    BoxParser.co64Box.prototype.write = function(stream) {
+    BoxParser2.co64Box.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4380,7 +4380,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint64(this.chunk_offsets[i2]);
       }
     };
-    BoxParser.cslgBox.prototype.write = function(stream) {
+    BoxParser2.cslgBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4392,7 +4392,7 @@ var require_mp4box_all = __commonJS({
       stream.writeInt32(this.compositionStartTime);
       stream.writeInt32(this.compositionEndTime);
     };
-    BoxParser.cttsBox.prototype.write = function(stream) {
+    BoxParser2.cttsBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4408,7 +4408,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.drefBox.prototype.write = function(stream) {
+    BoxParser2.drefBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4;
@@ -4421,14 +4421,14 @@ var require_mp4box_all = __commonJS({
       Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
-    BoxParser.elngBox.prototype.write = function(stream) {
+    BoxParser2.elngBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = this.extended_language.length;
       this.writeHeader(stream);
       stream.writeString(this.extended_language);
     };
-    BoxParser.elstBox.prototype.write = function(stream) {
+    BoxParser2.elstBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4 + 12 * this.entries.length;
@@ -4442,7 +4442,7 @@ var require_mp4box_all = __commonJS({
         stream.writeInt16(entry.media_rate_fraction);
       }
     };
-    BoxParser.emsgBox.prototype.write = function(stream) {
+    BoxParser2.emsgBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4 * 4 + this.message_data.length + (this.scheme_id_uri.length + 1) + (this.value.length + 1);
@@ -4455,7 +4455,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(this.id);
       stream.writeUint8Array(this.message_data);
     };
-    BoxParser.ftypBox.prototype.write = function(stream) {
+    BoxParser2.ftypBox.prototype.write = function(stream) {
       this.size = 8 + 4 * this.compatible_brands.length;
       this.writeHeader(stream);
       stream.writeString(this.major_brand, null, 4);
@@ -4464,7 +4464,7 @@ var require_mp4box_all = __commonJS({
         stream.writeString(this.compatible_brands[i2], null, 4);
       }
     };
-    BoxParser.hdlrBox.prototype.write = function(stream) {
+    BoxParser2.hdlrBox.prototype.write = function(stream) {
       this.size = 5 * 4 + this.name.length + 1;
       this.version = 0;
       this.flags = 0;
@@ -4476,7 +4476,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(0);
       stream.writeCString(this.name);
     };
-    BoxParser.hvcCBox.prototype.write = function(stream) {
+    BoxParser2.hvcCBox.prototype.write = function(stream) {
       var i2, j;
       this.size = 23;
       for (i2 = 0; i2 < this.nalu_arrays.length; i2++) {
@@ -4508,7 +4508,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.kindBox.prototype.write = function(stream) {
+    BoxParser2.kindBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = this.schemeURI.length + 1 + (this.value.length + 1);
@@ -4516,7 +4516,7 @@ var require_mp4box_all = __commonJS({
       stream.writeCString(this.schemeURI);
       stream.writeCString(this.value);
     };
-    BoxParser.mdhdBox.prototype.write = function(stream) {
+    BoxParser2.mdhdBox.prototype.write = function(stream) {
       this.size = 4 * 4 + 2 * 2;
       this.flags = 0;
       this.version = 0;
@@ -4528,21 +4528,21 @@ var require_mp4box_all = __commonJS({
       stream.writeUint16(this.language);
       stream.writeUint16(0);
     };
-    BoxParser.mehdBox.prototype.write = function(stream) {
+    BoxParser2.mehdBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4;
       this.writeHeader(stream);
       stream.writeUint32(this.fragment_duration);
     };
-    BoxParser.mfhdBox.prototype.write = function(stream) {
+    BoxParser2.mfhdBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4;
       this.writeHeader(stream);
       stream.writeUint32(this.sequence_number);
     };
-    BoxParser.mvhdBox.prototype.write = function(stream) {
+    BoxParser2.mvhdBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 23 * 4 + 2 * 2;
@@ -4565,9 +4565,9 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(0);
       stream.writeUint32(this.next_track_id);
     };
-    BoxParser.SampleEntry.prototype.writeHeader = function(stream) {
+    BoxParser2.SampleEntry.prototype.writeHeader = function(stream) {
       this.size = 8;
-      BoxParser.Box.prototype.writeHeader.call(this, stream);
+      BoxParser2.Box.prototype.writeHeader.call(this, stream);
       stream.writeUint8(0);
       stream.writeUint8(0);
       stream.writeUint8(0);
@@ -4576,7 +4576,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint8(0);
       stream.writeUint16(this.data_reference_index);
     };
-    BoxParser.SampleEntry.prototype.writeFooter = function(stream) {
+    BoxParser2.SampleEntry.prototype.writeFooter = function(stream) {
       for (var i2 = 0; i2 < this.boxes.length; i2++) {
         this.boxes[i2].write(stream);
         this.size += this.boxes[i2].size;
@@ -4584,14 +4584,14 @@ var require_mp4box_all = __commonJS({
       Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
-    BoxParser.SampleEntry.prototype.write = function(stream) {
+    BoxParser2.SampleEntry.prototype.write = function(stream) {
       this.writeHeader(stream);
       stream.writeUint8Array(this.data);
       this.size += this.data.length;
       Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
-    BoxParser.VisualSampleEntry.prototype.write = function(stream) {
+    BoxParser2.VisualSampleEntry.prototype.write = function(stream) {
       this.writeHeader(stream);
       this.size += 2 * 7 + 6 * 4 + 32;
       stream.writeUint16(0);
@@ -4611,7 +4611,7 @@ var require_mp4box_all = __commonJS({
       stream.writeInt16(-1);
       this.writeFooter(stream);
     };
-    BoxParser.AudioSampleEntry.prototype.write = function(stream) {
+    BoxParser2.AudioSampleEntry.prototype.write = function(stream) {
       this.writeHeader(stream);
       this.size += 2 * 4 + 3 * 4;
       stream.writeUint32(0);
@@ -4623,7 +4623,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(this.samplerate << 16);
       this.writeFooter(stream);
     };
-    BoxParser.stppSampleEntry.prototype.write = function(stream) {
+    BoxParser2.stppSampleEntry.prototype.write = function(stream) {
       this.writeHeader(stream);
       this.size += this.namespace.length + 1 + this.schema_location.length + 1 + this.auxiliary_mime_types.length + 1;
       stream.writeCString(this.namespace);
@@ -4631,10 +4631,10 @@ var require_mp4box_all = __commonJS({
       stream.writeCString(this.auxiliary_mime_types);
       this.writeFooter(stream);
     };
-    BoxParser.SampleGroupEntry.prototype.write = function(stream) {
+    BoxParser2.SampleGroupEntry.prototype.write = function(stream) {
       stream.writeUint8Array(this.data);
     };
-    BoxParser.sbgpBox.prototype.write = function(stream) {
+    BoxParser2.sbgpBox.prototype.write = function(stream) {
       this.version = 1;
       this.flags = 0;
       this.size = 12 + 8 * this.entries.length;
@@ -4648,7 +4648,7 @@ var require_mp4box_all = __commonJS({
         stream.writeInt32(entry.group_description_index);
       }
     };
-    BoxParser.sgpdBox.prototype.write = function(stream) {
+    BoxParser2.sgpdBox.prototype.write = function(stream) {
       var i2;
       var entry;
       this.flags = 0;
@@ -4681,7 +4681,7 @@ var require_mp4box_all = __commonJS({
         entry.write(stream);
       }
     };
-    BoxParser.sidxBox.prototype.write = function(stream) {
+    BoxParser2.sidxBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4 * 4 + 2 + 2 + 12 * this.references.length;
@@ -4699,7 +4699,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint32(ref.starts_with_SAP << 31 | ref.SAP_type << 28 | ref.SAP_delta_time);
       }
     };
-    BoxParser.smhdBox.prototype.write = function(stream) {
+    BoxParser2.smhdBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 1;
@@ -4708,7 +4708,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint16(this.balance);
       stream.writeUint16(0);
     };
-    BoxParser.stcoBox.prototype.write = function(stream) {
+    BoxParser2.stcoBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4 + 4 * this.chunk_offsets.length;
@@ -4716,7 +4716,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(this.chunk_offsets.length);
       stream.writeUint32Array(this.chunk_offsets);
     };
-    BoxParser.stscBox.prototype.write = function(stream) {
+    BoxParser2.stscBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4729,7 +4729,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint32(this.sample_description_index[i2]);
       }
     };
-    BoxParser.stsdBox.prototype.write = function(stream) {
+    BoxParser2.stsdBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4744,7 +4744,7 @@ var require_mp4box_all = __commonJS({
       Log2.debug("BoxWriter", "Adjusting box " + this.type + " with new size " + this.size);
       stream.adjustUint32(this.sizePosition, this.size);
     };
-    BoxParser.stshBox.prototype.write = function(stream) {
+    BoxParser2.stshBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4756,7 +4756,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint32(this.sync_sample_numbers[i2]);
       }
     };
-    BoxParser.stssBox.prototype.write = function(stream) {
+    BoxParser2.stssBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4 + 4 * this.sample_numbers.length;
@@ -4764,7 +4764,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(this.sample_numbers.length);
       stream.writeUint32Array(this.sample_numbers);
     };
-    BoxParser.stszBox.prototype.write = function(stream) {
+    BoxParser2.stszBox.prototype.write = function(stream) {
       var i2;
       var constant = true;
       this.version = 0;
@@ -4797,7 +4797,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint32Array(this.sample_sizes);
       }
     };
-    BoxParser.sttsBox.prototype.write = function(stream) {
+    BoxParser2.sttsBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 0;
@@ -4809,7 +4809,7 @@ var require_mp4box_all = __commonJS({
         stream.writeUint32(this.sample_deltas[i2]);
       }
     };
-    BoxParser.tfdtBox.prototype.write = function(stream) {
+    BoxParser2.tfdtBox.prototype.write = function(stream) {
       var UINT32_MAX = Math.pow(2, 32) - 1;
       this.version = this.baseMediaDecodeTime > UINT32_MAX ? 1 : 0;
       this.flags = 0;
@@ -4824,43 +4824,43 @@ var require_mp4box_all = __commonJS({
         stream.writeUint32(this.baseMediaDecodeTime);
       }
     };
-    BoxParser.tfhdBox.prototype.write = function(stream) {
+    BoxParser2.tfhdBox.prototype.write = function(stream) {
       this.version = 0;
       this.size = 4;
-      if (this.flags & BoxParser.TFHD_FLAG_BASE_DATA_OFFSET) {
+      if (this.flags & BoxParser2.TFHD_FLAG_BASE_DATA_OFFSET) {
         this.size += 8;
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_DESC) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_DESC) {
         this.size += 4;
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_DUR) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_DUR) {
         this.size += 4;
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_SIZE) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_SIZE) {
         this.size += 4;
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_FLAGS) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_FLAGS) {
         this.size += 4;
       }
       this.writeHeader(stream);
       stream.writeUint32(this.track_id);
-      if (this.flags & BoxParser.TFHD_FLAG_BASE_DATA_OFFSET) {
+      if (this.flags & BoxParser2.TFHD_FLAG_BASE_DATA_OFFSET) {
         stream.writeUint64(this.base_data_offset);
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_DESC) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_DESC) {
         stream.writeUint32(this.default_sample_description_index);
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_DUR) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_DUR) {
         stream.writeUint32(this.default_sample_duration);
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_SIZE) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_SIZE) {
         stream.writeUint32(this.default_sample_size);
       }
-      if (this.flags & BoxParser.TFHD_FLAG_SAMPLE_FLAGS) {
+      if (this.flags & BoxParser2.TFHD_FLAG_SAMPLE_FLAGS) {
         stream.writeUint32(this.default_sample_flags);
       }
     };
-    BoxParser.tkhdBox.prototype.write = function(stream) {
+    BoxParser2.tkhdBox.prototype.write = function(stream) {
       this.version = 0;
       this.size = 4 * 18 + 2 * 4;
       this.writeHeader(stream);
@@ -4879,7 +4879,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(this.width);
       stream.writeUint32(this.height);
     };
-    BoxParser.trexBox.prototype.write = function(stream) {
+    BoxParser2.trexBox.prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = 4 * 5;
@@ -4890,47 +4890,47 @@ var require_mp4box_all = __commonJS({
       stream.writeUint32(this.default_sample_size);
       stream.writeUint32(this.default_sample_flags);
     };
-    BoxParser.trunBox.prototype.write = function(stream) {
+    BoxParser2.trunBox.prototype.write = function(stream) {
       this.version = 0;
       this.size = 4;
-      if (this.flags & BoxParser.TRUN_FLAGS_DATA_OFFSET) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_DATA_OFFSET) {
         this.size += 4;
       }
-      if (this.flags & BoxParser.TRUN_FLAGS_FIRST_FLAG) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_FIRST_FLAG) {
         this.size += 4;
       }
-      if (this.flags & BoxParser.TRUN_FLAGS_DURATION) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_DURATION) {
         this.size += 4 * this.sample_duration.length;
       }
-      if (this.flags & BoxParser.TRUN_FLAGS_SIZE) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_SIZE) {
         this.size += 4 * this.sample_size.length;
       }
-      if (this.flags & BoxParser.TRUN_FLAGS_FLAGS) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_FLAGS) {
         this.size += 4 * this.sample_flags.length;
       }
-      if (this.flags & BoxParser.TRUN_FLAGS_CTS_OFFSET) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_CTS_OFFSET) {
         this.size += 4 * this.sample_composition_time_offset.length;
       }
       this.writeHeader(stream);
       stream.writeUint32(this.sample_count);
-      if (this.flags & BoxParser.TRUN_FLAGS_DATA_OFFSET) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_DATA_OFFSET) {
         this.data_offset_position = stream.getPosition();
         stream.writeInt32(this.data_offset);
       }
-      if (this.flags & BoxParser.TRUN_FLAGS_FIRST_FLAG) {
+      if (this.flags & BoxParser2.TRUN_FLAGS_FIRST_FLAG) {
         stream.writeUint32(this.first_sample_flags);
       }
       for (var i2 = 0; i2 < this.sample_count; i2++) {
-        if (this.flags & BoxParser.TRUN_FLAGS_DURATION) {
+        if (this.flags & BoxParser2.TRUN_FLAGS_DURATION) {
           stream.writeUint32(this.sample_duration[i2]);
         }
-        if (this.flags & BoxParser.TRUN_FLAGS_SIZE) {
+        if (this.flags & BoxParser2.TRUN_FLAGS_SIZE) {
           stream.writeUint32(this.sample_size[i2]);
         }
-        if (this.flags & BoxParser.TRUN_FLAGS_FLAGS) {
+        if (this.flags & BoxParser2.TRUN_FLAGS_FLAGS) {
           stream.writeUint32(this.sample_flags[i2]);
         }
-        if (this.flags & BoxParser.TRUN_FLAGS_CTS_OFFSET) {
+        if (this.flags & BoxParser2.TRUN_FLAGS_CTS_OFFSET) {
           if (this.version === 0) {
             stream.writeUint32(this.sample_composition_time_offset[i2]);
           } else {
@@ -4939,7 +4939,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser["url Box"].prototype.write = function(stream) {
+    BoxParser2["url Box"].prototype.write = function(stream) {
       this.version = 0;
       if (this.location) {
         this.flags = 0;
@@ -4953,7 +4953,7 @@ var require_mp4box_all = __commonJS({
         stream.writeCString(this.location);
       }
     };
-    BoxParser["urn Box"].prototype.write = function(stream) {
+    BoxParser2["urn Box"].prototype.write = function(stream) {
       this.version = 0;
       this.flags = 0;
       this.size = this.name.length + 1 + (this.location ? this.location.length + 1 : 0);
@@ -4963,7 +4963,7 @@ var require_mp4box_all = __commonJS({
         stream.writeCString(this.location);
       }
     };
-    BoxParser.vmhdBox.prototype.write = function(stream) {
+    BoxParser2.vmhdBox.prototype.write = function(stream) {
       var i2;
       this.version = 0;
       this.flags = 1;
@@ -4972,7 +4972,7 @@ var require_mp4box_all = __commonJS({
       stream.writeUint16(this.graphicsmode);
       stream.writeUint16Array(this.opcolor);
     };
-    BoxParser.cttsBox.prototype.unpack = function(samples) {
+    BoxParser2.cttsBox.prototype.unpack = function(samples) {
       var i2, j, k;
       k = 0;
       for (i2 = 0; i2 < this.sample_counts.length; i2++) {
@@ -4982,7 +4982,7 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.sttsBox.prototype.unpack = function(samples) {
+    BoxParser2.sttsBox.prototype.unpack = function(samples) {
       var i2, j, k;
       k = 0;
       for (i2 = 0; i2 < this.sample_counts.length; i2++) {
@@ -4996,13 +4996,13 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.stcoBox.prototype.unpack = function(samples) {
+    BoxParser2.stcoBox.prototype.unpack = function(samples) {
       var i2;
       for (i2 = 0; i2 < this.chunk_offsets.length; i2++) {
         samples[i2].offset = this.chunk_offsets[i2];
       }
     };
-    BoxParser.stscBox.prototype.unpack = function(samples) {
+    BoxParser2.stscBox.prototype.unpack = function(samples) {
       var i2, j, k, l, m;
       l = 0;
       m = 0;
@@ -5021,13 +5021,13 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.stszBox.prototype.unpack = function(samples) {
+    BoxParser2.stszBox.prototype.unpack = function(samples) {
       var i2;
       for (i2 = 0; i2 < this.sample_sizes.length; i2++) {
         samples[i2].size = this.sample_sizes[i2];
       }
     };
-    BoxParser.DIFF_BOXES_PROP_NAMES = [
+    BoxParser2.DIFF_BOXES_PROP_NAMES = [
       "boxes",
       "entries",
       "references",
@@ -5043,7 +5043,7 @@ var require_mp4box_all = __commonJS({
       "esd",
       "levels"
     ];
-    BoxParser.DIFF_PRIMITIVE_ARRAY_PROP_NAMES = [
+    BoxParser2.DIFF_PRIMITIVE_ARRAY_PROP_NAMES = [
       "compatible_brands",
       "matrix",
       "opcolor",
@@ -5058,14 +5058,14 @@ var require_mp4box_all = __commonJS({
       "sample_description_index",
       "sample_duration"
     ];
-    BoxParser.boxEqualFields = function(box_a, box_b) {
+    BoxParser2.boxEqualFields = function(box_a, box_b) {
       if (box_a && !box_b)
         return false;
       var prop;
       for (prop in box_a) {
-        if (BoxParser.DIFF_BOXES_PROP_NAMES.indexOf(prop) > -1) {
+        if (BoxParser2.DIFF_BOXES_PROP_NAMES.indexOf(prop) > -1) {
           continue;
-        } else if (box_a[prop] instanceof BoxParser.Box || box_b[prop] instanceof BoxParser.Box) {
+        } else if (box_a[prop] instanceof BoxParser2.Box || box_b[prop] instanceof BoxParser2.Box) {
           continue;
         } else if (typeof box_a[prop] === "undefined" || typeof box_b[prop] === "undefined") {
           continue;
@@ -5076,7 +5076,7 @@ var require_mp4box_all = __commonJS({
         } else {
           if (prop === "data" || prop === "start" || prop === "size" || prop === "creation_time" || prop === "modification_time") {
             continue;
-          } else if (BoxParser.DIFF_PRIMITIVE_ARRAY_PROP_NAMES.indexOf(prop) > -1) {
+          } else if (BoxParser2.DIFF_PRIMITIVE_ARRAY_PROP_NAMES.indexOf(prop) > -1) {
             continue;
           } else {
             if (box_a[prop] !== box_b[prop]) {
@@ -5087,14 +5087,14 @@ var require_mp4box_all = __commonJS({
       }
       return true;
     };
-    BoxParser.boxEqual = function(box_a, box_b) {
-      if (!BoxParser.boxEqualFields(box_a, box_b)) {
+    BoxParser2.boxEqual = function(box_a, box_b) {
+      if (!BoxParser2.boxEqualFields(box_a, box_b)) {
         return false;
       }
-      for (var j = 0; j < BoxParser.DIFF_BOXES_PROP_NAMES.length; j++) {
-        var name = BoxParser.DIFF_BOXES_PROP_NAMES[j];
+      for (var j = 0; j < BoxParser2.DIFF_BOXES_PROP_NAMES.length; j++) {
+        var name = BoxParser2.DIFF_BOXES_PROP_NAMES[j];
         if (box_a[name] && box_b[name]) {
-          if (!BoxParser.boxEqual(box_a[name], box_b[name])) {
+          if (!BoxParser2.boxEqual(box_a[name], box_b[name])) {
             return false;
           }
         }
@@ -5108,8 +5108,8 @@ var require_mp4box_all = __commonJS({
       var stream = new MP4BoxStream(data.buffer);
       cues = [];
       while (!stream.isEos()) {
-        cue = BoxParser.parseOneBox(stream, false);
-        if (cue.code === BoxParser.OK && cue.box.type === "vttc") {
+        cue = BoxParser2.parseOneBox(stream, false);
+        if (cue.code === BoxParser2.OK && cue.box.type === "vttc") {
           cues.push(cue.box);
         }
       }
@@ -5284,8 +5284,8 @@ var require_mp4box_all = __commonJS({
           if (this.saveParsePosition) {
             this.saveParsePosition();
           }
-          ret2 = BoxParser.parseOneBox(this.stream, parseBoxHeadersOnly);
-          if (ret2.code === BoxParser.ERR_NOT_ENOUGH_DATA) {
+          ret2 = BoxParser2.parseOneBox(this.stream, parseBoxHeadersOnly);
+          if (ret2.code === BoxParser2.ERR_NOT_ENOUGH_DATA) {
             if (this.processIncompleteBox) {
               if (this.processIncompleteBox(ret2)) {
                 continue;
@@ -5739,7 +5739,7 @@ var require_mp4box_all = __commonJS({
       while (box_index < this.boxes.length && box_index < b.boxes.length) {
         var a_box = this.boxes[box_index];
         var b_box = b.boxes[box_index];
-        if (!BoxParser.boxEqual(a_box, b_box)) {
+        if (!BoxParser2.boxEqual(a_box, b_box)) {
           return false;
         }
         box_index++;
@@ -5758,7 +5758,7 @@ var require_mp4box_all = __commonJS({
       var merged;
       var found;
       if (ret2.type === "mdat") {
-        box2 = new BoxParser[ret2.type + "Box"](ret2.size);
+        box2 = new BoxParser2[ret2.type + "Box"](ret2.size);
         this.parsingMdat = box2;
         this.boxes.push(box2);
         this.mdats.push(box2);
@@ -5838,8 +5838,8 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    ISOFile.prototype.add = BoxParser.Box.prototype.add;
-    ISOFile.prototype.addBox = BoxParser.Box.prototype.addBox;
+    ISOFile.prototype.add = BoxParser2.Box.prototype.add;
+    ISOFile.prototype.addBox = BoxParser2.Box.prototype.addBox;
     ISOFile.prototype.init = function(_options) {
       var options = _options || {};
       var ftyp = this.add("ftyp").set("major_brand", options.brands && options.brands[0] || "iso4").set("minor_version", 0).set("compatible_brands", options.brands || ["iso4"]);
@@ -5859,19 +5859,19 @@ var require_mp4box_all = __commonJS({
       options.type = options.type || "avc1";
       var trak = this.moov.add("trak");
       this.moov.mvhd.next_track_id = options.id + 1;
-      trak.add("tkhd").set("flags", BoxParser.TKHD_FLAG_ENABLED | BoxParser.TKHD_FLAG_IN_MOVIE | BoxParser.TKHD_FLAG_IN_PREVIEW).set("creation_time", 0).set("modification_time", 0).set("track_id", options.id).set("duration", options.duration || 0).set("layer", options.layer || 0).set("alternate_group", 0).set("volume", 1).set("matrix", [0, 0, 0, 0, 0, 0, 0, 0, 0]).set("width", options.width << 16).set("height", options.height << 16);
+      trak.add("tkhd").set("flags", BoxParser2.TKHD_FLAG_ENABLED | BoxParser2.TKHD_FLAG_IN_MOVIE | BoxParser2.TKHD_FLAG_IN_PREVIEW).set("creation_time", 0).set("modification_time", 0).set("track_id", options.id).set("duration", options.duration || 0).set("layer", options.layer || 0).set("alternate_group", 0).set("volume", 1).set("matrix", [0, 0, 0, 0, 0, 0, 0, 0, 0]).set("width", options.width << 16).set("height", options.height << 16);
       var mdia = trak.add("mdia");
       mdia.add("mdhd").set("creation_time", 0).set("modification_time", 0).set("timescale", options.timescale || 1).set("duration", options.media_duration || 0).set("language", options.language || "und");
       mdia.add("hdlr").set("handler", options.hdlr || "vide").set("name", options.name || "Track created with MP4Box.js");
       mdia.add("elng").set("extended_language", options.language || "fr-FR");
       var minf = mdia.add("minf");
-      if (BoxParser[options.type + "SampleEntry"] === void 0)
+      if (BoxParser2[options.type + "SampleEntry"] === void 0)
         return;
-      var sample_description_entry = new BoxParser[options.type + "SampleEntry"]();
+      var sample_description_entry = new BoxParser2[options.type + "SampleEntry"]();
       sample_description_entry.data_reference_index = 1;
       var media_type = "";
-      for (var mediaType in BoxParser.sampleEntryCodes) {
-        var codes = BoxParser.sampleEntryCodes[mediaType];
+      for (var mediaType in BoxParser2.sampleEntryCodes) {
+        var codes = BoxParser2.sampleEntryCodes[mediaType];
         for (var i2 = 0; i2 < codes.length; i2++) {
           if (codes.indexOf(options.type) > -1) {
             media_type = mediaType;
@@ -5884,11 +5884,11 @@ var require_mp4box_all = __commonJS({
           minf.add("vmhd").set("graphicsmode", 0).set("opcolor", [0, 0, 0]);
           sample_description_entry.set("width", options.width).set("height", options.height).set("horizresolution", 72 << 16).set("vertresolution", 72 << 16).set("frame_count", 1).set("compressorname", options.type + " Compressor").set("depth", 24);
           if (options.avcDecoderConfigRecord) {
-            var avcC = new BoxParser.avcCBox();
+            var avcC = new BoxParser2.avcCBox();
             avcC.parse(new MP4BoxStream(options.avcDecoderConfigRecord));
             sample_description_entry.addBox(avcC);
           } else if (options.hevcDecoderConfigRecord) {
-            var hvcC = new BoxParser.hvcCBox();
+            var hvcC = new BoxParser2.hvcCBox();
             hvcC.parse(new MP4BoxStream(options.hevcDecoderConfigRecord));
             sample_description_entry.addBox(hvcC);
           }
@@ -5926,7 +5926,7 @@ var require_mp4box_all = __commonJS({
           sample_description_entry.addBox(b);
         });
       }
-      minf.add("dinf").add("dref").addEntry(new BoxParser["url Box"]().set("flags", 1));
+      minf.add("dinf").add("dref").addEntry(new BoxParser2["url Box"]().set("flags", 1));
       var stbl = minf.add("stbl");
       stbl.add("stsd").addEntry(sample_description_entry);
       stbl.add("stts").set("sample_counts", []).set("sample_deltas", []);
@@ -5937,9 +5937,9 @@ var require_mp4box_all = __commonJS({
       this.buildTrakSampleLists(trak);
       return options.id;
     };
-    BoxParser.Box.prototype.computeSize = function(stream_) {
-      var stream = stream_ || new DataStream2();
-      stream.endianness = DataStream2.BIG_ENDIAN;
+    BoxParser2.Box.prototype.computeSize = function(stream_) {
+      var stream = stream_ || new DataStream3();
+      stream.endianness = DataStream3.BIG_ENDIAN;
       this.write(stream);
     };
     ISOFile.prototype.addSample = function(track_id, data, _options) {
@@ -5987,14 +5987,14 @@ var require_mp4box_all = __commonJS({
         sample_flags = 1 << 25;
       else
         sample_flags = 1 << 16;
-      var moof = new BoxParser.moofBox();
+      var moof = new BoxParser2.moofBox();
       moof.add("mfhd").set("sequence_number", this.nextMoofNumber);
       this.nextMoofNumber++;
       var traf = moof.add("traf");
       var trak = this.getTrackById(sample.track_id);
-      traf.add("tfhd").set("track_id", sample.track_id).set("flags", BoxParser.TFHD_FLAG_DEFAULT_BASE_IS_MOOF);
+      traf.add("tfhd").set("track_id", sample.track_id).set("flags", BoxParser2.TFHD_FLAG_DEFAULT_BASE_IS_MOOF);
       traf.add("tfdt").set("baseMediaDecodeTime", sample.dts - (trak.first_dts || 0));
-      traf.add("trun").set("flags", BoxParser.TRUN_FLAGS_DATA_OFFSET | BoxParser.TRUN_FLAGS_DURATION | BoxParser.TRUN_FLAGS_SIZE | BoxParser.TRUN_FLAGS_FLAGS | BoxParser.TRUN_FLAGS_CTS_OFFSET).set("data_offset", 0).set("first_sample_flags", 0).set("sample_count", 1).set("sample_duration", [sample.duration]).set("sample_size", [sample.size]).set("sample_flags", [sample_flags]).set("sample_composition_time_offset", [sample.cts - sample.dts]);
+      traf.add("trun").set("flags", BoxParser2.TRUN_FLAGS_DATA_OFFSET | BoxParser2.TRUN_FLAGS_DURATION | BoxParser2.TRUN_FLAGS_SIZE | BoxParser2.TRUN_FLAGS_FLAGS | BoxParser2.TRUN_FLAGS_CTS_OFFSET).set("data_offset", 0).set("first_sample_flags", 0).set("sample_count", 1).set("sample_duration", [sample.duration]).set("sample_size", [sample.size]).set("sample_flags", [sample_flags]).set("sample_composition_time_offset", [sample.cts - sample.dts]);
       return moof;
     };
     ISOFile.prototype.lastMoofIndex = 0;
@@ -6331,22 +6331,22 @@ var require_mp4box_all = __commonJS({
             traf = moof.trafs[i2];
             trak = this.getTrackById(traf.tfhd.track_id);
             trex = this.getTrexById(traf.tfhd.track_id);
-            if (traf.tfhd.flags & BoxParser.TFHD_FLAG_SAMPLE_DESC) {
+            if (traf.tfhd.flags & BoxParser2.TFHD_FLAG_SAMPLE_DESC) {
               default_sample_description_index = traf.tfhd.default_sample_description_index;
             } else {
               default_sample_description_index = trex ? trex.default_sample_description_index : 1;
             }
-            if (traf.tfhd.flags & BoxParser.TFHD_FLAG_SAMPLE_DUR) {
+            if (traf.tfhd.flags & BoxParser2.TFHD_FLAG_SAMPLE_DUR) {
               default_sample_duration = traf.tfhd.default_sample_duration;
             } else {
               default_sample_duration = trex ? trex.default_sample_duration : 0;
             }
-            if (traf.tfhd.flags & BoxParser.TFHD_FLAG_SAMPLE_SIZE) {
+            if (traf.tfhd.flags & BoxParser2.TFHD_FLAG_SAMPLE_SIZE) {
               default_sample_size = traf.tfhd.default_sample_size;
             } else {
               default_sample_size = trex ? trex.default_sample_size : 0;
             }
-            if (traf.tfhd.flags & BoxParser.TFHD_FLAG_SAMPLE_FLAGS) {
+            if (traf.tfhd.flags & BoxParser2.TFHD_FLAG_SAMPLE_FLAGS) {
               default_sample_flags = traf.tfhd.default_sample_flags;
             } else {
               default_sample_flags = trex ? trex.default_sample_flags : 0;
@@ -6370,12 +6370,12 @@ var require_mp4box_all = __commonJS({
                 sample.description_index = default_sample_description_index - 1;
                 sample.description = trak.mdia.minf.stbl.stsd.entries[sample.description_index];
                 sample.size = default_sample_size;
-                if (trun.flags & BoxParser.TRUN_FLAGS_SIZE) {
+                if (trun.flags & BoxParser2.TRUN_FLAGS_SIZE) {
                   sample.size = trun.sample_size[k];
                 }
                 trak.samples_size += sample.size;
                 sample.duration = default_sample_duration;
-                if (trun.flags & BoxParser.TRUN_FLAGS_DURATION) {
+                if (trun.flags & BoxParser2.TRUN_FLAGS_DURATION) {
                   sample.duration = trun.sample_duration[k];
                 }
                 trak.samples_duration += sample.duration;
@@ -6390,13 +6390,13 @@ var require_mp4box_all = __commonJS({
                   trak.first_traf_merged = true;
                 }
                 sample.cts = sample.dts;
-                if (trun.flags & BoxParser.TRUN_FLAGS_CTS_OFFSET) {
+                if (trun.flags & BoxParser2.TRUN_FLAGS_CTS_OFFSET) {
                   sample.cts = sample.dts + trun.sample_composition_time_offset[k];
                 }
                 sample_flags = default_sample_flags;
-                if (trun.flags & BoxParser.TRUN_FLAGS_FLAGS) {
+                if (trun.flags & BoxParser2.TRUN_FLAGS_FLAGS) {
                   sample_flags = trun.sample_flags[k];
-                } else if (k === 0 && trun.flags & BoxParser.TRUN_FLAGS_FIRST_FLAG) {
+                } else if (k === 0 && trun.flags & BoxParser2.TRUN_FLAGS_FIRST_FLAG) {
                   sample_flags = trun.first_sample_flags;
                 }
                 sample.is_sync = sample_flags >> 16 & 1 ? false : true;
@@ -6405,9 +6405,9 @@ var require_mp4box_all = __commonJS({
                 sample.is_depended_on = sample_flags >> 22 & 3;
                 sample.has_redundancy = sample_flags >> 20 & 3;
                 sample.degradation_priority = sample_flags & 65535;
-                var bdop = traf.tfhd.flags & BoxParser.TFHD_FLAG_BASE_DATA_OFFSET ? true : false;
-                var dbim = traf.tfhd.flags & BoxParser.TFHD_FLAG_DEFAULT_BASE_IS_MOOF ? true : false;
-                var dop = trun.flags & BoxParser.TRUN_FLAGS_DATA_OFFSET ? true : false;
+                var bdop = traf.tfhd.flags & BoxParser2.TFHD_FLAG_BASE_DATA_OFFSET ? true : false;
+                var dbim = traf.tfhd.flags & BoxParser2.TFHD_FLAG_DEFAULT_BASE_IS_MOOF ? true : false;
+                var dop = trun.flags & BoxParser2.TRUN_FLAGS_DATA_OFFSET ? true : false;
                 var bdo = 0;
                 if (!bdop) {
                   if (!dbim) {
@@ -6471,7 +6471,7 @@ var require_mp4box_all = __commonJS({
           var lengthAfterStart = buffer.byteLength - (sample.offset + sample.alreadyRead - buffer.fileStart);
           if (sample.size - sample.alreadyRead <= lengthAfterStart) {
             Log2.debug("ISOFile", "Getting sample #" + sampleNum + " data (alreadyRead: " + sample.alreadyRead + " offset: " + (sample.offset + sample.alreadyRead - buffer.fileStart) + " read size: " + (sample.size - sample.alreadyRead) + " full size: " + sample.size + ")");
-            DataStream2.memcpy(
+            DataStream3.memcpy(
               sample.data.buffer,
               sample.alreadyRead,
               buffer,
@@ -6486,7 +6486,7 @@ var require_mp4box_all = __commonJS({
             if (lengthAfterStart === 0)
               return null;
             Log2.debug("ISOFile", "Getting sample #" + sampleNum + " partial data (alreadyRead: " + sample.alreadyRead + " offset: " + (sample.offset + sample.alreadyRead - buffer.fileStart) + " read size: " + lengthAfterStart + " full size: " + sample.size + ")");
-            DataStream2.memcpy(
+            DataStream3.memcpy(
               sample.data.buffer,
               sample.alreadyRead,
               buffer,
@@ -6669,7 +6669,7 @@ var require_mp4box_all = __commonJS({
             var lengthAfterStart = buffer.byteLength - (extent.offset + extent.alreadyRead - buffer.fileStart);
             if (extent.length - extent.alreadyRead <= lengthAfterStart) {
               Log2.debug("ISOFile", "Getting item #" + item_id + " extent #" + i2 + " data (alreadyRead: " + extent.alreadyRead + " offset: " + (extent.offset + extent.alreadyRead - buffer.fileStart) + " read size: " + (extent.length - extent.alreadyRead) + " full extent size: " + extent.length + " full item size: " + item.size + ")");
-              DataStream2.memcpy(
+              DataStream3.memcpy(
                 item.data.buffer,
                 item.alreadyRead,
                 buffer,
@@ -6682,7 +6682,7 @@ var require_mp4box_all = __commonJS({
               extent.alreadyRead = extent.length;
             } else {
               Log2.debug("ISOFile", "Getting item #" + item_id + " extent #" + i2 + " partial data (alreadyRead: " + extent.alreadyRead + " offset: " + (extent.offset + extent.alreadyRead - buffer.fileStart) + " read size: " + lengthAfterStart + " full extent size: " + extent.length + " full item size: " + item.size + ")");
-              DataStream2.memcpy(
+              DataStream3.memcpy(
                 item.data.buffer,
                 item.alreadyRead,
                 buffer,
@@ -6792,14 +6792,14 @@ var require_mp4box_all = __commonJS({
         this.setNextSeekPositionFromSample(trak.samples[sampleNumber]);
         return null;
       }
-      var stream = stream_ || new DataStream2();
-      stream.endianness = DataStream2.BIG_ENDIAN;
+      var stream = stream_ || new DataStream3();
+      stream.endianness = DataStream3.BIG_ENDIAN;
       var moof = this.createSingleSampleMoof(sample);
       moof.write(stream);
       moof.trafs[0].truns[0].data_offset = moof.size + 8;
       Log2.debug("MP4Box", "Adjusting data_offset with new value " + moof.trafs[0].truns[0].data_offset);
       stream.adjustUint32(moof.trafs[0].truns[0].data_offset_position, moof.trafs[0].truns[0].data_offset);
-      var mdat = new BoxParser.mdatBox();
+      var mdat = new BoxParser2.mdatBox();
       mdat.data = sample.data;
       mdat.write(stream);
       return stream;
@@ -6811,8 +6811,8 @@ var require_mp4box_all = __commonJS({
       var trex;
       var box2;
       Log2.debug("ISOFile", "Generating initialization segment");
-      var stream = new DataStream2();
-      stream.endianness = DataStream2.BIG_ENDIAN;
+      var stream = new DataStream3();
+      stream.endianness = DataStream3.BIG_ENDIAN;
       ftyp.write(stream);
       var mvex = moov.add("mvex");
       if (total_duration) {
@@ -6825,14 +6825,14 @@ var require_mp4box_all = __commonJS({
       return stream.buffer;
     };
     ISOFile.prototype.save = function(name) {
-      var stream = new DataStream2();
-      stream.endianness = DataStream2.BIG_ENDIAN;
+      var stream = new DataStream3();
+      stream.endianness = DataStream3.BIG_ENDIAN;
       this.write(stream);
       stream.save(name);
     };
     ISOFile.prototype.getBuffer = function() {
-      var stream = new DataStream2();
-      stream.endianness = DataStream2.BIG_ENDIAN;
+      var stream = new DataStream3();
+      stream.endianness = DataStream3.BIG_ENDIAN;
       this.write(stream);
       return stream.buffer;
     };
@@ -6853,7 +6853,7 @@ var require_mp4box_all = __commonJS({
       }
       initSegs = [];
       for (i2 = 0; i2 < this.fragmentedTracks.length; i2++) {
-        var moov = new BoxParser.moovBox();
+        var moov = new BoxParser2.moovBox();
         moov.mvhd = this.moov.mvhd;
         moov.boxes.push(moov.mvhd);
         trak = this.getTrackById(this.fragmentedTracks[i2].id);
@@ -6867,7 +6867,7 @@ var require_mp4box_all = __commonJS({
       }
       return initSegs;
     };
-    BoxParser.Box.prototype.printHeader = function(output) {
+    BoxParser2.Box.prototype.printHeader = function(output) {
       this.size += 8;
       if (this.size > MAX_SIZE) {
         this.size += 8;
@@ -6878,16 +6878,16 @@ var require_mp4box_all = __commonJS({
       output.log(output.indent + "size:" + this.size);
       output.log(output.indent + "type:" + this.type);
     };
-    BoxParser.FullBox.prototype.printHeader = function(output) {
+    BoxParser2.FullBox.prototype.printHeader = function(output) {
       this.size += 4;
-      BoxParser.Box.prototype.printHeader.call(this, output);
+      BoxParser2.Box.prototype.printHeader.call(this, output);
       output.log(output.indent + "version:" + this.version);
       output.log(output.indent + "flags:" + this.flags);
     };
-    BoxParser.Box.prototype.print = function(output) {
+    BoxParser2.Box.prototype.print = function(output) {
       this.printHeader(output);
     };
-    BoxParser.ContainerBox.prototype.print = function(output) {
+    BoxParser2.ContainerBox.prototype.print = function(output) {
       this.printHeader(output);
       for (var i2 = 0; i2 < this.boxes.length; i2++) {
         if (this.boxes[i2]) {
@@ -6906,8 +6906,8 @@ var require_mp4box_all = __commonJS({
         }
       }
     };
-    BoxParser.mvhdBox.prototype.print = function(output) {
-      BoxParser.FullBox.prototype.printHeader.call(this, output);
+    BoxParser2.mvhdBox.prototype.print = function(output) {
+      BoxParser2.FullBox.prototype.printHeader.call(this, output);
       output.log(output.indent + "creation_time: " + this.creation_time);
       output.log(output.indent + "modification_time: " + this.modification_time);
       output.log(output.indent + "timescale: " + this.timescale);
@@ -6917,8 +6917,8 @@ var require_mp4box_all = __commonJS({
       output.log(output.indent + "matrix: " + this.matrix.join(", "));
       output.log(output.indent + "next_track_id: " + this.next_track_id);
     };
-    BoxParser.tkhdBox.prototype.print = function(output) {
-      BoxParser.FullBox.prototype.printHeader.call(this, output);
+    BoxParser2.tkhdBox.prototype.print = function(output) {
+      BoxParser2.FullBox.prototype.printHeader.call(this, output);
       output.log(output.indent + "creation_time: " + this.creation_time);
       output.log(output.indent + "modification_time: " + this.modification_time);
       output.log(output.indent + "track_id: " + this.track_id);
@@ -6944,7 +6944,7 @@ var require_mp4box_all = __commonJS({
 });
 
 // src/index.ts
-var import_mp4box2 = __toESM(require_mp4box_all());
+var import_mp4box3 = __toESM(require_mp4box_all());
 
 // node_modules/.pnpm/@misskey-dev+browser-image-resizer@2.2.1-misskey.10/node_modules/@misskey-dev/browser-image-resizer/dist/index.js
 function bilinear(srcCanvasData, destCanvasData, scale) {
@@ -7388,118 +7388,36 @@ function calculateSize(src, userConfig) {
   return { width: Math.floor(width), height };
 }
 
-// src/decode.ts
-var DECODE_QUEUE_MAX = 32;
-var DECODE_HWM = 16;
-var generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
-  return new TransformStream({
-    start() {
-    },
-    transform(sample, controller) {
-      controller.enqueue(new EncodedVideoChunk({
-        type: sample.is_sync ? "key" : "delta",
-        timestamp: 1e6 * sample.cts / sample.timescale,
-        duration: 1e6 * sample.duration / sample.timescale,
-        data: sample.data
-      }));
-    },
-    flush(controller) {
-      if (DEV)
-        console.log("sample: [terminate] sample flush");
-      controller.terminate();
-    }
-  });
-};
-async function generateVideoDecodeTransformer(videoInfo, description, DEV = false) {
-  let samplecnt = 0;
-  let framecnt = 0;
-  const totalcnt = videoInfo.nb_samples;
-  let decoder;
-  let allowWriteResolve = null;
-  const emitResolve = () => {
-    if (DEV)
-      console.log("decode: emit resolve", allowWriteResolve);
-    if (allowWriteResolve) {
-      allowWriteResolve();
-      allowWriteResolve = null;
-    }
-  };
-  const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
-  return new TransformStream({
-    start(controller) {
-      decoder = new VideoDecoder({
-        output: (frame) => {
-          if (frame) {
-            framecnt++;
-            if (DEV)
-              console.log("decode: enqueue frame", frame.timestamp, framecnt, totalcnt);
-            controller.enqueue(frame);
-          }
-          if (allowWriteEval())
-            emitResolve();
-          if (totalcnt === framecnt) {
-            if (DEV)
-              console.log("decode: enqueue frame: [terminate] last frame", totalcnt, framecnt);
-            controller.terminate();
-          }
-        },
-        error: (e) => {
-          console.error("decode: decoder error", e);
-          controller.error(e);
-        }
-      });
-      decoder.configure({
-        codec: videoInfo.codec.startsWith("vp08") ? "vp8" : videoInfo.codec,
-        codedHeight: videoInfo.track_height,
-        codedWidth: videoInfo.track_width,
-        hardwareAcceleration: "prefer-hardware",
-        description
-      });
-    },
-    transform(vchunk, controller) {
-      samplecnt++;
-      decoder.decode(vchunk);
-      if (DEV)
-        console.log("decode: recieving vchunk", samplecnt, framecnt, decoder.decodeQueueSize);
-      emitResolve();
-      if (totalcnt === samplecnt) {
-        if (DEV)
-          console.log("decode: recieving vchunk: last chunk", totalcnt, samplecnt);
-        decoder.flush();
-        return Promise.resolve();
-      }
-      if (allowWriteEval()) {
-        if (DEV)
-          console.log("decode: recieving vchunk: resolve immediate");
-        return Promise.resolve();
-      }
-      if (DEV)
-        console.log("decode: recieving vchunk: wait for allowWrite");
-      return new Promise((resolve) => {
-        allowWriteResolve = resolve;
-      });
-    },
-    flush(controller) {
-      if (DEV)
-        console.log("decode: [terminate] vchunk flush");
-      controller.terminate();
-      return decoder.flush();
-    }
-  }, {
-    highWaterMark: DECODE_HWM
-  });
+// src/demux.ts
+var import_mp4box2 = __toESM(require_mp4box_all());
+
+// src/box.ts
+var import_mp4box = __toESM(require_mp4box_all());
+function getBoxBuffer(box2) {
+  const stream = new import_mp4box.DataStream(void 0, 0, import_mp4box.DataStream.BIG_ENDIAN);
+  box2.write(stream);
+  return stream.buffer;
+}
+function getDescriptionBuffer(entry) {
+  const box2 = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C || entry.mp4a;
+  if (box2) {
+    const buffer = getBoxBuffer(box2);
+    return new Uint8Array(buffer, 8);
+  }
+  throw new Error("avcC, hvcC, vpcC, or av1C box not found");
+}
+function getDescriptionBoxEntriesFromTrak(trak) {
+  return trak?.mdia?.minf?.stbl?.stsd?.entries ?? [];
 }
 
 // src/demux.ts
-var import_mp4box = __toESM(require_mp4box_all());
-var DECODE_HWM2 = 16;
+var DECODE_HWM = 16;
 var generateDemuxTransformer = (trackId, DEV = false) => {
   let seek = 0;
   let mp4boxfile;
   const data = {
     track: void 0,
     tracks: void 0,
-    totalSamples: 0,
     processedSample: 0,
     /**
      * controller.desiredSizeを1msおきに監視するsetIntervalのID
@@ -7521,7 +7439,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
   };
   return new TransformStream({
     start(controller) {
-      mp4boxfile = (0, import_mp4box.createFile)();
+      mp4boxfile = (0, import_mp4box2.createFile)();
       mp4boxfile.onError = (e) => {
         controller.error(e);
         console.error("demux: mp4box error", e);
@@ -7530,15 +7448,14 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
       };
       mp4boxfile.onReady = (info) => {
         mp4boxfile.setExtractionOptions(trackId, null, { nbSamples: 1 });
-        data.tracks = new Set(info.tracks.map((track2) => track2.id));
-        const track = info.tracks.find((track2) => track2.id === trackId);
-        if (!track) {
+        data.tracks = new Set(info.tracks.map((track) => track.id));
+        data.track = info.tracks.find((track) => track.id === trackId);
+        if (!data.track) {
           controller.error("No track found");
           return;
         }
-        data.totalSamples = track.nb_samples;
         if (DEV)
-          console.log("demux: onReady", info, data.totalSamples);
+          console.log("demux: onReady", info, data.track.nb_samples);
         mp4boxfile.start();
       };
       mp4boxfile.onSamples = (id, user, samples) => {
@@ -7550,10 +7467,10 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
           controller.enqueue(sample);
           data.processedSample = sample.number + 1;
           if (DEV)
-            console.log("demux: onSamples: sample", sample.track_id, sample.number, data.totalSamples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
-          if (data.processedSample === data.totalSamples) {
+            console.log("demux: onSamples: sample", sample.track_id, sample.number, data.track.nb_samples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
+          if (data.processedSample === data.track.nb_samples) {
             if (DEV)
-              console.log("demux: onSamples: [terminate] last sample", sample.number);
+              console.log("demux: onSamples: [terminate] last sample", sample.number, data.processedSample, data.track.nb_samples);
             controller.terminate();
             mp4boxfile.flush();
             clearInterval();
@@ -7579,7 +7496,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
           console.log("demux: recieving chunk", chunk.byteLength, seek, controller.desiredSize);
         if (data.processedSample > 100) {
           const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
-          const hwmFiveTimes = DECODE_HWM2 * 5;
+          const hwmFiveTimes = DECODE_HWM * 5;
           const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
           if (DEV)
             console.log("demux: recieving chunk: release used samples", trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
@@ -7592,7 +7509,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
           }
         }
       }
-      if (data.totalSamples === 0)
+      if (!data.track?.nb_samples)
         return;
       return new Promise((resolve) => {
         if (data.resolve)
@@ -7610,19 +7527,31 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
     highWaterMark: 1
   });
 };
-function getDescriptionBuffer(entry) {
-  const box2 = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C;
-  if (box2) {
-    const stream = new import_mp4box.DataStream(void 0, 0, import_mp4box.DataStream.BIG_ENDIAN);
-    box2.write(stream);
-    return new Uint8Array(stream.buffer, 8);
+var STABLE_FPSs = [
+  9,
+  15,
+  23.94,
+  24,
+  25,
+  29.97,
+  30,
+  59.94,
+  60,
+  119.88,
+  120
+];
+function getStabilizedFps(srcFps) {
+  const fps = Math.round(srcFps * 100) / 100;
+  for (const stableFps of STABLE_FPSs) {
+    if (fps <= stableFps)
+      return stableFps;
   }
-  throw new Error("avcC, hvcC, vpcC, or av1C box not found");
+  return fps;
 }
 function getMP4Info(file, DEV = false) {
   const result = {};
   return new Promise((resolve, reject) => {
-    const mp4boxfile = (0, import_mp4box.createFile)();
+    const mp4boxfile = (0, import_mp4box2.createFile)();
     result.file = mp4boxfile;
     const reader = file.stream().getReader();
     let seek = 0;
@@ -7650,12 +7579,19 @@ function getMP4Info(file, DEV = false) {
       }
       result.info = info;
       result.videoInfo = info.videoTracks[0];
-      result.fps = result.videoInfo.duration ? result.videoInfo.timescale * result.videoInfo.nb_samples / result.videoInfo.duration : 30;
+      if (result.videoInfo.edits && result.videoInfo.edits.length && result.videoInfo.edits[0].media_time) {
+        result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
+        result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
+      } else {
+        result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples;
+        result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
+      }
+      result.fps = getStabilizedFps(result.fps);
       const trak = mp4boxfile.getTrackById(result.videoInfo.id);
       if (!trak) {
         return reject("No video track found");
       }
-      for (const entry of trak.mdia.minf.stbl.stsd.entries) {
+      for (const entry of getDescriptionBoxEntriesFromTrak(trak)) {
         try {
           result.description = getDescriptionBuffer(entry);
         } catch (e) {
@@ -7666,9 +7602,6 @@ function getMP4Info(file, DEV = false) {
       if (!result.description) {
         return reject("No description found");
       }
-      if (info.audioTracks.length > 0) {
-        result.audioInfo = info.audioTracks[0];
-      }
       resolve(result);
       mp4boxfile.flush();
       reader.cancel();
@@ -7677,47 +7610,183 @@ function getMP4Info(file, DEV = false) {
   });
 }
 
+// src/decode.ts
+var DECODE_QUEUE_MAX = 32;
+var DECODE_HWM2 = 16;
+var generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
+  return new TransformStream({
+    start() {
+    },
+    transform(sample, controller) {
+      controller.enqueue(new EncodedVideoChunk({
+        type: sample.is_sync ? "key" : "delta",
+        timestamp: 1e6 * sample.cts / sample.timescale,
+        duration: 1e6 * sample.duration / sample.timescale,
+        data: sample.data
+      }));
+    },
+    flush(controller) {
+      if (DEV)
+        console.log("sample: [terminate] sample flush");
+      controller.terminate();
+    }
+  });
+};
+async function generateVideoDecodeTransformer(videoInfo, description, orderConfig, DEV = false) {
+  let samplecnt = 0;
+  let framecnt = 0;
+  let decoder;
+  const config = {
+    codec: videoInfo.codec.startsWith("vp08") ? "vp8" : videoInfo.codec,
+    hardwareAcceleration: "prefer-hardware",
+    ...orderConfig,
+    codedHeight: videoInfo.track_height,
+    codedWidth: videoInfo.track_width,
+    description
+  };
+  if (DEV)
+    console.log("decode: configure", config);
+  await VideoDecoder.isConfigSupported(config);
+  let allowWriteResolve = null;
+  const emitResolve = () => {
+    if (DEV)
+      console.log("decode: emit resolve", allowWriteResolve);
+    if (allowWriteResolve) {
+      allowWriteResolve();
+      allowWriteResolve = null;
+    }
+  };
+  const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
+  const keyFrames = /* @__PURE__ */ new Set();
+  return new TransformStream({
+    async start(controller) {
+      decoder = new VideoDecoder({
+        output: (frame) => {
+          if (frame) {
+            framecnt++;
+            if (DEV)
+              console.log("decode: enqueue frame", frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples);
+            controller.enqueue({
+              frame,
+              isKeyFrame: keyFrames.has(framecnt)
+            });
+          }
+          if (allowWriteEval())
+            emitResolve();
+          if (framecnt === videoInfo.nb_samples) {
+            if (DEV)
+              console.log("decode: enqueue frame: [terminate] last frame", videoInfo.nb_samples, framecnt);
+            controller.terminate();
+          }
+        },
+        error: (e) => {
+          console.error("decode: decoder error", e);
+          controller.error(e);
+        }
+      });
+      decoder.configure(config);
+    },
+    transform(vchunk, controller) {
+      samplecnt++;
+      if (vchunk.type === "key") {
+        keyFrames.add(samplecnt);
+      }
+      decoder.decode(vchunk);
+      if (DEV)
+        console.log("decode: recieving vchunk", samplecnt, framecnt, decoder.decodeQueueSize);
+      emitResolve();
+      if (samplecnt === videoInfo.nb_samples) {
+        if (DEV)
+          console.log("decode: recieving vchunk: last chunk", videoInfo.nb_samples, samplecnt);
+        decoder.flush();
+        return Promise.resolve();
+      }
+      if (allowWriteEval()) {
+        if (DEV)
+          console.log("decode: recieving vchunk: resolve immediate");
+        return Promise.resolve();
+      }
+      if (DEV)
+        console.log("decode: recieving vchunk: wait for allowWrite");
+      return new Promise((resolve) => {
+        allowWriteResolve = resolve;
+      });
+    },
+    flush(controller) {
+      if (DEV)
+        console.log("decode: [terminate] vchunk flush");
+      controller.terminate();
+      return decoder.flush();
+    }
+  }, {
+    highWaterMark: DECODE_HWM2
+  });
+}
+
 // src/transform.ts
 var TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
-function generateVideoSortTransformer(videoInfo, data, DEV = false) {
+function generateVideoSortTransformer(videoInfo, sharedData, DEV = false) {
   let expectedNextTimestamp = 0;
+  let prevTimestamp = 0;
+  function getDuration(timestamp) {
+    const duration = timestamp - prevTimestamp;
+    prevTimestamp = timestamp;
+    return duration;
+  }
   const cache = /* @__PURE__ */ new Map();
   let recievedcnt = 0;
   let enqueuecnt = 0;
-  const totalcnt = videoInfo.nb_samples;
-  function send(controller, incoming, _buffer) {
+  function dropByCache(timestamp) {
+    cache.get(timestamp)?.frame.close();
+    cache.delete(timestamp);
+    sharedData.dropFrames++;
+  }
+  function enqueue(f, controller) {
+    controller.enqueue({
+      frame: new VideoFrame(f.frame, {
+        timestamp: f.frame.timestamp,
+        duration: getDuration(f.frame.timestamp),
+        visibleRect: f.frame.visibleRect ?? void 0
+      }),
+      isKeyFrame: f.isKeyFrame
+    });
+    f.frame.close();
+    enqueuecnt++;
+  }
+  function enqueueByCache(timestamp, controller) {
+    const frame = cache.get(timestamp);
+    enqueue(frame, controller);
+    cache.delete(timestamp);
+  }
+  function send(controller, incoming, _timestamps) {
     if (DEV)
       console.log("sort: send: trying to send", expectedNextTimestamp, incoming, cache.keys());
-    const buffer = _buffer ?? /* @__PURE__ */ new Set();
-    cache.set(incoming.timestamp, incoming);
+    const timestamps = _timestamps ?? /* @__PURE__ */ new Set();
+    cache.set(incoming.frame.timestamp, incoming);
     for (const margin of TIMESTAMP_MARGINS) {
       const timestamp = expectedNextTimestamp + margin;
-      if (incoming?.timestamp === timestamp) {
-        buffer.add(incoming);
-        cache.delete(incoming.timestamp);
-        expectedNextTimestamp = timestamp + (incoming.duration ?? 0);
+      if (incoming?.frame.timestamp === timestamp) {
+        timestamps.add(incoming.frame.timestamp);
+        expectedNextTimestamp = timestamp + (incoming.frame.duration ?? 0);
         break;
       }
       if (cache.size && cache.has(timestamp)) {
+        timestamps.add(timestamp);
         const frame = cache.get(timestamp);
-        buffer.add(frame);
-        cache.delete(timestamp);
-        if (frame?.duration) {
-          expectedNextTimestamp = timestamp + frame.duration;
-          send(controller, frame, buffer);
+        if (frame.frame.duration) {
+          expectedNextTimestamp = timestamp + frame.frame.duration;
+          send(controller, frame, timestamps);
           return;
         }
       }
     }
-    if (buffer.size > 0) {
+    if (timestamps.size > 0) {
       if (DEV)
-        console.log("sort: send: enqueue buffer", buffer, buffer.size);
-      for (const frame of buffer) {
-        controller.enqueue(frame);
-        cache.delete(frame.timestamp);
-        enqueuecnt++;
+        console.log("sort: send: enqueue buffer", timestamps, timestamps.size);
+      for (const frame of timestamps) {
+        enqueueByCache(frame, controller);
         if (DEV)
-          console.log("sort: send: enqueue buffer: sending frame", frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+          console.log("sort: send: enqueue buffer: sending frame", frame, recievedcnt, enqueuecnt, cache.size);
       }
       return;
     } else {
@@ -7731,45 +7800,47 @@ function generateVideoSortTransformer(videoInfo, data, DEV = false) {
     transform(frame, controller) {
       recievedcnt++;
       if (DEV)
-        console.log("sort: recieving frame", frame.timestamp, recievedcnt, enqueuecnt, cache.size);
-      if (frame.timestamp < expectedNextTimestamp) {
-        console.error("sort: recieving frame: drop frame", frame.timestamp, expectedNextTimestamp);
-        data.nbSamples--;
-        frame.close();
+        console.log("sort: recieving frame", frame.frame.timestamp, recievedcnt, enqueuecnt, cache.size);
+      if (frame.frame.timestamp < expectedNextTimestamp) {
+        console.error("sort: recieving frame: drop frame", frame.frame.timestamp, expectedNextTimestamp);
+        sharedData.dropFrames++;
+        frame.frame.close();
         return;
       }
-      if (recievedcnt === totalcnt) {
+      if (recievedcnt === videoInfo.nb_samples) {
+        cache.set(expectedNextTimestamp, frame);
         if (DEV)
-          console.log("sort: recieving frame: last frame", frame.timestamp, cache);
-        for (const timestamp of Array.from(cache.keys()).filter((x) => x >= expectedNextTimestamp).sort((a, b) => a - b)) {
-          if (DEV)
-            console.log("sort: recieving frame: enqueue cache", timestamp);
-          controller.enqueue(cache.get(timestamp));
-          cache.delete(timestamp);
-        }
-        if (frame.timestamp >= expectedNextTimestamp) {
-          if (DEV)
-            console.log("sort: recieving frame: enqueue last frame", frame.timestamp);
-          controller.enqueue(frame);
-        } else {
-          if (DEV)
-            console.error("sort: recieving frame: drop last frame", frame.timestamp, expectedNextTimestamp);
+          console.log("sort: recieving frame: last frame", frame.frame.timestamp, cache);
+        for (const timestamp of Array.from(cache.keys()).sort((a, b) => a - b)) {
+          if (timestamp < expectedNextTimestamp) {
+            if (DEV)
+              console.error("sort: recieving frame: drop frame", timestamp, expectedNextTimestamp);
+            dropByCache(timestamp);
+          } else {
+            if (DEV)
+              console.log("sort: recieving frame: enqueue cache", timestamp);
+            const f = cache.get(timestamp);
+            expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
+            enqueue(f, controller);
+            cache.delete(timestamp);
+          }
         }
         if (DEV)
-          console.log("sort: recieving frame: [terminate]", totalcnt, data.nbSamples);
+          console.log("sort: recieving frame: [terminate]", enqueuecnt, sharedData.dropFrames, sharedData.getResultSamples());
         controller.terminate();
         return;
       }
       if (cache.size >= 14) {
-        console.error("sort: recieving frame: cache is too large", frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
+        console.error("sort: recieving frame: cache is too large", frame.frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
         for (const timestamp of cache.keys()) {
           if (timestamp < expectedNextTimestamp) {
-            cache.get(timestamp)?.close();
-            cache.delete(timestamp);
-            data.nbSamples--;
+            dropByCache(timestamp);
           }
         }
         expectedNextTimestamp = Math.min(...cache.keys());
+        if (!("startTimeShift" in sharedData)) {
+          sharedData.startTimeShift = expectedNextTimestamp;
+        }
         if (DEV)
           console.log("sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)", Array.from(cache.keys()), expectedNextTimestamp);
       }
@@ -7796,24 +7867,24 @@ function generateResizeTransformer(config, DEV = false) {
         performance.mark("resize start");
         console.log("resize: recieved", framecnt, srcFrame);
       }
-      const canvas = await readAndCompressImage(srcFrame, {
+      const canvas = await readAndCompressImage(srcFrame.frame, {
         ...config,
         mimeType: null
       });
-      srcFrame.close();
+      srcFrame.frame.close();
       const dstFrame = new VideoFrame(canvas, {
-        timestamp: srcFrame.timestamp
-        //duration: srcFrame.duration ?? undefined,
+        timestamp: srcFrame.frame.timestamp,
+        duration: srcFrame.frame.duration ?? void 0
       });
       if (DEV) {
         performance.mark("resize end");
         console.log("resize: transform", framecnt, performance.measure("resize", "resize start").duration, dstFrame);
       }
-      controller.enqueue(dstFrame);
+      controller.enqueue({ frame: dstFrame, isKeyFrame: srcFrame.isKeyFrame });
     },
     flush(controller) {
       if (DEV)
-        console.log("resize: [terminate] videoframe flush");
+        console.log("resize: [terminate]  cache is too large flush");
       controller.terminate();
     }
   });
@@ -7821,7 +7892,7 @@ function generateResizeTransformer(config, DEV = false) {
 
 // src/encode.ts
 var ENCODE_QUEUE_MAX = 32;
-function generateVideoEncoderTransformStream(config, data, DEV = false) {
+function generateVideoEncoderTransformStream(config, sharedData, DEV = false) {
   let encoder;
   let framecnt = 0;
   let enqueuecnt = 0;
@@ -7838,19 +7909,24 @@ function generateVideoEncoderTransformStream(config, data, DEV = false) {
   return new TransformStream({
     start(controller) {
       encoder = new VideoEncoder({
-        output: (chunk, config2) => {
+        output: (chunk, metadata) => {
           enqueuecnt++;
-          if (config2 && Object.keys(config2).length) {
-            controller.enqueue({ type: "metadata", data: config2 });
-            if (DEV)
-              console.log("encode: encoded: metadata", config2);
+          if (metadata && Object.keys(metadata).length) {
+            controller.enqueue({ type: "metadata", data: metadata });
+            if (DEV) {
+              console.log(
+                "encode: encoded: metadata",
+                metadata,
+                Array.from(new Uint8Array(metadata.decoderConfig?.description ?? new ArrayBuffer(0))).map((n) => n.toString(16).padStart(2, "0")).join(" ")
+              );
+            }
           }
           controller.enqueue({ type: "encodedVideoChunk", data: chunk });
           if (DEV)
-            console.log("encode: encoded", framecnt, chunk, encoder.encodeQueueSize, config2);
-          if (enqueuecnt === data.nbSamples) {
+            console.log("encode: encoded", chunk.timestamp, enqueuecnt - 1, framecnt, chunk, encoder.encodeQueueSize, metadata);
+          if (enqueuecnt === sharedData.getResultSamples()) {
             if (DEV)
-              console.log("encode: encoded: [terminate] done", framecnt, data.nbSamples);
+              console.log("encode: encoded: [terminate] done", framecnt, sharedData.getResultSamples());
             encoder.flush();
             controller.terminate();
           }
@@ -7858,18 +7934,28 @@ function generateVideoEncoderTransformStream(config, data, DEV = false) {
             emitResolve();
         },
         error: (error) => {
-          console.error("encoder error", error);
+          console.error("encode: encoder error", error);
           controller.error(error);
         }
       });
-      encoder.configure(config);
+      try {
+        encoder.configure(config);
+      } catch (e) {
+        console.error("encoder configure error", e);
+        controller.error(e);
+      }
     },
     transform(frame, controller) {
       framecnt++;
+      const keyFrame = (() => {
+        return frame.isKeyFrame;
+      })();
       if (DEV)
-        console.log("encode: frame", framecnt, frame, encoder.encodeQueueSize);
-      encoder.encode(frame);
-      frame.close();
+        console.log("encode: frame", framecnt, frame, keyFrame, encoder.encodeQueueSize);
+      encoder.encode(frame.frame, {
+        keyFrame
+      });
+      frame.frame.close();
       emitResolve();
       if (allowWriteEval()) {
         if (DEV)
@@ -7890,26 +7976,34 @@ function generateVideoEncoderTransformStream(config, data, DEV = false) {
     }
   });
 }
-function writeEncodedVideoChunksToMP4File(file, encoderConfig, srcInfo, DEV = false) {
+
+// src/mux.ts
+function copyEdits(tragetTrak, srcInfo) {
+  if (srcInfo.edits) {
+    const edts = tragetTrak.add("edts");
+    const elst = edts.add("elst");
+    srcInfo.edits.forEach((editEntry) => {
+      elst.addEntry(editEntry);
+    });
+  }
+}
+function writeEncodedVideoChunksToMP4File(file, encoderConfig, videoInfo, sharedData, trackAddedCallback, promiseToStartChunks, DEV = false) {
   let trackId;
   let trak;
   let samplecnt = 0;
-  let prevChunk;
-  let currentChunk;
-  const TIMESCALE = srcInfo.timescale || 9e4;
-  const scaleScale = TIMESCALE / srcInfo.timescale;
-  return new WritableStream({
+  let nextDtsTime = 0;
+  return new TransformStream({
     start() {
     },
-    write(data) {
+    async transform(data, controller) {
       if (data.type === "metadata" && !trak) {
-        const media_duration = Math.round(srcInfo.duration * scaleScale);
+        const media_duration = videoInfo.duration;
         trackId = file.addTrack({
           name: "VideoHandle",
-          timescale: TIMESCALE,
+          timescale: videoInfo.timescale,
           duration: media_duration,
           media_duration,
-          language: srcInfo.language,
+          language: videoInfo.language,
           width: encoderConfig.width,
           height: encoderConfig.height,
           ...encoderConfig.codec.startsWith("avc") ? {
@@ -7920,65 +8014,53 @@ function writeEncodedVideoChunksToMP4File(file, encoderConfig, srcInfo, DEV = fa
         });
         trak = file.getTrackById(trackId);
         if (trak.tkhd) {
-          trak.tkhd.set("matrix", srcInfo.matrix);
+          trak.tkhd.set("matrix", videoInfo.matrix);
         }
+        copyEdits(trak, videoInfo);
+        file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
         if (DEV)
-          console.log("write: addTrack", trackId, trak, TIMESCALE, scaleScale);
+          console.log("write: addTrack", trackId, trak, videoInfo.timescale);
+        trackAddedCallback(trackId);
+        await promiseToStartChunks;
         return;
-      } else {
+      } else if (data.type === "encodedVideoChunk") {
         samplecnt++;
-        if (!prevChunk) {
-          prevChunk = data.data;
+        const chunk = data.data;
+        const b = new ArrayBuffer(chunk.byteLength);
+        chunk.copyTo(b);
+        const times = {
+          cts: Math.round(chunk.timestamp * videoInfo.timescale / 1e6),
+          dts: Math.round(nextDtsTime * videoInfo.timescale / 1e6),
+          duration: Math.round((chunk.duration ?? 1) * videoInfo.timescale / 1e6)
+        };
+        const sample = file.addSample(trackId, b, {
+          ...times,
+          is_sync: chunk.type === "key"
+        });
+        if (DEV)
+          console.log("write: addSample", samplecnt, times, sample);
+        controller.enqueue(sample);
+        if (samplecnt === sharedData.getResultSamples()) {
+          if (DEV)
+            console.log("write: [terminate] addSample last", sharedData.getResultSamples(), samplecnt, sample, file);
           return;
         }
-        currentChunk = data.data;
-        const b = new ArrayBuffer(prevChunk.byteLength);
-        prevChunk.copyTo(b);
-        const sample = file.addSample(trackId, b, {
-          cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-          dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-          duration: Math.round((currentChunk.timestamp - prevChunk.timestamp) * TIMESCALE / 1e6),
-          is_sync: prevChunk.type === "key"
-        });
-        prevChunk = currentChunk;
-        currentChunk = null;
-        if (DEV)
-          console.log("write: addSample", samplecnt - 1, sample);
+        nextDtsTime += chunk.duration ?? 1;
       }
     },
-    close() {
-      const b = new ArrayBuffer(prevChunk.byteLength);
-      prevChunk.copyTo(b);
-      const sample = file.addSample(trackId, b, {
-        cts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-        dts: Math.round(prevChunk.timestamp * TIMESCALE / 1e6),
-        duration: Math.round((srcInfo.duration / srcInfo.timescale * 1e6 - prevChunk.timestamp) * TIMESCALE / 1e6)
-      });
+    flush(controller) {
       if (DEV)
-        console.log("write: addSample last", samplecnt, sample);
-      file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
-      if (DEV)
-        console.log("write: close", file);
+        console.log("write: flush", file);
+      controller.terminate();
     }
   });
 }
-function writeAudioSamplesToMP4File(file, srcInfo, DEV = false) {
-  const trackId = file.addTrack({
-    type: srcInfo.codec.split(".")[0],
-    hdlr: "soun",
-    name: "SoundHandle",
-    timescale: srcInfo.timescale,
-    duration: srcInfo.duration,
-    media_duration: srcInfo.duration,
-    language: srcInfo.language,
-    width: 0,
-    height: 0,
-    channel_count: srcInfo.audio.channel_count,
-    samplerate: srcInfo.audio.sample_rate,
-    samplesize: srcInfo.audio.sample_size
-  });
+function samplesToMp4FileWritable(file, trackId, srcInfo, sampleOptions = {}, DEV = false) {
+  const trak = file.getTrackById(trackId);
+  copyEdits(trak, srcInfo);
+  file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
   if (DEV)
-    console.log("write audio: addTrack", trackId);
+    console.log("write samples to file: addTrack", `#${trackId}`, trak, srcInfo.nb_samples);
   let samplecnt = 0;
   return new WritableStream({
     start() {
@@ -7986,7 +8068,6 @@ function writeAudioSamplesToMP4File(file, srcInfo, DEV = false) {
     write(sample) {
       samplecnt++;
       const res = file.addSample(trackId, sample.data, {
-        //sample_description_index: sample.description_index,
         duration: sample.duration,
         cts: sample.cts,
         dts: sample.dts,
@@ -7996,17 +8077,363 @@ function writeAudioSamplesToMP4File(file, srcInfo, DEV = false) {
         is_depended_on: sample.is_depended_on,
         has_redundancy: sample.has_redundancy,
         degradation_priority: sample.degradation_priority,
-        subsamples: sample.subsamples
+        subsamples: sample.subsamples,
+        ...sampleOptions
       });
       if (DEV)
-        console.log("write audio: addSample", samplecnt, sample, res);
+        console.log("write samples to file: addSample", `#${trackId}`, samplecnt, sample, res);
     },
     close() {
-      file.setSegmentOptions(trackId, null, { nbSamples: samplecnt });
       if (DEV)
-        console.log("write audio: close", file);
+        console.log("write samples to file: close", `#${trackId}`, file);
     }
   });
+}
+function writeVideoSamplesToMP4File(file, videoInfo, description, DEV = false) {
+  const trackId = file.addTrack({
+    name: "VideoHandle",
+    timescale: videoInfo.timescale,
+    //duration: videoInfo.duration,
+    //media_duration: videoInfo.duration,
+    // duration must be 0 for fragmented mp4
+    duration: 0,
+    media_duration: 0,
+    language: videoInfo.language,
+    width: videoInfo.video.width,
+    height: videoInfo.video.height,
+    ...videoInfo.codec.startsWith("avc") ? {
+      avcDecoderConfigRecord: description
+    } : videoInfo.codec.startsWith("hevc") ? {
+      hevcDecoderConfigRecord: description
+    } : {}
+  });
+  return {
+    writable: samplesToMp4FileWritable(file, trackId, videoInfo, {}, DEV),
+    trackId
+  };
+}
+function writeAudioSamplesToMP4File(file, audioInfo, DEV = false) {
+  const trackId = file.addTrack({
+    type: audioInfo.codec.split(".")[0],
+    hdlr: "soun",
+    name: "SoundHandle",
+    timescale: audioInfo.timescale,
+    //duration: audioInfo.duration,
+    //media_duration: audioInfo.duration,
+    // duration must be 0 for fragmented mp4
+    duration: 0,
+    media_duration: 0,
+    language: audioInfo.language,
+    width: 0,
+    height: 0,
+    channel_count: audioInfo.audio.channel_count,
+    samplerate: audioInfo.audio.sample_rate,
+    samplesize: audioInfo.audio.sample_size
+  });
+  return {
+    writable: samplesToMp4FileWritable(file, trackId, audioInfo, {}, DEV),
+    trackId
+  };
+}
+
+// src/specs/avc1.ts
+var avc1ProfileToProfileIdTable = {
+  "constrained_baseline": "4240",
+  "baseline": "4200",
+  "extended": "5800",
+  "constrained_main": "4d40",
+  "main": "4d00",
+  "constrained_high": "640c",
+  "high": "6400",
+  "high_progressive": "6408",
+  /**
+   * 10bit and 422/444 are not supported by JS Canvas,
+   * so the following definitions are not used in this application,
+   * but may be useful for something else.
+   */
+  "high_10": "6e00",
+  "high_10_intra": "6e10",
+  "high_422": "7a00",
+  "high_422_intra": "7a10",
+  "high_444_predictive": "f400",
+  "high_444_intra": "f410",
+  "cavlc_444_intra": "2c00"
+};
+var Avc1ProfileIdcToFactor = class {
+  constructor(profileIdc, cpbBrVclFactor, cpbBrNalFactor) {
+    this.profileIdc = profileIdc;
+    this.cpbBrVclFactor = cpbBrVclFactor;
+    this.cpbBrNalFactor = cpbBrNalFactor;
+  }
+};
+var avc1ProfileIdcToFactorTable = [
+  new Avc1ProfileIdcToFactor(66, 1e3, 1200),
+  new Avc1ProfileIdcToFactor(77, 1e3, 1200),
+  new Avc1ProfileIdcToFactor(88, 1e3, 1200),
+  new Avc1ProfileIdcToFactor(100, 1250, 1500),
+  new Avc1ProfileIdcToFactor(110, 3e3, 3600),
+  new Avc1ProfileIdcToFactor(122, 4e3, 4800),
+  new Avc1ProfileIdcToFactor(244, 4e3, 4800),
+  new Avc1ProfileIdcToFactor(44, 4e3, 4800)
+];
+function avc1GetProfileToNalFactor(profile) {
+  const targetProfileIdc = parseInt(avc1ProfileToProfileIdTable[profile].substring(0, 2), 16);
+  const factor = avc1ProfileIdcToFactorTable.find(({ profileIdc }) => profileIdc === targetProfileIdc);
+  if (!factor)
+    throw new Error(`profile ${profile} is not supported`);
+  return factor.cpbBrNalFactor;
+}
+var Avc1LevelLimit = class {
+  constructor(name, levelIdc, cs3fFlag, maxMBPS, maxFS, maxDpbMbs, maxBR, maxCPB, maxVmvR, minCR, maxMvsPer2Mb) {
+    this.name = name;
+    this.levelIdc = levelIdc;
+    this.cs3fFlag = cs3fFlag;
+    this.maxMBPS = maxMBPS;
+    this.maxFS = maxFS;
+    this.maxDpbMbs = maxDpbMbs;
+    this.maxBR = maxBR;
+    this.maxCPB = maxCPB;
+    this.maxVmvR = maxVmvR;
+    this.minCR = minCR;
+    this.maxMvsPer2Mb = maxMvsPer2Mb;
+  }
+};
+var avc1LevelLimitsTable = [
+  //                   Name, idc, cs3f,MxMBPS,  MaxFS, DpbMbs,  MaxBR, MaxCPB, VmvR,CR, Mvs/2Mb]
+  new Avc1LevelLimit("1", 10, 0, 1485, 99, 396, 64, 175, 64, 2, 0),
+  //new Avc1LevelLimit("1b",  11, 1,     1485,     99,    396,    128,    350,   64, 2,  0),
+  new Avc1LevelLimit("1b", 9, 0, 1485, 99, 396, 128, 350, 64, 2, 0),
+  new Avc1LevelLimit("1.1", 11, 0, 3e3, 396, 900, 192, 500, 128, 2, 0),
+  new Avc1LevelLimit("1.2", 12, 0, 6e3, 396, 2376, 384, 1e3, 128, 2, 0),
+  new Avc1LevelLimit("1.3", 13, 0, 11880, 396, 2376, 768, 2e3, 128, 2, 0),
+  new Avc1LevelLimit("2", 20, 0, 11880, 396, 2376, 2e3, 2e3, 128, 2, 0),
+  new Avc1LevelLimit("2.1", 21, 0, 19800, 792, 4752, 4e3, 4e3, 256, 2, 0),
+  new Avc1LevelLimit("2.2", 22, 0, 20250, 1620, 8100, 4e3, 4e3, 256, 2, 0),
+  new Avc1LevelLimit("3", 30, 0, 40500, 1620, 8100, 1e4, 1e4, 256, 2, 32),
+  new Avc1LevelLimit("3.1", 31, 0, 108e3, 3600, 18e3, 14e3, 14e3, 512, 4, 16),
+  new Avc1LevelLimit("3.2", 32, 0, 216e3, 5120, 20480, 2e4, 2e4, 512, 4, 16),
+  new Avc1LevelLimit("4", 40, 0, 245760, 8192, 32768, 2e4, 25e3, 512, 4, 16),
+  new Avc1LevelLimit("4.1", 41, 0, 245760, 8192, 32768, 5e4, 62500, 512, 2, 16),
+  new Avc1LevelLimit("4.2", 42, 0, 522240, 8704, 34816, 5e4, 62500, 512, 2, 16),
+  new Avc1LevelLimit("5", 50, 0, 589824, 22080, 110400, 135e3, 135e3, 512, 2, 16),
+  new Avc1LevelLimit("5.1", 51, 0, 983040, 36864, 184320, 24e4, 24e4, 512, 2, 16),
+  new Avc1LevelLimit("5.2", 52, 0, 2073600, 36864, 184320, 24e4, 24e4, 512, 2, 16),
+  new Avc1LevelLimit("6", 60, 0, 4177920, 139264, 696320, 24e4, 24e4, 8192, 2, 16),
+  new Avc1LevelLimit("6.1", 61, 0, 8355840, 139264, 696320, 48e4, 48e4, 8192, 2, 16),
+  new Avc1LevelLimit("6.2", 62, 0, 16711680, 139264, 696320, 8e5, 8e5, 8192, 2, 16)
+];
+function avc1GuessLevelIdcFromInformations({ profile, width, height, fps, prefferedAllowingMaxBitrate, maxDecFrameBuffering }, DEV = false) {
+  const profileIdc = avc1ProfileToProfileIdTable[profile];
+  if (!profileIdc) {
+    throw new Error(`avc1 guess lv: profile ${profile} is not supported`);
+  }
+  if (!Math.max(width, 0) || !Math.max(height, 0) || !Math.max(fps, 0)) {
+    throw new Error("avc1 guess lv: width, heighta and fps must be positive number");
+  }
+  const acceptCs3f = profileIdc.startsWith("42") || profileIdc.startsWith("4d") || profileIdc.startsWith("58");
+  const factor = avc1GetProfileToNalFactor(profile);
+  const widthMBs = Math.ceil(width / 16);
+  const heightMBs = Math.ceil(height / 16);
+  const whMBs = widthMBs * heightMBs;
+  const whMBPS = whMBs * fps;
+  const whDpbMbs = whMBs * (maxDecFrameBuffering ?? 0);
+  const wwMBs = widthMBs ** 2;
+  const hhMBs = heightMBs ** 2;
+  let antiprefferedLevelIdc = void 0;
+  for (let i2 = 0; i2 < avc1LevelLimitsTable.length; i2++) {
+    const level = avc1LevelLimitsTable[i2];
+    if (level.cs3fFlag && !acceptCs3f)
+      continue;
+    if (whMBs > level.maxFS)
+      continue;
+    if (wwMBs > 8 * level.maxFS)
+      continue;
+    if (hhMBs > 8 * level.maxFS)
+      continue;
+    if (whMBPS > level.maxMBPS)
+      continue;
+    if (maxDecFrameBuffering) {
+      if (whDpbMbs > level.maxDpbMbs)
+        continue;
+    }
+    if (DEV)
+      console.log("avc1 guess lv: level choosing: bitrate", level.name, (prefferedAllowingMaxBitrate ?? 0) / 1e3, level.maxBR, factor, level.maxBR * factor / 1e3);
+    if (prefferedAllowingMaxBitrate && prefferedAllowingMaxBitrate > level.maxBR * factor) {
+      antiprefferedLevelIdc = level.levelIdc;
+      continue;
+    }
+    if (DEV)
+      console.log("avc1 guess lv: level choosing: level chosen", level.name, level.levelIdc);
+    return level.levelIdc;
+  }
+  if (antiprefferedLevelIdc) {
+    if (DEV)
+      console.log("avc1 guess lv: level choosing: anti-preffered level chosen", antiprefferedLevelIdc);
+    return antiprefferedLevelIdc;
+  }
+  throw new Error(`avc1 guess lv: suitable level is not found`);
+}
+function avc1LevelId(levelx10) {
+  return levelx10.toString(16).padStart(2, "0");
+}
+function avc1PL(profile, levelx10) {
+  return `avc1.${avc1ProfileToProfileIdTable[profile]}${avc1LevelId(levelx10)}`;
+}
+function avc1PLFromVideoInfo(videoInfo, DEV = false) {
+  return avc1PL(videoInfo.profile, avc1GuessLevelIdcFromInformations(videoInfo, DEV));
+}
+
+// src/specs/av01.ts
+var av01ProfileToProfileIdTable = {
+  "Main": 0,
+  "High": 1,
+  "Professional": 2
+};
+var av01ChromaSubsamplingTable = {
+  "4:0:0": "111",
+  "4:2:0": "110",
+  "4:2:2": "100",
+  "4:4:4": "000"
+};
+var av01ColorPrimariesTable = {
+  BT_709: 1,
+  UNSPECIFIED: 2,
+  // RESERVED?: 3,
+  BT_470_M: 4,
+  BT_470_B_G: 5,
+  BT_601: 6,
+  SMPTE_240: 7,
+  GENERIC_FILM: 8,
+  BT_2020: 9,
+  XYZ: 10,
+  SMPTE_431: 11,
+  SMPTE_432: 12,
+  EBU_3213: 22
+};
+var av01TransferCharacteristicsTable = {
+  RESERVED_0: 0,
+  BT_709: 1,
+  UNSPECIFIED: 2,
+  RESERVED_3: 3,
+  BT_470_M: 4,
+  BT_470_B_G: 5,
+  BT_601: 6,
+  SMPTE_240: 7,
+  LINEAR: 8,
+  LOG_100: 9,
+  LOG_100_SQRT10: 10,
+  IEC_61966: 11,
+  BT_1361: 12,
+  SRGB: 13,
+  BT_2020_10_BIT: 14,
+  BT_2020_12_BIT: 15,
+  SMPTE_2084: 16,
+  SMPTE_428: 17,
+  HLG: 18
+};
+var av01MatrixCoefficientsTable = {
+  IDENTITY: 0,
+  BT_709: 1,
+  UNSPECIFIED: 2,
+  RESERVED_3: 3,
+  FCC: 4,
+  BT_470_B_G: 5,
+  BT_601: 6,
+  SMPTE_240: 7,
+  SMPTE_YCGCO: 8,
+  BT_2020_NCL: 9,
+  BT_2020_CL: 10,
+  SMPTE_2085: 11,
+  CHROMAT_NCL: 12,
+  CHROMAT_CL: 13,
+  ICTCP: 14
+};
+var VOID = void 0;
+var Av01LevelLimit = class {
+  constructor(name, levelIdx, maxPicSize, maxHSize, maxVSize, maxDisplayRate, maxDecodeRate, maxHeaderRate, mainMbps, highMbps, mainCR, highCR, maxTiles, maxTileCols) {
+    this.name = name;
+    this.levelIdx = levelIdx;
+    this.maxPicSize = maxPicSize;
+    this.maxHSize = maxHSize;
+    this.maxVSize = maxVSize;
+    this.maxDisplayRate = maxDisplayRate;
+    this.maxDecodeRate = maxDecodeRate;
+    this.maxHeaderRate = maxHeaderRate;
+    this.mainMbps = mainMbps;
+    this.highMbps = highMbps;
+    this.mainCR = mainCR;
+    this.highCR = highCR;
+    this.maxTiles = maxTiles;
+    this.maxTileCols = maxTileCols;
+  }
+};
+var av01LevelLimitTable = [
+  //                 name levelIdx maxPicSize maxH maxV  maxDisplayR  maxDecodeR maxHeaderR mainbr highbr mainCR highCR maxTiles maxTileCols
+  new Av01LevelLimit("2.0", 0, 147456, 2048, 1152, 4423680, 5529600, 150, 1.5, VOID, 2, VOID, 8, 4),
+  new Av01LevelLimit("2.1", 1, 278784, 2816, 1584, 8363520, 10454400, 150, 3, VOID, 2, VOID, 8, 4),
+  new Av01LevelLimit("3.0", 4, 665856, 4352, 2448, 19975680, 24969600, 150, 6, VOID, 2, VOID, 16, 6),
+  new Av01LevelLimit("3.1", 5, 1065024, 5504, 3096, 31950720, 39938400, 150, 10, VOID, 2, VOID, 16, 6),
+  new Av01LevelLimit("4.0", 8, 2359296, 6144, 3456, 70778880, 77856768, 300, 12, 30, 4, 4, 32, 8),
+  new Av01LevelLimit("4.1", 9, 2359296, 6144, 3456, 141557760, 155713536, 300, 20, 50, 4, 4, 32, 8),
+  new Av01LevelLimit("5.0", 12, 8912896, 8192, 4352, 267386880, 273715200, 300, 30, 100, 6, 4, 64, 8),
+  new Av01LevelLimit("5.1", 13, 8912896, 8192, 4352, 534773760, 547430400, 300, 40, 160, 8, 4, 64, 8),
+  new Av01LevelLimit("5.2", 14, 8912896, 8192, 4352, 1069547520, 1094860800, 300, 60, 240, 8, 4, 64, 8),
+  new Av01LevelLimit("5.3", 15, 8912896, 8192, 4352, 1069547520, 1176502272, 300, 60, 240, 8, 4, 64, 8),
+  new Av01LevelLimit("6.0", 16, 35651584, 16384, 8704, 1069547520, 1176502272, 300, 60, 240, 8, 4, 128, 16),
+  new Av01LevelLimit("6.1", 17, 35651584, 16384, 8704, 2139095040, 2189721600, 300, 100, 480, 8, 4, 128, 16),
+  new Av01LevelLimit("6.2", 18, 35651584, 16384, 8704, 4278190080, 4379443200, 300, 160, 800, 8, 4, 128, 16),
+  new Av01LevelLimit("6.3", 19, 35651584, 16384, 8704, 4278190080, 4706009088, 300, 160, 800, 8, 4, 128, 16)
+];
+function av01GuessLevelFromInformations({ profile, width, height, tiles, tileCols, fps, prefferedAllowingMaxBitrate }, DEV = false) {
+  let maxBrMbps = VOID;
+  const picSize = width * height;
+  const displayRate = picSize * fps;
+  for (let i2 = 0; i2 < av01LevelLimitTable.length; i2++) {
+    const level = av01LevelLimitTable[i2];
+    if (picSize > level.maxPicSize)
+      continue;
+    if (width > level.maxHSize)
+      continue;
+    if (height > level.maxVSize)
+      continue;
+    if (displayRate > level.maxDisplayRate)
+      continue;
+    maxBrMbps = profile === "Main" ? level.mainMbps : level.highMbps;
+    if (maxBrMbps === VOID)
+      continue;
+    if (prefferedAllowingMaxBitrate) {
+      if (prefferedAllowingMaxBitrate > 1e6 * maxBrMbps)
+        continue;
+    }
+    if (tiles ?? 0 > level.maxTiles)
+      continue;
+    if (tileCols ?? 0 > level.maxTileCols)
+      continue;
+    return level;
+  }
+  throw new Error(`av01 guess lv: suitable level is not found`);
+}
+function av01CorrectSeqTier(requestedSeqTier, levelIdx) {
+  return levelIdx > 7 ? requestedSeqTier : "M";
+}
+function numPad(num, length) {
+  return num.toString().padStart(length, "0");
+}
+function av01PL(levelInfo, depth = 8, seqTier = "M", additional, DEV = false) {
+  const level = av01GuessLevelFromInformations(levelInfo, DEV);
+  const basic = `av01.${av01ProfileToProfileIdTable[levelInfo.profile]}.${numPad(level.levelIdx, 2)}${av01CorrectSeqTier(seqTier, level.levelIdx)}.${depth.toString().padStart(2, "0")}`;
+  if (additional) {
+    return [
+      basic,
+      additional.monoChrome ? "1" : "0",
+      av01ChromaSubsamplingTable[additional.chromaSubsampling],
+      numPad(av01ColorPrimariesTable[additional.colorPrimary], 2),
+      numPad(av01TransferCharacteristicsTable[additional.transferCharacteristics], 2),
+      numPad(av01MatrixCoefficientsTable[additional.matrixCoefficients], 2),
+      additional.videoFullRange ? "1" : "0"
+    ].join(".");
+  }
+  return basic;
 }
 
 // src/index.ts
@@ -8016,31 +8443,126 @@ var preventer = {
   preventAbort: true
 };
 var EasyVideoEncoder = class extends EventTarget {
+  processes = /* @__PURE__ */ new Map();
   constructor() {
     super();
   }
+  async waitForAllProcesses() {
+    await Promise.all(this.processes.values());
+  }
+  async getProcesses() {
+    return new Map(this.processes);
+  }
   async start(order) {
+    const identifier = order.identifier ?? crypto.randomUUID();
+    if (this.processes.has(order.identifier))
+      throw new Error("Already started");
+    const process = this._start({ ...order, identifier });
+    this.processes.set(identifier, process);
+    try {
+      await process;
+    } catch (e) {
+      if (order.DEV) {
+        console.error("start root: error caught", e);
+      }
+      this.dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
+    } finally {
+      this.processes.delete(identifier);
+    }
+  }
+  async _start(order) {
     const DEV = order.DEV ?? false;
-    import_mp4box2.Log.setLogLevel(DEV ? import_mp4box2.Log.LOG_LEVEL_DEBUG : import_mp4box2.Log.LOG_LEVEL_ERROR);
+    import_mp4box3.Log.setLogLevel(DEV ? import_mp4box3.Log.LOG_LEVEL_DEBUG : import_mp4box3.Log.LOG_LEVEL_ERROR);
+    const identifier = order.identifier;
+    if (DEV)
+      console.log("start", order);
     const dispatchEvent = this.dispatchEvent.bind(this);
     const info = await getMP4Info(order.file);
     const fps = info.fps;
     if (DEV)
       console.log("info", info);
-    const samplesNumber = info.audioInfo ? info.videoInfo.nb_samples + info.audioInfo.nb_samples : info.videoInfo.nb_samples;
+    const samplesNumber = info.videoInfo.nb_samples + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
     let samplesCount = 0;
-    dispatchEvent(new CustomEvent("progress", { detail: { samplesNumber, samplesCount } }));
+    function dispatchProgress() {
+      dispatchEvent(new CustomEvent("progress", { detail: { identifier, samplesNumber, samplesCount } }));
+    }
+    dispatchProgress();
     const _outputSize = calculateSize(info.videoInfo.video, order.resizeConfig);
     const outputSize = {
       width: floorWithSignificance(_outputSize.width, 2),
       height: floorWithSignificance(_outputSize.height, 2)
     };
+    const targetVideoCodec = (() => {
+      if (order.videoEncoderConfig.codec)
+        return order.videoEncoderConfig.codec;
+      if (order.codecRequest) {
+        if (order.codecRequest.type === "av01") {
+          return av01PL(
+            {
+              width: outputSize.width,
+              height: outputSize.height,
+              profile: order.codecRequest?.profile ?? "Main",
+              fps,
+              prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? void 0
+            },
+            order.codecRequest.depth ?? 8,
+            order.codecRequest.seqTier ?? "M",
+            order.codecRequest.additional,
+            DEV
+          );
+        }
+      }
+      return avc1PLFromVideoInfo({
+        width: outputSize.width,
+        height: outputSize.height,
+        profile: order.codecRequest?.profile ?? "constrained_baseline",
+        fps,
+        prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? void 0
+      }, DEV);
+    })();
     const encoderConfig = {
-      ...order.encoderConfig,
-      codec: (order.codecEntries?.find((entry) => entry[0] >= fps) ?? [null, "avc1.4d0034"])[1],
-      ...outputSize
+      ...order.videoEncoderConfig,
+      ...outputSize,
+      codec: targetVideoCodec.startsWith("vp08") ? "vp8" : targetVideoCodec,
+      framerate: Math.round(fps * 100) / 100,
+      ...targetVideoCodec.startsWith("avc") ? {
+        avc: {
+          format: "avc"
+        }
+      } : {}
     };
-    const dstFile = (0, import_mp4box2.createFile)();
+    if (DEV)
+      console.log("start: encoderConfig", encoderConfig);
+    await VideoEncoder.isConfigSupported(encoderConfig).then((res) => {
+      if (DEV)
+        console.log("start: isConfigSupported", JSON.stringify(res));
+    }).catch((e) => {
+      console.error("start: isConfigSupported error", e);
+      throw e;
+    });
+    const dstFile = (0, import_mp4box3.createFile)();
+    dstFile.init({
+      brands: Array.from(/* @__PURE__ */ new Set([
+        "isom",
+        "iso6",
+        "iso2",
+        encoderConfig.codec.split(".")[0],
+        ...info.info.audioTracks.map((track) => track.codec.split(".")[0])
+      ])).filter((brand) => brand && typeof brand === "string" && brand.length === 4),
+      timescale: info.info.timescale,
+      //duration: info.info.duration,
+      // duration must be 0 for fragmented mp4
+      duration: 0
+    });
+    if (dstFile.moov) {
+      const _1904 = (/* @__PURE__ */ new Date("1904-01-01T00:00:00Z")).getTime();
+      dstFile.moov.mvhd?.set("creation_time", Math.floor((info.info.created.getTime() - _1904) / 1e3));
+      dstFile.moov.mvhd?.set("modification_time", Math.floor((Date.now() - _1904) / 1e3));
+      const mehd = dstFile.moov.mvex?.add("mehd");
+      mehd.set("fragment_duration", info.info.duration);
+    }
+    if (DEV)
+      console.log("prepare", samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
     function upcnt() {
       return new TransformStream({
         start() {
@@ -8048,30 +8570,135 @@ var EasyVideoEncoder = class extends EventTarget {
         transform(chunk, controller) {
           controller.enqueue(chunk);
           samplesCount++;
-          dispatchEvent(new CustomEvent("progress", { detail: { samplesNumber, samplesCount } }));
+          dispatchProgress();
         },
         flush() {
         }
       });
     }
-    const data = { nbSamples: info.videoInfo.nb_samples };
-    await order.file.stream().pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer).pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV)).pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, DEV), preventer).pipeThrough(generateVideoSortTransformer(info.videoInfo, data, DEV), preventer).pipeThrough(generateResizeTransformer(order.resizeConfig, DEV)).pipeThrough(generateVideoEncoderTransformStream(encoderConfig, data, DEV), preventer).pipeThrough(upcnt()).pipeTo(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, DEV));
-    if (info.audioInfo) {
-      await order.file.stream().pipeThrough(generateDemuxTransformer(info.audioInfo.id, DEV), preventer).pipeThrough(upcnt()).pipeTo(writeAudioSamplesToMP4File(dstFile, info.audioInfo, DEV));
+    const ___ = (() => {
+      let videoTrackAddedCallback;
+      const videoTrackAddedPromise = new Promise((resolve) => {
+        videoTrackAddedCallback = resolve;
+      });
+      let startToWriteVideoChunksCallback;
+      const startToWriteVideoChunksPromise = new Promise((resolve) => {
+        startToWriteVideoChunksCallback = resolve;
+      });
+      return {
+        videoTrackAddedCallback,
+        videoTrackAddedPromise,
+        startToWriteVideoChunksCallback,
+        startToWriteVideoChunksPromise
+      };
+    })();
+    let nextBox = 0;
+    let fileSize = 0;
+    const startPositionMap = /* @__PURE__ */ new Map();
+    function sendBoxes() {
+      for (let i2 = nextBox; i2 < dstFile.boxes.length; i2++) {
+        if (DEV)
+          console.log("send box", nextBox, i2, dstFile.boxes[i2]);
+        const box2 = dstFile.boxes[i2];
+        if (box2.type === "moof") {
+          const trackId = box2.trafs[0].tfhd.track_id;
+          if (!startPositionMap.has(trackId)) {
+            startPositionMap.set(trackId, fileSize);
+            if (DEV)
+              console.log("send box: set start position", trackId, fileSize);
+          }
+        }
+        const buffer = getBoxBuffer(box2);
+        fileSize += buffer.byteLength;
+        dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer } }));
+        if (box2.data) {
+          box2.data = void 0;
+        }
+      }
+      if (DEV)
+        console.log("send box: next", dstFile.boxes.length);
+      nextBox = dstFile.boxes.length;
     }
+    const sharedData = {
+      /**
+       * Number of samples/frames video_sort_transformer has dropped
+       */
+      dropFrames: 0,
+      getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames
+    };
+    const writeThenSendBoxStream = () => new WritableStream({
+      start() {
+      },
+      write() {
+        sendBoxes();
+      },
+      close() {
+        sendBoxes();
+      }
+    });
+    const videoWriter = writeThenSendBoxStream();
+    const videoStreamPromise = order.file.stream().pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer).pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV)).pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, DEV), preventer).pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer).pipeThrough(generateResizeTransformer(order.resizeConfig, DEV)).pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer).pipeThrough(upcnt()).pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV)).pipeTo(videoWriter).catch((e) => {
+      console.error("video stream error", e);
+      dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
+    });
+    await ___.videoTrackAddedPromise;
+    const audioStreams = [];
+    const audioTrackIds = [];
+    for (const track of info.info.audioTracks) {
+      const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, DEV);
+      audioTrackIds.push(trackId);
+      audioStreams.push(
+        () => order.file.stream().pipeThrough(generateDemuxTransformer(track.id, DEV), preventer).pipeThrough(upcnt()).pipeTo(audioWriter).catch((e) => {
+          dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
+        })
+      );
+    }
+    if (DEV)
+      console.log("send first boxes", dstFile);
+    sendBoxes();
+    for (let i2 = 0; i2 < audioStreams.length; i2++) {
+      const audioStream = audioStreams[i2];
+      await audioStream();
+      sendBoxes();
+    }
+    if (DEV)
+      console.log("start writing video chunks");
+    ___.startToWriteVideoChunksCallback();
+    await videoStreamPromise;
+    const mfraStream = new import_mp4box3.DataStream();
+    mfraStream.endianness = import_mp4box3.DataStream.BIG_ENDIAN;
+    mfraStream.writeUint32(0);
+    mfraStream.writeString("mfra", null, 4);
+    for (const [trackId, pos] of startPositionMap) {
+      mfraStream.writeUint32(43);
+      mfraStream.writeString("tfra", null, 4);
+      mfraStream.writeUint8(1);
+      mfraStream.writeUint24(0);
+      mfraStream.writeUint32(trackId);
+      mfraStream.writeUint32(0);
+      mfraStream.writeUint32(1);
+      mfraStream.writeUint64(0);
+      mfraStream.writeUint64(pos);
+      mfraStream.writeUint8(1);
+      mfraStream.writeUint8(1);
+      mfraStream.writeUint8(1);
+    }
+    mfraStream.writeUint32(16);
+    mfraStream.writeString("mfro", null, 4);
+    mfraStream.writeUint8(0);
+    mfraStream.writeUint24(0);
+    const mfraSize = mfraStream.getPosition() + 4;
+    mfraStream.writeUint32(mfraSize);
+    mfraStream.adjustUint32(0, mfraSize);
+    mfraStream.buffer.fileStart = fileSize;
+    dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer: mfraStream.buffer } }));
     if (samplesCount !== samplesNumber) {
       samplesCount = samplesNumber;
-      dispatchEvent(new CustomEvent("progress", { detail: { samplesNumber, samplesCount } }));
+      dispatchProgress();
     }
-    if (dstFile.moov) {
-      const _1904 = (/* @__PURE__ */ new Date("1904-01-01T00:00:00Z")).getTime();
-      dstFile.moov.mvhd?.set("creation_time", Math.floor((info.info.created.getTime() - _1904) / 1e3));
-      dstFile.moov.mvhd?.set("modification_time", Math.floor((Date.now() - _1904) / 1e3));
-      dstFile.moov.mvhd?.set("timescale", info.info.timescale);
-      dstFile.moov.mvhd?.set("duration", info.info.duration);
-    }
-    const buffer = dstFile.getBuffer();
-    dispatchEvent(new CustomEvent("result", { detail: { buffer } }));
+    if (DEV)
+      console.log("mux finish", samplesNumber, samplesCount, dstFile);
+    dispatchEvent(new CustomEvent("complete", { detail: { identifier } }));
     dstFile.flush();
   }
 };
@@ -8084,8 +8711,10 @@ export {
   generateVideoDecodeTransformer,
   generateVideoEncoderTransformStream,
   generateVideoSortTransformer,
-  getDescriptionBuffer,
   getMP4Info,
+  getStabilizedFps,
+  samplesToMp4FileWritable,
   writeAudioSamplesToMP4File,
-  writeEncodedVideoChunksToMP4File
+  writeEncodedVideoChunksToMP4File,
+  writeVideoSamplesToMP4File
 };

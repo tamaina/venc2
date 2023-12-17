@@ -173,7 +173,7 @@ export function avc1GuessLevelIdcFromInformations(
         if (DEV) console.log('avc1 guess lv: level choosing: anti-preffered level chosen', antiprefferedLevelIdc);
         return antiprefferedLevelIdc;
     }
-    throw new Error(`suitable level is not found`);
+    throw new Error(`avc1 guess lv: suitable level is not found`);
 }
 
 /**
