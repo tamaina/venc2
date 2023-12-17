@@ -79,10 +79,9 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 						framecnt++;
 						if (DEV) console.log('decode: enqueue frame', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples);
 						controller.enqueue({
-							frame: frame.clone(),
+							frame,
 							isKeyFrame: keyFrames.has(framecnt),
 						});
-						frame.close();
 					}
 					if (allowWriteEval()) emitResolve();
 					if (framecnt === videoInfo.nb_samples) {
