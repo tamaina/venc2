@@ -183,7 +183,7 @@ export function av01GuessLevelFromInformations(
 
 // https://aomediacodec.github.io/av1-spec/#general-sequence-header-obu-syntax
 export function av01CorrectSeqTier(
-    requestedSeqTier: 'M' | 'H',
+    requestedSeqTier: 'M' | string,
     levelIdx: number,
 ) {
     return levelIdx > 7 ? requestedSeqTier : 'M';
@@ -225,9 +225,9 @@ export function av01PL(
     depth: number | '8' | '10' | '12' = 8,
 
     /**
-     * Sequence tier: 'M' or 'H', maybe related to temporal and spatial scalability.
+     * Sequence tier: e.g. 'M', maybe related to temporal and spatial scalability.
      */
-    seqTier: 'M' | 'H' = 'M',
+    seqTier: 'M' | string = 'M',
 
     additional?: Av01VideoAdditionalInfoToBuildCodecsParameterString | null,
     DEV = false,

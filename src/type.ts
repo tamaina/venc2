@@ -84,9 +84,9 @@ export type CodecRequests = {
     depth?: number | '8' | '10' | '12',
 
     /**
-     * Sequence tier: 'M' or 'H', maybe related to temporal and spatial scalability.
+     * Sequence tier: e.g. 'M', maybe related to temporal and spatial scalability.
      */
-    seqTier?: 'M' | 'H',
+    seqTier?: 'M' | string,
 
     additional?: Av01VideoAdditionalInfoToBuildCodecsParameterString;
 };
