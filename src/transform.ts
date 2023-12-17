@@ -108,8 +108,7 @@ export function generateVideoSortTransformer(
 			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, enqueuecnt, sharedData.dropFrames, cache.size);
 			if (cache.has(frame.frame.timestamp)) {
 				console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp, expectedNextTimestamp);
-				cache.delete(frame.frame.timestamp);
-				sharedData.dropFrames++;
+				dropByCache(frame.frame.timestamp);
 			}
 
 			if (frame.frame.timestamp < expectedNextTimestamp) {
@@ -193,6 +192,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
                 mimeType: null,
             });
             srcFrame.frame.close();
+			await new Promise((resolve) => setTimeout(resolve, 0));
             const dstFrame = new VideoFrame(canvas, {
                 timestamp: srcFrame.frame.timestamp,
 				duration: srcFrame.frame.duration ?? undefined,
