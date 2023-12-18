@@ -69,7 +69,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 			allowWriteResolve = null;
 		}
 	};
-	const allowWriteEval = () => /*samplecnt <= framecnt + DECODE_QUEUE_MAX*/ true;
+	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
 
 	const keyFrames = new Set<number>();
 
