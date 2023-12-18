@@ -69,7 +69,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 			allowWriteResolve = null;
 		}
 	};
-	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
+	const allowWriteEval = () => /*samplecnt <= framecnt + DECODE_QUEUE_MAX*/ true;
 
 	const keyFrames = new Set<number>();
 
@@ -84,6 +84,8 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 							frame,
 							isKeyFrame: keyFrames.has(framecnt),
 						});
+					} else {
+						console.error('decode: no frame output');
 					}
 					if (allowWriteEval()) emitResolve();
 					if (framecnt === videoInfo.nb_samples) {
