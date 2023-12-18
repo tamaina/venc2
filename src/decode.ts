@@ -86,7 +86,7 @@ export async function generateVideoDecodeTransformer(
 				output: (frame) => {
 					if (frame) {
 						framecnt++;
-						if (DEV) console.log('decode: enqueue frame:', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples);
+						if (DEV) console.log('decode: enqueue frame:', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples, decoder.decodeQueueSize);
 						try {
 							controller.enqueue({
 								frame,
@@ -102,11 +102,13 @@ export async function generateVideoDecodeTransformer(
 					if (framecnt === videoInfo.nb_samples) {
 						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', videoInfo.nb_samples, framecnt);
 						controller.terminate();
-					} else if (frame && frame.timestamp >= (1e6 * videoInfo.duration / videoInfo.timescale)) {
+						decoder.close();
+					} else if (frame && frame.timestamp >= (1e6 * videoInfo.duration / videoInfo.timescale) && decoder.decodeQueueSize === 0) {
 						// デコーダーへの入力チャンクと出力フレームの数が一致しない場合がある（ソフトウェアデコーダの場合？）
-						console.error('decode: enqueue frame: [terminate] decoder dropped frame(s)...', videoInfo.nb_samples, framecnt, frame.timestamp, frame.duration, 1e6 * videoInfo.duration / videoInfo.timescale);
 						sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
+						console.error('decode: enqueue frame: [terminate] decoder dropped frame(s)...', sharedData.dropFramesOnDecoding, videoInfo.nb_samples, framecnt, frame.timestamp, 1e6 * videoInfo.duration / videoInfo.timescale);
 						controller.terminate();
+						decoder.close();
 					}
 				},
 				error: (e) => {
