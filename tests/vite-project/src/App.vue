@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { getMP4Info } from '../../../src/demux';
 import type { VencWorkerOrder, VencWorkerMessage, CodecRequests } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
+import OpfsWorker from '../../../src/opfs-worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
 import { avc1ProfileToProfileIdTable } from '../../../src/specs/avc1';
 import { av01ChromaSubsamplingTable, av01ProfileToProfileIdTable, av01ColorPrimariesTable, av01TransferCharacteristicsTable, av01MatrixCoefficientsTable } from '../../../src/specs/av01';
@@ -76,6 +77,7 @@ worker.onerror = e => console.error(e);
 
 let buffers = new Set<ArrayBuffer>();
 let worker = null as InstanceType<typeof TheWorker> | null;
+let opfsWorker = null as InstanceType<typeof OpfsWorker> | null;
 async function showBuffer() {
   console.log('buffers', buffers);
   const file = new File(Array.from(buffers), 'test.mp4', { type: 'video/mp4' });
@@ -135,6 +137,90 @@ async function execWorker() {
   for (const file of Array.from(input.value?.files ?? [])) {
     worker.postMessage({
       type: 'encode',
+      file,
+      codecRequest: getCodecRequest(),
+      videoEncoderConfig: {
+        hardwareAcceleration: hardwareAcceleration.value,
+        bitrateMode: bitrateMode.value,
+        bitrate: bitrate.value * 1000,
+        latencyMode: latencyMode.value,
+      },
+      resizeConfig: {
+        maxWidth: size.value,
+        maxHeight: size.value,
+      },
+      DEV: devchk.value?.checked,
+    } as VencWorkerOrder)
+  };
+}
+
+let prevOpfsIdentifier: string;
+
+async function execOpfsWorker() {
+  if (!('VideoEncoder' in globalThis) || !('VideoDecoder' in globalThis)) {
+    alert('VideoEncoder/VideoDecoder is not supported');
+    return;
+  }
+
+  if (opfsWorker) {
+    opfsWorker.terminate();
+  }
+  opfsWorker = new OpfsWorker();
+
+  const identifier = `${crypto.randomUUID()}.mp4`;
+  let dstFile: File;
+
+  const opfsRoot = await navigator.storage.getDirectory();
+
+  opfsWorker.onmessage = async (ev: MessageEvent<VencWorkerMessage>) => {
+    if (ev.data.type === 'opfs-file-created') {
+      console.log(ev.data);
+      if (prevOpfsIdentifier) {
+        await opfsRoot.removeEntry(prevOpfsIdentifier);
+        console.log(`${prevOpfsIdentifier} removed`);
+      }
+      prevOpfsIdentifier = identifier;
+    } else if (ev.data.type === 'progress') {
+      progress.value!.max = ev.data.samplesNumber;
+      progress.value!.value = ev.data.samplesCount;
+      return;
+    } else if (ev.data.type === 'complete') {
+      console.log('worker complete', ev.data);
+
+      if (!devchk.value?.checked) worker?.terminate();
+      worker = null;
+
+      const fileHandle = await opfsRoot.getFileHandle(identifier);
+      dstFile = await fileHandle.getFile();
+      const newUrl = URL.createObjectURL(dstFile);
+      if (a.value) {
+        a.value.href = newUrl;
+        a.value.download = 'test.mp4';
+      }
+
+      if (video.value) {
+        video.value.src = newUrl;
+      }
+
+      const info2 = await getMP4Info(dstFile);
+      console.log('info2 (opfs)', info2);
+    } else if (ev.data.type === 'error') {
+      console.error('worker error (via message)', ev.data);
+      if (!devchk.value?.checked) worker?.terminate();
+      worker = null;
+      alert(ev.data.error);
+    }
+  }
+
+  opfsWorker.onerror = (e: any) => {
+    console.error('worker error (via worker.onerror)', e);
+    alert(e);
+  }
+
+  for (const file of Array.from(input.value?.files ?? [])) {
+    opfsWorker.postMessage({
+      type: 'encode',
+      identifier,
       file,
       codecRequest: getCodecRequest(),
       videoEncoderConfig: {
@@ -281,6 +367,7 @@ function execMain() {
     </div>
 
     <div class="panel do">
+      <button @click="execOpfsWorker()">Worker (OPFS)</button>
       <button @click="execWorker()">Worker</button>
       <button @click="execMain()">Main</button>
     </div>

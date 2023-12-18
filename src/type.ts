@@ -55,7 +55,12 @@ export type VencWorkerError = {
     error: any;
 };
 
-export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError;
+export type VencOpfsWorkerFileCreated = {
+    identifier: any;
+    type: 'opfs-file-created';
+};
+
+export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError | VencOpfsWorkerFileCreated;
 
 export type EasyVideoEncoderEvents = {
     [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, { type: k }> , 'type'>>;

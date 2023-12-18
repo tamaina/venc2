@@ -2,7 +2,7 @@ import { EasyVideoEncoder } from '.';
 import type { EasyVideoEncoderEvents, VencWorkerRequest } from './type';
 
 const eventsWithoutComplete: (keyof EasyVideoEncoderEvents)[] = ['progress', 'segment', 'error'];
-function onEvent<E extends keyof EasyVideoEncoderEvents>(type: E) {
+function eventPassThrough<E extends keyof EasyVideoEncoderEvents>(type: E) {
     return (event: EasyVideoEncoderEvents[E]) => {
         globalThis.postMessage({
             type,
@@ -18,10 +18,10 @@ globalThis.onmessage = async (ev) => {
 
     await new Promise<void>((resolve, reject) => {
         // 一応Promiseにしてawaitしておく
-        const eventFuncs = new Map(eventsWithoutComplete.map(type => [type, onEvent(type)] as const));
+        const eventFuncs = new Map(eventsWithoutComplete.map(type => [type, eventPassThrough(type)] as const));
         
         eventFuncs.set('complete', (ev: EasyVideoEncoderEvents['complete']) => {
-            onEvent('complete')(ev);
+            eventPassThrough('complete')(ev);
             resolve();
 
             for (const [type, func] of eventFuncs) {
