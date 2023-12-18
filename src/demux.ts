@@ -64,7 +64,10 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 				if (!samples || samples.length === 0) return;
 				if (DEV) console.log('demux: onSamples: desiredSize', controller.desiredSize);
 				for (const sample of samples) {
-					controller.enqueue(sample);
+					controller.enqueue({
+						...sample,
+						data: sample.data.slice(0),
+					});
 					data.processedSample = sample.number + 1;
 					if (DEV) console.log('demux: onSamples: sample', sample.track_id, sample.number, data.track!.nb_samples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
 					if (data.processedSample === data.track!.nb_samples) {
