@@ -2,7 +2,7 @@ import { MP4VideoTrack, Sample } from '@webav/mp4box.js';
 import { VideoFrameAndIsKeyFrame } from './type';
 
 // VideoDecoderが持つキューの最大数
-const DECODE_QUEUE_MAX = 32;
+const DECODE_QUEUE_MAX = 16;
 
 // デコードのTransformStreamのhighWaterMark
 const DECODE_HWM = 16;
