@@ -80,14 +80,16 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 					if (frame) {
 						framecnt++;
 						if (DEV) console.log('decode: enqueue frame', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples);
-						try {
-							controller.enqueue({
-								frame,
-								isKeyFrame: keyFrames.has(framecnt),
-							});
-						} catch (e) {
-							console.error('decode: enqueue frame error', e);
-						}
+						setTimeout(() => {
+							try {
+								controller.enqueue({
+									frame,
+									isKeyFrame: keyFrames.has(framecnt),
+								});
+							} catch (e) {
+								console.error('decode: enqueue frame error', e);
+							}
+						}, 0);
 					} else {
 						console.error('decode: no frame output');
 					}
