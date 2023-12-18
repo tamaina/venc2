@@ -1,4 +1,4 @@
-import { DataStream } from "@webav/mp4box.js";
+import { BoxParser, DataStream } from "@webav/mp4box.js";
 
 /**
  * https://aomediacodec.github.io/av1-isobmff/#av1codecconfigurationbox-syntax
@@ -6,7 +6,8 @@ import { DataStream } from "@webav/mp4box.js";
  * @param codec e.g. av01.0.08M.08.0.110.01.01.01.0
  */
 export function av1CDescription(
-    codec: string
+    codec: string,
+    configOBUs: Uint8Array = new Uint8Array(0),
 ) {
     if (!codec.startsWith('av01.')) throw new Error(`codec ${codec} is not supported`);
     const [
@@ -38,7 +39,32 @@ export function av1CDescription(
         0                                                  // chroma_sample_position(TODO?)
     );
     stream.writeUint8(0); // reserved,initial_presentation_delay_present, reserved
+    stream.writeUint8Array(configOBUs);
     //#endregion
 
     return stream.buffer;
+}
+
+// Info: https://github.com/gpac/mp4box.js/blob/master/src/parsing/av1C.js
+BoxParser.av1CBox.prototype.write = function(stream) {
+	this.size = 4 + (this.configOBUs?.byteLength ?? 0);
+
+	this.writeHeader(stream);
+    stream.writeUint8((1 << 7) + this.version);
+    stream.writeUint8((this.seq_profile << 5) + this.seq_level_idx_0);
+    stream.writeUint8(
+        (this.seq_tier_0 << 7) +
+        (this.high_bitdepth << 6) +
+        (this.twelve_bit << 5) +
+        (this.monochrome << 4) +
+        (this.chroma_subsampling_x << 3) +
+        (this.chroma_subsampling_y << 2) +
+        this.chroma_sample_position
+    );
+    stream.writeUint8(
+        (this.reserved_1 << 5) +
+        (this.initial_presentation_delay_present << 4) +
+        this.initial_presentation_delay_present ? this.initial_presentation_delay_minus_one : this.reserved_2
+    );
+    stream.writeUint8Array(this.configOBUs);
 }

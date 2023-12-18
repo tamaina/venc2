@@ -13,10 +13,11 @@ function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
     }
 }
 
-function getAv1CBox(codec: string) {
+function getAv1CBox(codec: string, DEV = false) {
     const buffer = av1CDescription(codec);
     const av1CBox = new BoxParser.av1CBox(buffer.byteLength);
     av1CBox.parse(new MP4BoxStream(buffer));
+    if (DEV) console.log('write: metadata: getAv1CBox', codec, buffer, av1CBox);
     return av1CBox;
 }
 
@@ -56,7 +57,7 @@ export function writeEncodedVideoChunksToMP4File(
                     } : encoderConfig.codec.startsWith('hevc') ? {
                         hevcDecoderConfigRecord: data.data.decoderConfig?.description,
                     } : encoderConfig.codec.startsWith('av01') ? {
-                        description: getAv1CBox(data.data.decoderConfig?.codec ?? encoderConfig.codec),
+                        description: getAv1CBox(data.data.decoderConfig?.codec ?? encoderConfig.codec, DEV),
                     } : {}),
                 });
                 trak = file.getTrackById(trackId)!;
