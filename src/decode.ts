@@ -40,7 +40,13 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>
  */
-export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, orderConfig: Partial<VideoDecoderConfig>, DEV = false) {
+export async function generateVideoDecodeTransformer(
+	videoInfo: MP4VideoTrack,
+	description: BufferSource,
+	orderConfig: Partial<VideoDecoderConfig>,
+	sharedData: { dropFramesOnDecoding: number },
+	DEV = false,
+) {
 	let samplecnt = 0;
 	let framecnt = 0;
 	let decoder: VideoDecoder;
@@ -91,6 +97,11 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 					if (allowWriteEval()) emitResolve();
 					if (framecnt === videoInfo.nb_samples) {
 						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', videoInfo.nb_samples, framecnt);
+						controller.terminate();
+					} else if (frame && (frame.timestamp + (frame.duration ?? 0)) >= (1e6 * videoInfo.duration / videoInfo.timescale)) {
+						// デコーダーへの入力チャンクと出力フレームの数が一致しない場合がある（ソフトウェアデコーダの場合？）
+						console.error('decode: enqueue frame: [terminate] decoder dropped frame(s)...', videoInfo.nb_samples, framecnt, frame.timestamp, frame.duration, 1e6 * videoInfo.duration / videoInfo.timescale);
+						sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
 						controller.terminate();
 					}
 				},

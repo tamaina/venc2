@@ -228,8 +228,9 @@ export class EasyVideoEncoder extends EventTarget {
             /**
              * Number of samples/frames video_sort_transformer has dropped
              */
+            dropFramesOnDecoding: 0,
             dropFrames: 0,
-            getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames,
+            getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames - sharedData.dropFramesOnDecoding,
         };
         const writeThenSendBoxStream = () => new WritableStream({
             start() { },
@@ -240,7 +241,7 @@ export class EasyVideoEncoder extends EventTarget {
         const videoStreamPromise = order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
-            .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, DEV), preventer)
+            .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, sharedData, DEV), preventer)
             .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer)
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)

@@ -13,17 +13,11 @@ const TIMESTAMP_MARGINS = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5,
  */
 export function generateVideoSortTransformer(
 	videoInfo: MP4VideoTrack,
-	sharedData: { dropFrames: number; getResultSamples: () => number; startTimeShift?: number; },
+	sharedData: { dropFrames: number; dropFramesOnDecoding: number; getResultSamples: () => number; startTimeShift?: number; },
 	DEV = false
 ) {
 	let expectedNextTimestamp = 0;
 	let prevTimestamp = 0;
-
-	function getDuration(timestamp: number) {
-		const duration = timestamp - prevTimestamp;
-		prevTimestamp = timestamp;
-		return duration;
-	}
 
 	const cache = new Map<number, VideoFrameAndIsKeyFrame>();
 	let recievedcnt = 0;
@@ -35,12 +29,16 @@ export function generateVideoSortTransformer(
 		sharedData.dropFrames++;
 	}
 	function enqueue(f: VideoFrameAndIsKeyFrame, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
-		if (f.frame.duration !== getDuration(f.frame.timestamp)) {
+		const prefferedDuration = f.frame.timestamp - prevTimestamp;
+		prevTimestamp = f.frame.timestamp;
+
+		if (f.frame.duration !== prefferedDuration) {
 			const frame = new VideoFrame(f.frame, {
 				timestamp: f.frame.timestamp,
-				duration: getDuration(f.frame.timestamp),
+				duration: prefferedDuration,
 				visibleRect: f.frame.visibleRect ?? undefined,
 			});
+			if (DEV) console.log('sort: enqueue: duration is wrong', f.frame.timestamp, frame.duration, f.frame.duration, frame);
 			controller.enqueue({
 				frame,
 				isKeyFrame: f.isKeyFrame,
@@ -51,6 +49,7 @@ export function generateVideoSortTransformer(
 			// Chromeではどういうわけかnew VideoFrameで処理がストップする
 			// （特に最終フレームが来てキャッシュの放出をしている間）
 			// 原因はよくわからないがnew VideoFrameを極力使わないようにすることで処理のストップを回避できる
+			if (DEV) console.log('sort: enqueue:', f.frame.timestamp, f.frame.duration, f.frame);
 			controller.enqueue(f);
 		}
 		enqueuecnt++;
@@ -118,7 +117,7 @@ export function generateVideoSortTransformer(
 				return;
 			}
 
-			if (recievedcnt === videoInfo.nb_samples) {
+			if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
 				// 最後のフレームを受信した場合片付ける
 				cache.set(expectedNextTimestamp, frame);
 				if (DEV) console.log('sort: recieving frame: last frame', frame.frame.timestamp, cache);
