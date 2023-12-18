@@ -48,11 +48,12 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 	// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L82
 	const config = {
 		codec: videoInfo.codec.startsWith('vp08') ? 'vp8' : videoInfo.codec,
-		hardwareAcceleration: 'prefer-hardware' as const,
+		hardwareAcceleration: 'prefer-software' as const,
 		...orderConfig,
 		codedHeight: videoInfo.track_height,
 		codedWidth: videoInfo.track_width,
 		description,
+		optimizeForLatency: true,
 	};
 	if (DEV) console.log('decode: configure', config);
 	await VideoDecoder.isConfigSupported(config);
