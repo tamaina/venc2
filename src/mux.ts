@@ -1,5 +1,6 @@
-import { BoxParser, MP4AudioTrack, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, SampleOptions } from "@webav/mp4box.js";
+import { BoxParser, MP4AudioTrack, MP4BoxStream, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, SampleOptions } from "@webav/mp4box.js";
 import type { VideoEncoderOutputChunk } from "./type";
+import { av1CDescription } from "./specs/av1C";
 
 function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
     // Copy edits
@@ -10,6 +11,13 @@ function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
             elst.addEntry(editEntry);
         });
     }
+}
+
+function getAv1CBox(codec: string) {
+    const buffer = av1CDescription(codec);
+    const av1CBox = new BoxParser.av1CBox(buffer.byteLength);
+    av1CBox.parse(new MP4BoxStream(buffer));
+    return av1CBox;
 }
 
 export function writeEncodedVideoChunksToMP4File(
@@ -36,6 +44,7 @@ export function writeEncodedVideoChunksToMP4File(
                 const media_duration = videoInfo.duration;
                 trackId = file.addTrack({
                     name: 'VideoHandle',
+                    type: encoderConfig.codec.split('.')[0],
                     timescale: videoInfo.timescale,
                     duration: media_duration,
                     media_duration: media_duration,
@@ -46,6 +55,8 @@ export function writeEncodedVideoChunksToMP4File(
                         avcDecoderConfigRecord: data.data.decoderConfig?.description,
                     } : encoderConfig.codec.startsWith('hevc') ? {
                         hevcDecoderConfigRecord: data.data.decoderConfig?.description,
+                    } : encoderConfig.codec.startsWith('av01') ? {
+                        description: getAv1CBox(data.data.decoderConfig?.codec ?? encoderConfig.codec),
                     } : {}),
                 });
                 trak = file.getTrackById(trackId)!;
@@ -138,6 +149,7 @@ export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTra
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     const trackId = file.addTrack({
         name: 'VideoHandle',
+        type: videoInfo.codec.split('.')[0],
         timescale: videoInfo.timescale,
         //duration: videoInfo.duration,
         //media_duration: videoInfo.duration,
@@ -147,11 +159,7 @@ export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTra
         language: videoInfo.language,
         width: videoInfo.video.width,
         height: videoInfo.video.height,
-        ...(videoInfo.codec.startsWith('avc') ? {
-            avcDecoderConfigRecord: description,
-        } : videoInfo.codec.startsWith('hevc') ? {
-            hevcDecoderConfigRecord: description,
-        } : {}),
+        description,
     });
 
     return {
