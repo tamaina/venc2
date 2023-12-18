@@ -104,7 +104,7 @@ export function generateVideoSortTransformer(
 		start() {},
 		transform(frame, controller) {
 			recievedcnt++
-			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, enqueuecnt, sharedData.dropFrames, cache.size);
+			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, videoInfo.nb_samples, enqueuecnt, sharedData, cache.size);
 			if (cache.has(frame.frame.timestamp)) {
 				console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp, expectedNextTimestamp);
 				dropByCache(frame.frame.timestamp);
@@ -134,7 +134,7 @@ export function generateVideoSortTransformer(
 						cache.delete(timestamp);
 					}
 				}
-				if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData.dropFrames, sharedData.getResultSamples());
+				if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData, sharedData.getResultSamples());
 				controller.terminate();
 				return;
 			}

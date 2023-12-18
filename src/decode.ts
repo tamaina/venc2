@@ -79,19 +79,25 @@ export async function generateVideoDecodeTransformer(
 	const allowWriteEval = () => samplecnt <= framecnt + DECODE_QUEUE_MAX;
 
 	const keyFrames = new Set<number>();
+	const videoDuration = 1e6 * videoInfo.duration / videoInfo.timescale;
 
 	return new TransformStream<EncodedVideoChunk, VideoFrameAndIsKeyFrame>({
 		async start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
 					if (frame) {
-						framecnt++;
-						if (DEV) console.log('decode: enqueue frame:', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples, decoder.decodeQueueSize);
 						try {
-							controller.enqueue({
-								frame,
-								isKeyFrame: keyFrames.has(framecnt),
-							});
+							if (frame.timestamp <= videoDuration) {
+								if (DEV) console.log('decode: enqueue frame:', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples, decoder.decodeQueueSize);
+								framecnt++;
+								controller.enqueue({
+									frame,
+									isKeyFrame: keyFrames.has(frame.timestamp),
+								});
+							} else {
+								console.error('decode: enqueue frame: NOT enqueued because timestamp exceed video duration!', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples, decoder.decodeQueueSize);
+								sharedData.dropFramesOnDecoding++;
+							}
 						} catch (e) {
 							console.error('decode: enqueue frame: caught error', e);
 						}
@@ -99,11 +105,11 @@ export async function generateVideoDecodeTransformer(
 						console.error('decode: enqueue frame: no frame output??');
 					}
 					if (allowWriteEval()) emitResolve();
-					if (framecnt === videoInfo.nb_samples) {
+					if (decoder.decodeQueueSize === 0 && videoInfo.nb_samples === framecnt + sharedData.dropFramesOnDecoding) {
 						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', videoInfo.nb_samples, framecnt);
 						controller.terminate();
 						decoder.close();
-					} else if (frame && frame.timestamp >= (1e6 * videoInfo.duration / videoInfo.timescale) && decoder.decodeQueueSize === 0) {
+					} else if (decoder.decodeQueueSize === 0 && frame && frame.timestamp >= videoDuration) {
 						// デコーダーへの入力チャンクと出力フレームの数が一致しない場合がある（ソフトウェアデコーダの場合？）
 						sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
 						console.error('decode: enqueue frame: [terminate] decoder dropped frame(s)...', sharedData.dropFramesOnDecoding, videoInfo.nb_samples, framecnt, frame.timestamp, 1e6 * videoInfo.duration / videoInfo.timescale);
@@ -122,11 +128,17 @@ export async function generateVideoDecodeTransformer(
 		transform(vchunk, controller) {
 			samplecnt++;
 			if (vchunk.type === 'key') {
-				keyFrames.add(samplecnt);
+				keyFrames.add(vchunk.timestamp);
 			}
-			// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
-			decoder.decode(vchunk);
-			if (DEV) console.log('decode: recieving vchunk', samplecnt, framecnt, decoder.decodeQueueSize);
+
+			if (DEV) console.log('decode: recieving vchunk:', samplecnt, framecnt, decoder.decodeQueueSize);
+			if (decoder.state !== 'configured') {
+				console.error('decode: recieving vchunk: decoder state is strange', decoder.state);
+				return Promise.resolve();
+			} else {
+				// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
+				decoder.decode(vchunk);
+			}
 
 			// safety
 			emitResolve();
