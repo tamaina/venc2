@@ -17,12 +17,14 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 	return new TransformStream<Sample, EncodedVideoChunk>({
 		start() {},
 		transform(sample, controller) {
-			controller.enqueue(new EncodedVideoChunk({
+			const chunk = new EncodedVideoChunk({
 				type: sample.is_sync ? 'key' : 'delta',
 				timestamp: 1e6 * sample.cts / sample.timescale,
 				duration: 1e6 * sample.duration / sample.timescale,
 				data: sample.data,
-			}));
+			});
+			if (DEV) console.log('sample: transform from sample to EncodedVideoChunk', sample, chunk);
+			controller.enqueue(chunk);
 		},
 		flush(controller) {
 			if (DEV) console.log('sample: [terminate] sample flush');
