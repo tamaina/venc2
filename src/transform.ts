@@ -2,7 +2,7 @@ import { BrowserImageResizerConfigWithOffscreenCanvasOutput, readAndCompressImag
 import { MP4VideoTrack } from "@webav/mp4box.js";
 import { VideoFrameAndIsKeyFrame } from "./type";
 
-const TIMESTAMP_MARGINS = [0, -1, 1, -2, 2];
+const TIMESTAMP_MARGINS = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
  * **Set preventClose: true** when using the stream with pipeThrough.
