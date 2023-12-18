@@ -53,7 +53,7 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 		codedHeight: videoInfo.track_height,
 		codedWidth: videoInfo.track_width,
 		description,
-		optimizeForLatency: true,
+		//optimizeForLatency: true,
 	};
 	if (DEV) console.log('decode: configure', config);
 	await VideoDecoder.isConfigSupported(config);
@@ -81,16 +81,10 @@ export async function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, d
 					if (frame) {
 						framecnt++;
 						if (DEV) console.log('decode: enqueue frame', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples);
-						setTimeout(() => {
-							try {
-								controller.enqueue({
-									frame,
-									isKeyFrame: keyFrames.has(framecnt),
-								});
-							} catch (e) {
-								console.error('decode: enqueue frame error', e);
-							}
-						}, 0);
+						controller.enqueue({
+							frame,
+							isKeyFrame: keyFrames.has(framecnt),
+						});
 					} else {
 						console.error('decode: no frame output');
 					}
