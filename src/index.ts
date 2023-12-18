@@ -224,12 +224,6 @@ export class EasyVideoEncoder extends EventTarget {
             nextBox = dstFile.boxes.length;
         }
 
-        const writeThenSendBoxStream = () => new WritableStream({
-            start() { },
-            write() { sendBoxes() },
-            close() { sendBoxes() },
-        });
-
         const sharedData = {
             /**
              * Number of samples/frames video_sort_transformer has dropped
@@ -237,7 +231,12 @@ export class EasyVideoEncoder extends EventTarget {
             dropFrames: 0,
             getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames,
         };
-
+        const writeThenSendBoxStream = () => new WritableStream({
+            start() { },
+            write() { sendBoxes() },
+            close() { sendBoxes() },
+        });
+        const videoWriter = writeThenSendBoxStream();
         const videoStreamPromise = order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
@@ -247,7 +246,7 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
             .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
-            .pipeTo(writeThenSendBoxStream())
+            .pipeTo(videoWriter)
             .catch(e => {
                 console.error('video stream error', e);
                 dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
