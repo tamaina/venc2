@@ -162,6 +162,8 @@ export function generateVideoSortTransformer(
 			if (DEV) console.log('sort: [terminate] frame flush');
             controller.terminate();
 		},
+	}, {
+		highWaterMark: 16,
 	});
 }
 
