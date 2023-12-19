@@ -313,7 +313,7 @@ function execMain() {
       <a href="https://github.com/tamaina/venc2">https://github.com/tamaina/venc2</a>
     </div>
 
-    <div>
+    <div class="panel">
       <input type="file" ref="input" accept="video/*" />
       <select v-model="decoderHardwareAcceleration">
         <option value="no-preference">decoder no-preference</option>
