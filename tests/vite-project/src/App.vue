@@ -22,6 +22,7 @@ const size = ref(sizeInput.value?.valueAsNumber || 1920);
 const bitrate = ref(bitrateInput.value?.valueAsNumber || 1000);
 const keyFrameMilliSec = ref(4000);
 const hardwareAcceleration = ref<'prefer-hardware' | 'prefer-software' | 'no-preference'>('no-preference');
+const decoderHardwareAcceleration = ref<'prefer-hardware' | 'prefer-software' | 'no-preference'>('no-preference');
 const bitrateMode = ref<'constant' | 'quantizer' | 'variable'>('constant');
 const latencyMode = ref<'quality' | 'realtime'>('quality');
 
@@ -147,6 +148,9 @@ async function execWorker() {
         bitrate: bitrate.value * 1000,
         latencyMode: latencyMode.value,
       },
+      videoDecoderConfig: {
+        hardwareAcceleration: decoderHardwareAcceleration.value,
+      },
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,
@@ -238,6 +242,9 @@ async function execOpfsWorker() {
         bitrate: bitrate.value * 1000,
         latencyMode: latencyMode.value,
       },
+      videoDecoderConfig: {
+        hardwareAcceleration: decoderHardwareAcceleration.value,
+      },
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,
@@ -282,6 +289,9 @@ function execMain() {
         bitrate: bitrate.value * 1000,
         latencyMode: latencyMode.value,
       },
+      videoDecoderConfig: {
+        hardwareAcceleration: decoderHardwareAcceleration.value,
+      },
       resizeConfig: {
         maxWidth: size.value,
         maxHeight: size.value,
@@ -303,8 +313,16 @@ function execMain() {
       <a href="https://github.com/tamaina/venc2">https://github.com/tamaina/venc2</a>
     </div>
 
-    <div class="panel">
+    <div>
       <input type="file" ref="input" accept="video/*" />
+      <select v-model="decoderHardwareAcceleration">
+        <option value="no-preference">decoder no-preference</option>
+        <option value="prefer-hardware">decoder prefer-hardware</option>
+        <option value="prefer-software">decoder prefer-software</option>
+      </select>
+    </div>
+
+    <div class="panel">
       <div>
         W=
         <input type="number" min="0" step="1" placeholder="size" value="1920" ref="sizeInput"
