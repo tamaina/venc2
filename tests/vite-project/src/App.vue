@@ -23,7 +23,7 @@ const bitrate = ref(bitrateInput.value?.valueAsNumber || 1000);
 const keyFrameMilliSec = ref(4000);
 const hardwareAcceleration = ref<'prefer-hardware' | 'prefer-software' | 'no-preference'>('no-preference');
 const decoderHardwareAcceleration = ref<'prefer-hardware' | 'prefer-software' | 'no-preference'>('no-preference');
-const bitrateMode = ref<'constant' | 'quantizer' | 'variable'>('constant');
+const bitrateMode = ref<'constant' | 'quantizer' | 'variable'>('variable');
 const latencyMode = ref<'quality' | 'realtime'>('quality');
 
 //#region avc1
