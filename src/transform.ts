@@ -101,9 +101,9 @@ export function generateVideoSortTransformer(
 		transform(frame, controller) {
 			try {
 				recievedcnt++
-				console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, videoInfo.nb_samples, enqueuecnt, sharedData, cache.size);
+				if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, videoInfo.nb_samples, enqueuecnt, sharedData, cache.size);
 				if (cache.has(frame.frame.timestamp)) {
-					console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp, expectedNextTimestamp);
+					console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp);
 					dropByCache(frame.frame.timestamp);
 				}
 	
@@ -117,17 +117,17 @@ export function generateVideoSortTransformer(
 				if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
 					// 最後のフレームを受信した場合片付ける
 					cache.set(frame.frame.timestamp, frame);
-					if (DEV) console.log('sort: recieving frame: last frame:', frame.frame.timestamp, cache);
 					const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
+					if (DEV) console.log('sort: recieving frame: last frame:', frame.frame.timestamp, stamps);
 					for (const timestamp of stamps) {
 						// キャッシュを全てenqueueする
 						if (timestamp < expectedNextTimestamp) {
-							if (DEV) console.error('sort: recieving frame: last framee: drop frame', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
+							if (DEV) console.error('sort: recieving frame: last framee: drop frame', timestamp, expectedNextTimestamp, enqueuecnt);
 							dropByCache(timestamp);
 						} else {
 							const f = cache.get(timestamp)!;
 							expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
-							if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
+							if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, enqueuecnt);
 							enqueue(f, controller);
 							cache.delete(timestamp);
 						}
@@ -209,7 +209,6 @@ export function generateResizeTransformer(
 					console.log('resize: transform', framecnt, performance.measure('resize', 'resize start').duration, dstFrame);
 				}
 				controller.enqueue({ frame: dstFrame, isKeyFrame: srcFrame.isKeyFrame });
-				console.log('resize:', framecnt, sharedData.getResultSamples());
 			} catch (e) {
 				console.error('resize: caught error', e);
 			}

@@ -48,7 +48,7 @@ export async function generateVideoDecodeTransformer(
 	videoInfo: MP4VideoTrack,
 	description: BufferSource,
 	orderConfig: Partial<VideoDecoderConfig>,
-	sharedData: { dropFramesOnDecoding: number },
+	sharedData: { dropFramesOnDecoding: number; startTimeShift?: number; },
 	DEV = false,
 ) {
 	let samplecnt = 0;
@@ -97,7 +97,8 @@ export async function generateVideoDecodeTransformer(
 					}
 					if (frame) {
 						try {
-							if (frame.timestamp <= videoDuration) {
+							// startTimeShiftはソート時に考慮されるのでvideoDurationの時点では計算してはいけない
+							if (frame.timestamp <= videoDuration + (sharedData.startTimeShift ?? 0)) {
 								if (DEV) console.log('decode: enqueue frame:', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples, decoder.decodeQueueSize);
 								framecnt++;
 								controller.enqueue({
@@ -121,7 +122,7 @@ export async function generateVideoDecodeTransformer(
 						controller.terminate();
 						terminated = true;
 						decoder.flush();
-					} else if (decoder.decodeQueueSize === 0 && frame && frame.timestamp >= videoDuration) {
+					} else if (decoder.decodeQueueSize === 0 && frame && frame.timestamp >= videoDuration + (sharedData.startTimeShift ?? 0)) {
 						// デコーダーへの入力チャンクと出力フレームの数が一致しない場合がある（ソフトウェアデコーダの場合？）
 						sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
 						console.error('decode: enqueue frame: [terminate] decoder dropped frame(s)...', sharedData.dropFramesOnDecoding, videoInfo.nb_samples, framecnt, frame.timestamp, 1e6 * videoInfo.duration / videoInfo.timescale);
