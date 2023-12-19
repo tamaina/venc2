@@ -3,8 +3,12 @@ import { avc1ProfileToProfileIdTable } from './specs/avc1';
 import { Av01VideoAdditionalInfoToBuildCodecsParameterString, av01ProfileToProfileIdTable } from './specs/av01';
 
 export type VideoKeyframeConfig = {
-    // TODO!!
     type: 'microseconds';
+
+    /**
+     * Must be positive.
+     * 0 means "follow source video's keyframe interval"
+     */
     interval: number;
 };
 
