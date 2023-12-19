@@ -3,7 +3,7 @@ import { VideoEncoderOutputChunk, VideoFrameAndIsKeyFrame, VideoKeyframeConfig }
 // VideoEncoderが持つキューの最大数
 const ENCODE_QUEUE_MAX = 32;
 
-function validateVideoKeyFrameConfig(config?: VideoKeyframeConfig | undefined) {
+export function validateVideoKeyFrameConfig(config?: VideoKeyframeConfig | undefined) {
     if (!config) return;
     if (config.type === 'microseconds') {
         if (config.interval < 0) throw new Error('videoKeyframeConfig.interval must be positive');
