@@ -357,6 +357,7 @@ export class ISOFile {
 
 export namespace BoxParser {
 	export class Box {
+		type?: string
 		size?: number
 		data?: Uint8Array
 

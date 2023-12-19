@@ -1,6 +1,7 @@
 import { BoxParser, MP4AudioTrack, MP4BoxStream, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, SampleOptions } from "@webav/mp4box.js";
 import type { VideoEncoderOutputChunk } from "./type";
 import { av1CDescription } from "./specs/av1C";
+import { getDescriptionBoxEntriesFromTrak } from './box';
 
 function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
     // Copy edits
@@ -147,10 +148,30 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
  * 
  * @param file MP4File via mp4box.js
  * @param videoInfo MP4VideoTrack
- * @param description ArrayBuffer decoder config
+ * @param videoTrak ←SrcFile.getTrackById(videoInfo.track_id)
  * @param DEV enable debug log
  */
-export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTrack, description: any, DEV = false) {
+export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTrack, videoTrak: any, DEV = false) {
+    //#region copy description
+    // audioTrackのesdsコピーと同様にvideoTrackもdescriptionをコピーする
+    const entiries = getDescriptionBoxEntriesFromTrak(videoTrak)
+    const description = entiries.reduce((acc, entry) => {
+        if (acc) return acc;
+        if (entry.type?.startsWith('avc') && 'av1C' in entry) {
+            return entry.av1C as BoxParser.esdsBox;
+        } else if (entry.type === 'hvc1' && 'hvcC' in entry) {
+            return entry.hvcC as BoxParser.esdsBox;
+        } else if (entry.type === 'hev1' && 'hvcC' in entry) {
+            return entry.hvcC as BoxParser.esdsBox;
+        } else if (entry.type?.startsWith('vp') && 'vpcC' in entry) {
+            return entry.vpcC as BoxParser.esdsBox;
+        } else if (entry.type === 'av01' && 'av1C' in entry) {
+            return entry.av1C as BoxParser.esdsBox;
+        }
+        return undefined;
+    }, undefined as undefined | BoxParser.esdsBox);
+    //#endregion
+
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     const trackId = file.addTrack({
         name: 'VideoHandle',
@@ -180,7 +201,19 @@ export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTra
  * @param audioInfo MP4AudioTrack
  * @param DEV enable debug log
  */
-export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTrack, DEV = false) {
+export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTrack, audioTrak: any, DEV = false) {
+    //#region copy description
+    // esdsをコピーしないとFirefoxで音声を再生できない
+    const entiries = getDescriptionBoxEntriesFromTrak(audioTrak)
+    const description = entiries.reduce((acc, entry) => {
+        if (acc) return acc;
+        if (entry.type === 'mp4a' && 'esds' in entry) {
+            return entry.esds as BoxParser.esdsBox;
+        }
+        return undefined;
+    }, undefined as undefined | BoxParser.esdsBox);
+    //#endregion
+
     // https://github.com/gpac/mp4box.js/issues/243#issuecomment-950450478
     const trackId = file.addTrack({
         type: audioInfo.codec.split('.')[0],
@@ -200,6 +233,8 @@ export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTra
         channel_count: audioInfo.audio.channel_count,
         samplerate: audioInfo.audio.sample_rate,
         samplesize: audioInfo.audio.sample_size,
+
+        description,
     });
 
     return {

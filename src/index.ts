@@ -261,7 +261,7 @@ export class EasyVideoEncoder extends EventTarget {
         const audioTrackIds = [] as number[];
         for (const track of info.info.audioTracks) {
             // add audio tracks
-            const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, DEV);
+            const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, info.file.getTrackById(track.id), DEV);
 
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()

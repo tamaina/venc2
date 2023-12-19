@@ -10,14 +10,14 @@ export function getBoxBuffer(box: BoxParser.Box | BoxParser.ContainerBox | BoxPa
 // MEMO: about avcC (AVCDecoderConfigurationRecord)
 //       https://gist.github.com/uupaa/8493378ec15f644a3d2b
 export function getDescriptionBuffer(entry: any) {
-	const box = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C || entry.mp4a;
+	const box = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C;
 	if (box) {
 		const buffer = getBoxBuffer(box);
 		return new Uint8Array(buffer, 8);  // Remove the box header.
 	}
-	throw new Error("avcC, hvcC, vpcC, or av1C box not found");
+	throw new Error("avcC, hvcC, vpcC or av1C box not found");
 }
 
-export function getDescriptionBoxEntriesFromTrak(trak: any) {
-    return trak?.mdia?.minf?.stbl?.stsd?.entries ?? [];
+export function getDescriptionBoxEntriesFromTrak(trak: any /* BoxParser.trakBox */) {
+    return trak?.mdia?.minf?.stbl?.stsd?.entries as BoxParser.Box[] ?? [];
 }
