@@ -30,6 +30,7 @@ export function generateVideoSortTransformer(
 	}
 	function enqueue(f: VideoFrameAndIsKeyFrame, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
 		const prefferedDuration = f.frame.timestamp - prevTimestamp;
+		if (DEV) console.log('sort: enqueue: prefferedDuration', prefferedDuration, prevTimestamp, f.frame.timestamp, f.frame.duration, f.frame);
 		prevTimestamp = f.frame.timestamp;
 
 		if (f.frame.duration !== prefferedDuration) {
@@ -38,18 +39,16 @@ export function generateVideoSortTransformer(
 				duration: prefferedDuration,
 				visibleRect: f.frame.visibleRect ?? undefined,
 			});
-			if (DEV) console.log('sort: enqueue: duration is wrong', f.frame.timestamp, frame.duration, f.frame.duration, frame);
+			f.frame.close();
 			controller.enqueue({
 				frame,
 				isKeyFrame: f.isKeyFrame,
 			});
-			f.frame.close();
 		} else {
 			// durationが正しい場合はそのままenqueueする
 			// Chromeではどういうわけかnew VideoFrameで処理がストップする
 			// （特に最終フレームが来てキャッシュの放出をしている間）
 			// 原因はよくわからないがnew VideoFrameを極力使わないようにすることで処理のストップを回避できる
-			if (DEV) console.log('sort: enqueue:', f.frame.timestamp, f.frame.duration, f.frame);
 			controller.enqueue(f);
 		}
 		enqueuecnt++;
@@ -120,9 +119,10 @@ export function generateVideoSortTransformer(
 			if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
 				// 最後のフレームを受信した場合片付ける
 				cache.set(expectedNextTimestamp, frame);
-				if (DEV) console.log('sort: recieving frame: last frame', frame.frame.timestamp, cache);
+				if (DEV) console.log('sort: recieving frame: last frame:', frame.frame.timestamp, cache);
 				const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
 				for (const timestamp of stamps) {
+					if (DEV) console.log('sort: recieving frame: last frame: enqueueing', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
 					// キャッシュを全てenqueueする
 					if (timestamp < expectedNextTimestamp) {
 						if (DEV) console.error('sort: recieving frame: drop frame', timestamp, expectedNextTimestamp);
@@ -130,7 +130,9 @@ export function generateVideoSortTransformer(
 					} else {
 						const f = cache.get(timestamp)!;
 						expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
+						if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
 						enqueue(f, controller);
+						if (DEV) console.log('sort: recieving frame: last frame: enqueued', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
 						cache.delete(timestamp);
 					}
 				}
@@ -193,6 +195,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
                 mimeType: null,
             });
             srcFrame.frame.close();
+			// ???????????
 			await new Promise((resolve) => setTimeout(resolve, 0));
             const dstFrame = new VideoFrame(canvas, {
                 timestamp: srcFrame.frame.timestamp,
@@ -205,7 +208,7 @@ export function generateResizeTransformer(config: Partial<Omit<BrowserImageResiz
             controller.enqueue({ frame: dstFrame, isKeyFrame: srcFrame.isKeyFrame });
         },
         flush(controller) {
-            if (DEV) console.log('resize: [terminate]  cache is too large flush')
+            if (DEV) console.log('resize: [terminate] flush');
             controller.terminate();
         },
     });

@@ -80,11 +80,16 @@ export async function generateVideoDecodeTransformer(
 
 	const keyFrames = new Set<number>();
 	const videoDuration = 1e6 * videoInfo.duration / videoInfo.timescale;
+	let terminated = false;
 
 	return new TransformStream<EncodedVideoChunk, VideoFrameAndIsKeyFrame>({
 		async start(controller) {
 			decoder = new VideoDecoder({
 				output: (frame) => {
+					if (terminated) {
+						console.error('decode: enqueue frame: [terminate] decoder output after terminated');
+						return;
+					}
 					if (frame) {
 						try {
 							if (frame.timestamp <= videoDuration) {
@@ -97,6 +102,7 @@ export async function generateVideoDecodeTransformer(
 							} else {
 								console.error('decode: enqueue frame: NOT enqueued because timestamp exceed video duration!', frame.timestamp, keyFrames.has(framecnt), framecnt, videoInfo.nb_samples, decoder.decodeQueueSize);
 								sharedData.dropFramesOnDecoding++;
+								frame.close();
 							}
 						} catch (e) {
 							console.error('decode: enqueue frame: caught error', e);
@@ -108,13 +114,15 @@ export async function generateVideoDecodeTransformer(
 					if (decoder.decodeQueueSize === 0 && videoInfo.nb_samples === framecnt + sharedData.dropFramesOnDecoding) {
 						if (DEV) console.log('decode: enqueue frame: [terminate] last frame', videoInfo.nb_samples, framecnt);
 						controller.terminate();
-						decoder.close();
+						terminated = true;
+						decoder.flush();
 					} else if (decoder.decodeQueueSize === 0 && frame && frame.timestamp >= videoDuration) {
 						// デコーダーへの入力チャンクと出力フレームの数が一致しない場合がある（ソフトウェアデコーダの場合？）
 						sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
 						console.error('decode: enqueue frame: [terminate] decoder dropped frame(s)...', sharedData.dropFramesOnDecoding, videoInfo.nb_samples, framecnt, frame.timestamp, 1e6 * videoInfo.duration / videoInfo.timescale);
 						controller.terminate();
-						decoder.close();
+						terminated = true;
+						decoder.flush();
 					}
 				},
 				error: (e) => {
@@ -160,6 +168,7 @@ export async function generateVideoDecodeTransformer(
 		flush(controller) {
 			if (DEV) console.log('decode: [terminate] vchunk flush');
 			controller.terminate();
+			terminated = true;
 			return decoder.flush();
 		},
 	}, {
