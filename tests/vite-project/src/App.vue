@@ -218,6 +218,9 @@ async function execOpfsWorker() {
   }
 
   for (const file of Array.from(input.value?.files ?? [])) {
+    const info = await getMP4Info(file);
+    console.log('info (opfs)', info);
+
     opfsWorker.postMessage({
       type: 'encode',
       identifier,
