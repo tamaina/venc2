@@ -61,8 +61,8 @@ export async function generateVideoDecodeTransformer(
 		hardwareAcceleration: 'prefer-software' as const,
 		optimizeForLatency: false,
 		...orderConfig,
-		codedHeight: videoInfo.track_height,
-		codedWidth: videoInfo.track_width,
+		codedHeight: videoInfo.video.height,
+		codedWidth: videoInfo.video.width,
 		description,
 	};
 	if (DEV) console.log('decode: configure', config);
