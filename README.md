@@ -16,6 +16,7 @@ Sample: https://venc2.vercel.app/
 |Safari 17.2|~high|❌|
 |Safari 17.4 TP 184|~high|Main|
 |Chrome|~high_progressive|Main|
+|Firefox|❌|❌|
 
 ## References
 https://github.com/vjeux/mp4-h264-re-encode
