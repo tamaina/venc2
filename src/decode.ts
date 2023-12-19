@@ -59,11 +59,11 @@ export async function generateVideoDecodeTransformer(
 	const config = {
 		codec: videoInfo.codec.startsWith('vp08') ? 'vp8' : videoInfo.codec,
 		hardwareAcceleration: 'prefer-software' as const,
+		optimizeForLatency: false,
 		...orderConfig,
 		codedHeight: videoInfo.track_height,
 		codedWidth: videoInfo.track_width,
 		description,
-		//optimizeForLatency: true,
 	};
 	if (DEV) console.log('decode: configure', config);
 	await VideoDecoder.isConfigSupported(config);

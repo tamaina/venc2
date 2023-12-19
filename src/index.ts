@@ -61,13 +61,13 @@ export class EasyVideoEncoder extends EventTarget {
         const DEV = order.DEV ?? false;
         Log.setLogLevel(DEV ? Log.LOG_LEVEL_DEBUG : Log.LOG_LEVEL_ERROR);
         const identifier = order.identifier;
-        if (DEV) console.log('start', order);
+        if (DEV) console.log('index: start', order);
 
         const dispatchEvent = this.dispatchEvent.bind(this);
         const info = await getMP4Info(order.file)
 
         const fps = info.fps;
-        if (DEV) console.log('info', info);
+        if (DEV) console.log('index: info', info);
 
         const samplesNumber = info.videoInfo.nb_samples + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
         let samplesCount = 0;
@@ -123,11 +123,11 @@ export class EasyVideoEncoder extends EventTarget {
                 },
             } : {})
         } as VideoEncoderConfig;
-        if (DEV) console.log('start: encoderConfig', encoderConfig);
+        if (DEV) console.log('index: start: encoderConfig', encoderConfig);
 
         try {
             const encoderSupport = await VideoEncoder.isConfigSupported(encoderConfig);
-            if (DEV) console.log('start: isConfigSupported', JSON.parse(JSON.stringify(encoderSupport)));
+            if (DEV) console.log('index: start: isConfigSupported', JSON.parse(JSON.stringify(encoderSupport)));
             if (!encoderSupport || !encoderSupport.supported) {
                 console.error('Your encoding config is not supported.', encoderSupport);
                 throw new Error(`Your encoding config is not supported. ${JSON.stringify(encoderSupport)}`);
@@ -158,7 +158,7 @@ export class EasyVideoEncoder extends EventTarget {
             mehd.set('fragment_duration', info.info.duration);
         }
 
-        if (DEV) console.log('prepare', samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
+        if (DEV) console.log('index: prepare', samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
 
         function upcnt() {
             return new TransformStream({
@@ -203,14 +203,15 @@ export class EasyVideoEncoder extends EventTarget {
         const startPositionMap = new Map<number, number>();
 
         function sendBoxes() {
+            if (DEV) console.log('index: send box called', nextBox, dstFile.boxes.length)
             for (let i = nextBox; i < dstFile.boxes.length; i++) {
-                if (DEV) console.log('send box', nextBox, i, dstFile.boxes[i]);
+                if (DEV) console.log('index: send box', nextBox, i, dstFile.boxes[i]);
                 const box = dstFile.boxes[i] as any;
                 if (box.type === 'moof') {
                     const trackId = box.trafs[0].tfhd.track_id;
                     if (!startPositionMap.has(trackId)) {
                         startPositionMap.set(trackId, fileSize);
-                        if (DEV) console.log('send box: set start position', trackId, fileSize);
+                        if (DEV) console.log('index: send box: set start position', trackId, fileSize);
                     }
                 }
                 const buffer = getBoxBuffer(box);
@@ -220,7 +221,7 @@ export class EasyVideoEncoder extends EventTarget {
                     box.data = undefined;
                 }
             }
-            if (DEV) console.log('send box: next', dstFile.boxes.length);
+            if (DEV) console.log('index: send box: next', dstFile.boxes.length);
             nextBox = dstFile.boxes.length;
         }
 
@@ -277,7 +278,7 @@ export class EasyVideoEncoder extends EventTarget {
 
         //#region send the first segment
         //        after all tracks are added
-        if (DEV) console.log('send first boxes', dstFile);
+        if (DEV) console.log('index: send first boxes', dstFile);
         sendBoxes();
         //#endregion
 
@@ -290,9 +291,10 @@ export class EasyVideoEncoder extends EventTarget {
             sendBoxes();
         }
         // Stop writing video samples until all tracks are added
-        if (DEV) console.log('start writing video chunks');
+        if (DEV) console.log('index: start writing video chunks');
         ___.startToWriteVideoChunksCallback();
         await videoStreamPromise;
+        if (DEV) console.log('index: writing video chunks finished');
         //#endregion
 
         //#region make mfra/tfra/mfro
@@ -339,7 +341,7 @@ export class EasyVideoEncoder extends EventTarget {
             dispatchProgress();
         }
 
-        if (DEV) console.log('mux finish', samplesNumber, samplesCount, dstFile);
+        if (DEV) console.log('index: mux finish', samplesNumber, samplesCount, dstFile);
 
         dispatchEvent(new CustomEvent('complete', { detail: { identifier } }));
 
