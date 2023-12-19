@@ -245,7 +245,7 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, sharedData, DEV), preventer)
             .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer)
             .pipeThrough(generateResizeTransformer(order.resizeConfig, sharedData, DEV))
-            .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, sharedData, DEV), preventer)
+            .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, sharedData, DEV), preventer)
             .pipeThrough(upcnt())
             .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
             .pipeTo(videoWriter)

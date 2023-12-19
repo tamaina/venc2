@@ -9,5 +9,13 @@ Sample: https://venc2.vercel.app/
 - [WHATWG Streams API](https://developer.mozilla.org/ja/docs/Web/API/Streams_API)
 - [OPFS](https://developer.mozilla.org/ja/docs/Web/API/File_System_API/Origin_private_file_system)
 
+## WebCodecs API Implementation Status
+
+||VideoEncoder|avc1|av01|
+|:--|:-:|:-:|
+|Safari 17.2|~high|❌|
+|Safari 17.4 TP 184|~high|Main|
+|Chrome|~high_progressive|Main|
+
 ## References
 https://github.com/vjeux/mp4-h264-re-encode

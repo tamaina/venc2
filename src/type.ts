@@ -4,7 +4,7 @@ import { Av01VideoAdditionalInfoToBuildCodecsParameterString, av01ProfileToProfi
 
 export type VideoKeyframeConfig = {
     // TODO!!
-    type: 'ms' | 'frame';
+    type: 'microseconds';
     interval: number;
 };
 

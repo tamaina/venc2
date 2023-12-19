@@ -1,16 +1,26 @@
-import { VideoEncoderOutputChunk, VideoFrameAndIsKeyFrame } from "./type";
+import { VideoEncoderOutputChunk, VideoFrameAndIsKeyFrame, VideoKeyframeConfig } from "./type";
 
 // VideoEncoderが持つキューの最大数
 const ENCODE_QUEUE_MAX = 32;
+
+function validateVideoKeyFrameConfig(config?: VideoKeyframeConfig | undefined) {
+    if (!config) return;
+    if (config.type === 'microseconds') {
+        if (config.interval < 0) throw new Error('videoKeyframeConfig.interval must be positive');
+    }
+}
 
 /**
  * Returns a transform stream that encodes videoframes.
  * **Set preventClose: true** when using the stream with pipeThrough.
  */
-export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, sharedData: { getResultSamples: () => number }, DEV = false) {
+export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, videoKeyframeConfig: VideoKeyframeConfig | undefined, sharedData: { getResultSamples: () => number }, DEV = false) {
     let encoder: VideoEncoder;
     let framecnt = 0;
     let enqueuecnt = 0;
+    let prevKeyFrameNumber = 0;
+
+    validateVideoKeyFrameConfig(videoKeyframeConfig);
 
 	/**
 	 * transformで返されているPromiseのresolve
@@ -46,11 +56,6 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
                     if (DEV) console.log('encode: encoded', chunk.timestamp, enqueuecnt - 1, framecnt, sharedData, sharedData.getResultSamples(), chunk, encoder.encodeQueueSize, metadata);
 
-                    if (enqueuecnt === sharedData.getResultSamples()) {
-                        if (DEV) console.log('encode: encoded: [terminate] done', framecnt, sharedData.getResultSamples());
-                        encoder.flush();
-                        controller.terminate();
-                    }
 					if (allowWriteEval()) emitResolve();
                 },
                 error: (error) => {
@@ -66,24 +71,47 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                 controller.error(e);
             }
         },
-        transform(frame, controller) {
+        async transform(frame, controller) {
             try {
                 framecnt++;
                 const keyFrame = (() => {
-                    // TODO!!!!
+                    if (DEV) console.log('encode: keyframe decision:', framecnt, frame.frame.timestamp, videoKeyframeConfig);
+                    if (framecnt === 1) return true;
+                    if (!videoKeyframeConfig) {
+                        return frame.isKeyFrame;
+                    }
+                    if (videoKeyframeConfig.type === 'microseconds') {
+                        if (videoKeyframeConfig.interval === 0) return frame.isKeyFrame;
+                        if (frame.frame.timestamp - prevKeyFrameNumber >= videoKeyframeConfig.interval) {
+                            if (DEV) console.log('encode: keyframe decision: microseconds true:', framecnt, frame.frame.timestamp, prevKeyFrameNumber, videoKeyframeConfig.interval);
+                            prevKeyFrameNumber = frame.frame.timestamp;
+                            return true;
+                        }
+                        return false;
+                    }
+
                     return frame.isKeyFrame;
                 })();
     
-                if (DEV) console.log('encode: frame', framecnt, frame, keyFrame, encoder.encodeQueueSize);
+                if (DEV) console.log('encode: frame:', framecnt, frame, keyFrame, encoder.encodeQueueSize);
     
                 encoder.encode(frame.frame, {
                     keyFrame,
                 });
                 frame.frame.close();
-    
+
                 // safety
                 emitResolve();
-    
+
+                if (framecnt === sharedData.getResultSamples()) {
+                    if (DEV) console.log('encode: frame: [terminate] last frame', framecnt, sharedData.getResultSamples());
+                    return encoder.flush()
+                        .then(() => {
+                            if (DEV) console.log('encode: frame: [terminate] done', framecnt, enqueuecnt, sharedData.getResultSamples());
+                            controller.terminate();
+                        });
+                }
+
                 if (allowWriteEval()) {
                     if (DEV) console.log('encode: recieving vchunk: resolve immediate');
                     return Promise.resolve();

@@ -10,6 +10,7 @@ import { av01ChromaSubsamplingTable, av01ProfileToProfileIdTable, av01ColorPrima
 
 const sizeInput = ref<HTMLInputElement>();
 const bitrateInput = ref<HTMLInputElement>();
+const keyFrameMilliSecInput = ref<HTMLInputElement>();
 const input = ref<HTMLInputElement>();
 const devchk = ref<HTMLInputElement>();
 const video = ref<HTMLVideoElement>();
@@ -19,6 +20,7 @@ const progress = ref<HTMLProgressElement>();
 const codec = ref<'avc1' | 'av01'>('avc1');
 const size = ref(sizeInput.value?.valueAsNumber || 1920);
 const bitrate = ref(bitrateInput.value?.valueAsNumber || 1000);
+const keyFrameMilliSec = ref(4000);
 const hardwareAcceleration = ref<'prefer-hardware' | 'prefer-software' | 'no-preference'>('no-preference');
 const bitrateMode = ref<'constant' | 'quantizer' | 'variable'>('constant');
 const latencyMode = ref<'quality' | 'realtime'>('quality');
@@ -149,6 +151,10 @@ async function execWorker() {
         maxWidth: size.value,
         maxHeight: size.value,
       },
+      videoKeyframeConfig: {
+        type: 'microseconds',
+        interval: keyFrameMilliSec.value * 1e3,
+      },
       DEV: devchk.value?.checked,
     } as VencWorkerOrder)
   };
@@ -236,6 +242,10 @@ async function execOpfsWorker() {
         maxWidth: size.value,
         maxHeight: size.value,
       },
+      videoKeyframeConfig: {
+        type: 'microseconds',
+        interval: keyFrameMilliSec.value * 1e3,
+      },
       DEV: devchk.value?.checked,
     } as VencWorkerOrder)
   };
@@ -276,6 +286,10 @@ function execMain() {
         maxWidth: size.value,
         maxHeight: size.value,
       },
+      videoKeyframeConfig: {
+        type: 'microseconds',
+        interval: keyFrameMilliSec.value * 1e3,
+      },
       DEV: devchk.value?.checked,
     });
   }
@@ -300,6 +314,12 @@ function execMain() {
         <input type="number" min="0" step="1" placeholder="kbps" value="1000" ref="bitrateInput"
           @change="bitrate = bitrateInput?.valueAsNumber || 1000" style="width: 4.1em; font-family: monospace;" />
         kbps
+      </div>
+      <div>
+        KeyFrame
+        <input type="number" min="0" step="0.001" placeholder="ms" value="4000" ref="keyFrameMilliSecInput"
+          @change="keyFrameMilliSec = keyFrameMilliSecInput?.valueAsNumber || 4000" style="width: 5em; font-family: monospace;" />
+        ms
       </div>
       <select v-model="hardwareAcceleration">
         <option value="no-preference">no-preference</option>
