@@ -29,8 +29,9 @@ export function generateVideoSortTransformer(
 		sharedData.dropFrames++;
 	}
 	function enqueue(f: VideoFrameAndIsKeyFrame, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
+		enqueuecnt++;
 		const prefferedDuration = f.frame.timestamp - prevTimestamp;
-		if (DEV) console.log('sort: enqueue: prefferedDuration', prefferedDuration, prevTimestamp, f.frame.timestamp, f.frame.duration, f.frame);
+		if (DEV) console.log('sort: enqueue: prefferedDuration', enqueuecnt, prefferedDuration, prevTimestamp, f.frame.timestamp, f.frame.duration, f.frame);
 		prevTimestamp = f.frame.timestamp;
 
 		if (f.frame.duration !== prefferedDuration) {
@@ -45,13 +46,9 @@ export function generateVideoSortTransformer(
 				isKeyFrame: f.isKeyFrame,
 			});
 		} else {
-			// durationが正しい場合はそのままenqueueする
-			// Chromeではどういうわけかnew VideoFrameで処理がストップする
-			// （特に最終フレームが来てキャッシュの放出をしている間）
-			// 原因はよくわからないがnew VideoFrameを極力使わないようにすることで処理のストップを回避できる
+			// そのままenqueueする
 			controller.enqueue(f);
 		}
-		enqueuecnt++;
 	}
 	function enqueueByCache(timestamp: number, controller: TransformStreamDefaultController<VideoFrameAndIsKeyFrame>) {
 		const frame = cache.get(timestamp)!;
@@ -102,62 +99,65 @@ export function generateVideoSortTransformer(
 	return new TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>({
 		start() {},
 		transform(frame, controller) {
-			recievedcnt++
-			if (DEV) console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, videoInfo.nb_samples, enqueuecnt, sharedData, cache.size);
-			if (cache.has(frame.frame.timestamp)) {
-				console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp, expectedNextTimestamp);
-				dropByCache(frame.frame.timestamp);
-			}
-
-			if (frame.frame.timestamp < expectedNextTimestamp) {
-				console.error('sort: recieving frame: drop frame', frame.frame.timestamp, expectedNextTimestamp);
-				sharedData.dropFrames++;
-				frame.frame.close();
-				return;
-			}
-
-			if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
-				// 最後のフレームを受信した場合片付ける
-				cache.set(expectedNextTimestamp, frame);
-				if (DEV) console.log('sort: recieving frame: last frame:', frame.frame.timestamp, cache);
-				const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
-				for (const timestamp of stamps) {
-					if (DEV) console.log('sort: recieving frame: last frame: enqueueing', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
-					// キャッシュを全てenqueueする
-					if (timestamp < expectedNextTimestamp) {
-						if (DEV) console.error('sort: recieving frame: drop frame', timestamp, expectedNextTimestamp);
-						dropByCache(timestamp);
-					} else {
-						const f = cache.get(timestamp)!;
-						expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
-						if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
-						enqueue(f, controller);
-						if (DEV) console.log('sort: recieving frame: last frame: enqueued', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
-						cache.delete(timestamp);
+			try {
+				recievedcnt++
+				console.log('sort: recieving frame', frame.frame.timestamp, recievedcnt, videoInfo.nb_samples, enqueuecnt, sharedData, cache.size);
+				if (cache.has(frame.frame.timestamp)) {
+					console.error('sort: recieving frame: timestamp duplicated', frame.frame.timestamp, expectedNextTimestamp);
+					dropByCache(frame.frame.timestamp);
+				}
+	
+				if (frame.frame.timestamp < expectedNextTimestamp) {
+					console.error('sort: recieving frame: drop frame', frame.frame.timestamp, expectedNextTimestamp);
+					sharedData.dropFrames++;
+					frame.frame.close();
+					return;
+				}
+	
+				if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
+					// 最後のフレームを受信した場合片付ける
+					cache.set(frame.frame.timestamp, frame);
+					if (DEV) console.log('sort: recieving frame: last frame:', frame.frame.timestamp, cache);
+					const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
+					for (const timestamp of stamps) {
+						// キャッシュを全てenqueueする
+						if (timestamp < expectedNextTimestamp) {
+							if (DEV) console.error('sort: recieving frame: last framee: drop frame', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
+							dropByCache(timestamp);
+						} else {
+							const f = cache.get(timestamp)!;
+							expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
+							if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, stamps, enqueuecnt);
+							enqueue(f, controller);
+							cache.delete(timestamp);
+						}
 					}
+					if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData, sharedData.getResultSamples());
+					controller.terminate();
+					return;
 				}
-				if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData, sharedData.getResultSamples());
-				controller.terminate();
-				return;
-			}
-
-			if (cache.size >= 13) {
-				// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
-				// 最小のtimestampを探してexpectedNextTimestampとする
-				// 最初のtimestampが0でない場合もこの処理が必要
-				console.error('sort: recieving frame: cache is too large', frame.frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
-				for (const timestamp of cache.keys()) {
-					if (timestamp < expectedNextTimestamp) {
-						dropByCache(timestamp);
+	
+				if (cache.size >= 13) {
+					// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
+					// 最小のtimestampを探してexpectedNextTimestampとする
+					// 最初のtimestampが0でない場合もこの処理が必要
+					console.error('sort: recieving frame: cache is too large', frame.frame.timestamp, expectedNextTimestamp, Array.from(cache.keys()));
+					for (const timestamp of cache.keys()) {
+						if (timestamp < expectedNextTimestamp) {
+							dropByCache(timestamp);
+						}
 					}
+					expectedNextTimestamp = Math.min(...cache.keys());
+					if (!('startTimeShift' in sharedData)) {
+						sharedData.startTimeShift = expectedNextTimestamp;
+					}
+					if (DEV) console.log('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
 				}
-				expectedNextTimestamp = Math.min(...cache.keys());
-				if (!('startTimeShift' in sharedData)) {
-					sharedData.startTimeShift = expectedNextTimestamp;
-				}
-				if (DEV) console.log('sort: recieving frame: cache is too large (cache and expectedNextTimestamp fixed)', Array.from(cache.keys()), expectedNextTimestamp);
+
+				send(controller, frame);
+			} catch (e) {
+				console.error('sort: recieving frame: caught error', e);
 			}
-			send(controller, frame);
 		},
 		flush(controller) {
 			if (DEV) console.log('sort: [terminate] frame flush');
@@ -180,35 +180,42 @@ export function floorWithSignificance(value: number, significance: number) {
  * @returns TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>
  * 
  */
-export function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, DEV = false) {
+export function generateResizeTransformer(
+	config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>,
+	sharedData: { getResultSamples: () => number; },
+	DEV = false,
+) {
     let framecnt = 0;
     return new TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>({
         start() {},
         async transform(srcFrame, controller) {
-            framecnt++;
-            if (DEV) {
-                performance.mark('resize start');
-                console.log('resize: recieved', framecnt, srcFrame);
-            }
-            const canvas = await readAndCompressImage(srcFrame.frame, {
-                ...config,
-                mimeType: null,
-            });
-            srcFrame.frame.close();
-			// ???????????
-			await new Promise((resolve) => setTimeout(resolve, 0));
-            const dstFrame = new VideoFrame(canvas, {
-                timestamp: srcFrame.frame.timestamp,
-				duration: srcFrame.frame.duration ?? undefined,
-            });
-            if (DEV) {
-                performance.mark('resize end');
-                console.log('resize: transform', framecnt, performance.measure('resize', 'resize start').duration, dstFrame);
-            }
-            controller.enqueue({ frame: dstFrame, isKeyFrame: srcFrame.isKeyFrame });
+			try {
+				framecnt++;
+				if (DEV) {
+					performance.mark('resize start');
+					console.log('resize: recieved', framecnt, srcFrame);
+				}
+				const canvas = await readAndCompressImage(srcFrame.frame, {
+					...config,
+					mimeType: null,
+				})
+				srcFrame.frame.close();
+				const dstFrame = new VideoFrame(canvas, {
+					timestamp: srcFrame.frame.timestamp,
+					duration: srcFrame.frame.duration ?? undefined,
+				});
+				if (DEV) {
+					performance.mark('resize end');
+					console.log('resize: transform', framecnt, performance.measure('resize', 'resize start').duration, dstFrame);
+				}
+				controller.enqueue({ frame: dstFrame, isKeyFrame: srcFrame.isKeyFrame });
+				console.log('resize:', framecnt, sharedData.getResultSamples());
+			} catch (e) {
+				console.error('resize: caught error', e);
+			}
         },
         flush(controller) {
-            if (DEV) console.log('resize: [terminate] flush');
+            console.log('resize: [terminate] flush');
             controller.terminate();
         },
     });

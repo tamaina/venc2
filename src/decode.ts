@@ -17,14 +17,18 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 	return new TransformStream<Sample, EncodedVideoChunk>({
 		start() {},
 		transform(sample, controller) {
-			const chunk = new EncodedVideoChunk({
-				type: sample.is_sync ? 'key' : 'delta',
-				timestamp: 1e6 * sample.cts / sample.timescale,
-				duration: 1e6 * sample.duration / sample.timescale,
-				data: sample.data,
-			});
-			if (DEV) console.log('sample: transform from sample to EncodedVideoChunk', sample, chunk);
-			controller.enqueue(chunk);
+			try {
+				const chunk = new EncodedVideoChunk({
+					type: sample.is_sync ? 'key' : 'delta',
+					timestamp: 1e6 * sample.cts / sample.timescale,
+					duration: 1e6 * sample.duration / sample.timescale,
+					data: sample.data,
+				});
+				if (DEV) console.log('sample: transform from sample to EncodedVideoChunk', sample, chunk);
+				controller.enqueue(chunk);
+			} catch (e) {
+				console.error('sample: caught error', e);
+			}
 		},
 		flush(controller) {
 			if (DEV) console.log('sample: [terminate] sample flush');
@@ -88,6 +92,7 @@ export async function generateVideoDecodeTransformer(
 				output: (frame) => {
 					if (terminated) {
 						console.error('decode: enqueue frame: [terminate] decoder output after terminated');
+						frame.close();
 						return;
 					}
 					if (frame) {
@@ -134,36 +139,41 @@ export async function generateVideoDecodeTransformer(
 			decoder.configure(config);
 		},
 		transform(vchunk, controller) {
-			samplecnt++;
-			if (vchunk.type === 'key') {
-				keyFrames.add(vchunk.timestamp);
-			}
-
-			if (DEV) console.log('decode: recieving vchunk:', samplecnt, framecnt, decoder.decodeQueueSize);
-			if (decoder.state !== 'configured') {
-				console.error('decode: recieving vchunk: decoder state is strange', decoder.state);
+			try {
+				samplecnt++;
+				if (vchunk.type === 'key') {
+					keyFrames.add(vchunk.timestamp);
+				}
+	
+				if (DEV) console.log('decode: recieving vchunk:', samplecnt, framecnt, decoder.decodeQueueSize);
+				if (decoder.state !== 'configured') {
+					console.error('decode: recieving vchunk: decoder state is strange', decoder.state);
+					return Promise.resolve();
+				} else {
+					// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
+					decoder.decode(vchunk);
+				}
+	
+				// safety
+				emitResolve();
+	
+				if (samplecnt === videoInfo.nb_samples) {
+					if (DEV) console.log('decode: recieving vchunk: last chunk', videoInfo.nb_samples, samplecnt);
+					decoder.flush();
+					return Promise.resolve();
+				}
+				if (allowWriteEval()) {
+					if (DEV) console.log('decode: recieving vchunk: resolve immediate');
+					return Promise.resolve();
+				}
+				if (DEV) console.log('decode: recieving vchunk: wait for allowWrite');
+				return new Promise<void>((resolve) => {
+					allowWriteResolve = resolve;
+				});
+			} catch (e) {
+				console.error('decode: caught error', e);
 				return Promise.resolve();
-			} else {
-				// https://github.com/w3c/webcodecs/blob/261401a02ff2fd7e1d3351e3257fe0ef96848fde/samples/video-decode-display/demuxer_mp4.js#L99
-				decoder.decode(vchunk);
 			}
-
-			// safety
-			emitResolve();
-
-			if (samplecnt === videoInfo.nb_samples) {
-				if (DEV) console.log('decode: recieving vchunk: last chunk', videoInfo.nb_samples, samplecnt);
-				decoder.flush();
-				return Promise.resolve();
-			}
-			if (allowWriteEval()) {
-				if (DEV) console.log('decode: recieving vchunk: resolve immediate');
-				return Promise.resolve();
-			}
-			if (DEV) console.log('decode: recieving vchunk: wait for allowWrite');
-			return new Promise<void>((resolve) => {
-				allowWriteResolve = resolve;
-			});
 		},
 		flush(controller) {
 			if (DEV) console.log('decode: [terminate] vchunk flush');

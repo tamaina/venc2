@@ -41,60 +41,64 @@ export function writeEncodedVideoChunksToMP4File(
         start() {
         },
         async transform(data, controller) {
-            if (data.type === 'metadata' && !trak) {
-                const media_duration = videoInfo.duration;
-                trackId = file.addTrack({
-                    name: 'VideoHandle',
-                    type: encoderConfig.codec.split('.')[0],
-                    timescale: videoInfo.timescale,
-                    duration: media_duration,
-                    media_duration: media_duration,
-                    language: videoInfo.language,
-                    width: encoderConfig.width,
-                    height: encoderConfig.height,
-                    ...(encoderConfig.codec.startsWith('avc') ? {
-                        avcDecoderConfigRecord: data.data.decoderConfig?.description,
-                    } : encoderConfig.codec.startsWith('hevc') ? {
-                        hevcDecoderConfigRecord: data.data.decoderConfig?.description,
-                    } : encoderConfig.codec.startsWith('av01') ? {
-                        description: getAv1CBox(data.data.decoderConfig?.codec ?? encoderConfig.codec, DEV),
-                    } : {}),
-                });
-                trak = file.getTrackById(trackId)!;
-                if ((trak as any).tkhd) {
-                    (trak as any).tkhd.set('matrix', (videoInfo as any).matrix)
-                }
-                copyEdits(trak, videoInfo);
-
-                file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
-
-                if (DEV) console.log('write: addTrack', trackId, trak, videoInfo.timescale);
-                trackAddedCallback(trackId);
-                await promiseToStartChunks;
-                return;
-            } else if (data.type === 'encodedVideoChunk') {
-                samplecnt++;
-
-                const chunk = data.data as EncodedVideoChunk;
-                const b = new ArrayBuffer(chunk.byteLength);
-                chunk.copyTo(b);
-                const times = {
-                    cts: Math.round((chunk.timestamp * videoInfo.timescale) / 1e6),
-                    dts: Math.round((nextDtsTime * videoInfo.timescale) / 1e6),
-                    duration: Math.round(((chunk.duration ?? 1) * videoInfo.timescale) / 1e6),
-                };
-                const sample = file.addSample(trackId, b, {
-                    ...times,
-                    is_sync: chunk.type === 'key',
-                });
-                if (DEV) console.log('write: addSample', samplecnt, sharedData.getResultSamples(), times, sample);
-                controller.enqueue(sample);
-
-                if (samplecnt === sharedData.getResultSamples()) {
-                    if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
+            try {
+                if (data.type === 'metadata' && !trak) {
+                    const media_duration = videoInfo.duration;
+                    trackId = file.addTrack({
+                        name: 'VideoHandle',
+                        type: encoderConfig.codec.split('.')[0],
+                        timescale: videoInfo.timescale,
+                        duration: media_duration,
+                        media_duration: media_duration,
+                        language: videoInfo.language,
+                        width: encoderConfig.width,
+                        height: encoderConfig.height,
+                        ...(encoderConfig.codec.startsWith('avc') ? {
+                            avcDecoderConfigRecord: data.data.decoderConfig?.description,
+                        } : encoderConfig.codec.startsWith('hevc') ? {
+                            hevcDecoderConfigRecord: data.data.decoderConfig?.description,
+                        } : encoderConfig.codec.startsWith('av01') ? {
+                            description: getAv1CBox(data.data.decoderConfig?.codec ?? encoderConfig.codec, DEV),
+                        } : {}),
+                    });
+                    trak = file.getTrackById(trackId)!;
+                    if ((trak as any).tkhd) {
+                        (trak as any).tkhd.set('matrix', (videoInfo as any).matrix)
+                    }
+                    copyEdits(trak, videoInfo);
+    
+                    file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
+    
+                    if (DEV) console.log('write: addTrack', trackId, trak, videoInfo.timescale);
+                    trackAddedCallback(trackId);
+                    await promiseToStartChunks;
                     return;
+                } else if (data.type === 'encodedVideoChunk') {
+                    samplecnt++;
+    
+                    const chunk = data.data as EncodedVideoChunk;
+                    const b = new ArrayBuffer(chunk.byteLength);
+                    chunk.copyTo(b);
+                    const times = {
+                        cts: Math.round((chunk.timestamp * videoInfo.timescale) / 1e6),
+                        dts: Math.round((nextDtsTime * videoInfo.timescale) / 1e6),
+                        duration: Math.round(((chunk.duration ?? 1) * videoInfo.timescale) / 1e6),
+                    };
+                    const sample = file.addSample(trackId, b, {
+                        ...times,
+                        is_sync: chunk.type === 'key',
+                    });
+                    if (DEV) console.log('write: addSample', samplecnt, sharedData.getResultSamples(), times, sample);
+                    controller.enqueue(sample);
+    
+                    if (samplecnt === sharedData.getResultSamples()) {
+                        if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
+                        return;
+                    }
+                    nextDtsTime += (chunk.duration ?? 1);
                 }
-                nextDtsTime += (chunk.duration ?? 1);
+            } catch (e) {
+                console.error('write: caught error', e);
             }
         },
         flush(controller) {

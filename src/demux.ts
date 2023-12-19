@@ -87,45 +87,50 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 			}, 1) as unknown as number;
 		},
 		transform(chunk, controller) {
-			if (chunk) {
-				const buff = chunk.buffer as MP4ArrayBuffer;
-				buff.fileStart = seek;
-				mp4boxfile.appendBuffer(buff);
-				seek += chunk.byteLength;
-				if (DEV) console.log('demux: recieving chunk', chunk.byteLength, seek, controller.desiredSize);
-
-				if (data.processedSample > 100) {
-					// チャンクをappendBufferしたら古い内容を順次開放する
-
-					// desiredSize（負のみ・nullは0）
-					// 負の場合、その絶対値分のサンプルはブラウザが管理している　この分のサンプルは開放してはならない
-					// 正の場合processedSampleに足すと不必要に開放するのもだめ
-					const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
-
-					// 一応の安全マージンでHWMの5倍は保持しておく
-					const hwmFiveTimes = DECODE_HWM * 5;
-
-					const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
-					if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
-					mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
-				}
-
-				for (const track of data.tracks ?? []) {
-					// Release samples in other tracks
-					const length = mp4boxfile.getTrackSamplesInfo(track).length;
-					if (track !== trackId && length) {
-						mp4boxfile.releaseUsedSamples(track, length);
+			try {
+				if (chunk) {
+					const buff = chunk.buffer as MP4ArrayBuffer;
+					buff.fileStart = seek;
+					mp4boxfile.appendBuffer(buff);
+					seek += chunk.byteLength;
+					if (DEV) console.log('demux: recieving chunk', chunk.byteLength, seek, controller.desiredSize);
+	
+					if (data.processedSample > 100) {
+						// チャンクをappendBufferしたら古い内容を順次開放する
+	
+						// desiredSize（負のみ・nullは0）
+						// 負の場合、その絶対値分のサンプルはブラウザが管理している　この分のサンプルは開放してはならない
+						// 正の場合processedSampleに足すと不必要に開放するのもだめ
+						const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
+	
+						// 一応の安全マージンでHWMの5倍は保持しておく
+						const hwmFiveTimes = DECODE_HWM * 5;
+	
+						const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
+						if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
+						mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
+					}
+	
+					for (const track of data.tracks ?? []) {
+						// Release samples in other tracks
+						const length = mp4boxfile.getTrackSamplesInfo(track).length;
+						if (track !== trackId && length) {
+							mp4boxfile.releaseUsedSamples(track, length);
+						}
 					}
 				}
+	
+				// readyになるまでは問答無用で読み込む
+				if (!data.track?.nb_samples) return;
+	
+				return new Promise<void>((resolve) => {
+					if (data.resolve) data.resolve();
+					data.resolve = resolve;
+				});
+			} catch (e) {
+				console.error('demux: caught error', e);
+				return Promise.resolve();
 			}
-
-			// readyになるまでは問答無用で読み込む
-			if (!data.track?.nb_samples) return;
-
-			return new Promise<void>((resolve) => {
-				if (data.resolve) data.resolve();
-				data.resolve = resolve;
-			});
 		},
 		flush(controller) {
 			// 呼ばれたのを見たことがないが一応書いておく

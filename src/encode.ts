@@ -67,31 +67,36 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
             }
         },
         transform(frame, controller) {
-            framecnt++;
-            const keyFrame = (() => {
-                // TODO!!!!
-                return frame.isKeyFrame;
-            })();
+            try {
+                framecnt++;
+                const keyFrame = (() => {
+                    // TODO!!!!
+                    return frame.isKeyFrame;
+                })();
+    
+                if (DEV) console.log('encode: frame', framecnt, frame, keyFrame, encoder.encodeQueueSize);
+    
+                encoder.encode(frame.frame, {
+                    keyFrame,
+                });
+                frame.frame.close();
+    
+                // safety
+                emitResolve();
+    
+                if (allowWriteEval()) {
+                    if (DEV) console.log('encode: recieving vchunk: resolve immediate');
+                    return Promise.resolve();
+                }
+                if (DEV) console.log('encode: recieving vchunk: wait for allowWrite');
 
-            if (DEV) console.log('encode: frame', framecnt, frame, keyFrame, encoder.encodeQueueSize);
-
-            encoder.encode(frame.frame, {
-                keyFrame,
-            });
-            frame.frame.close();
-
-			// safety
-			emitResolve();
-
-			if (allowWriteEval()) {
-				if (DEV) console.log('encode: recieving vchunk: resolve immediate');
-				return Promise.resolve();
-			}
-			if (DEV) console.log('encode: recieving vchunk: wait for allowWrite');
-
-			return new Promise<void>((resolve) => {
-				allowWriteResolve = resolve;
-            });
+                return new Promise<void>((resolve) => {
+                    allowWriteResolve = resolve;
+                });
+            } catch (e) {
+                console.error('encode: caught error', e);
+                return Promise.resolve();
+            }
         },
         flush(controller) {
             if (DEV) console.log('encode: [terminate] flush', framecnt, enqueuecnt);
