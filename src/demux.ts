@@ -185,27 +185,29 @@ export function getStabilizedFps(srcFps: number) {
 export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 	let result = {} as Partial<SimpleVideoInfoWithVideoTrack>;
 
-    return new Promise<SimpleVideoInfo>((resolve, reject) => {
-        const mp4boxfile = createFile();
-		result.file = mp4boxfile;
+    const mp4boxfile = createFile();
+	result.file = mp4boxfile;
 
-		const reader = file.stream().getReader();
-		let seek = 0;
-		async function push(): Promise<void> {
-			const { done, value } = await reader.read();
+	const reader = file.stream().getReader();
+	let seek = 0;
+	async function push(): Promise<void> {
+		const { done, value } = await reader.read();
+		if (DEV) console.log('getMP4Info: push', seek, done, value?.byteLength);
 
-			if (done) {
-				return;
-			}
-			if (value) {
-				const buff = value.buffer as MP4ArrayBuffer;
-				buff.fileStart = seek;
-				mp4boxfile.appendBuffer(buff);
-				seek += value.byteLength;
-			}
-			return push();
+		if (value) {
+			const buff = value.buffer as MP4ArrayBuffer;
+			buff.fileStart = seek;
+			mp4boxfile.appendBuffer(buff);
+			mp4boxfile.flush();
+			seek += value.byteLength;
 		}
+		if (done) {
+			return;
+		}
+		return push();
+	}
 
+	const mp4BoxReady = () => new Promise<SimpleVideoInfo>((resolve, reject) => {
         mp4boxfile.onError = (e) => {
             reject(e);
 			mp4boxfile.flush();
@@ -213,8 +215,9 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
         };
 
         mp4boxfile.onReady = (info) => {
+			if (DEV) console.log('getMP4Info: onReady', info);
+			mp4boxfile.flush();
 			reader.cancel();
-
 			result.info = info;
 
 			if (info.videoTracks.length > 0) {
@@ -240,9 +243,13 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 				}
 			}
 			resolve(result as SimpleVideoInfo);
-			mp4boxfile.flush();
         };
-
-		push();
     });
+
+	return Promise.race([
+		push().then(() => {
+			throw new Error('push() resolved');
+		}),
+		mp4BoxReady(),
+	]);
 }

@@ -167,7 +167,7 @@ export class EasyVideoEncoder extends EventTarget {
             };
         })();
 
-        const info = await getMP4Info(order.file)
+        const info = await getMP4Info(order.file, DEV)
 
         if (DEV) console.log('index: info', info);
 
