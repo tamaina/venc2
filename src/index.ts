@@ -22,12 +22,6 @@ export * from './specs/av1C';
 import { getMfraStream } from './specs/mfra';
 export * from './specs/mfra';
 
-const preventer = {
-    preventCancel: true,
-    preventClose: true,
-    preventAbort: true,
-};
-
 export interface EasyVideoEncoder extends EventTarget {
     addEventListener<K extends keyof EasyVideoEncoderEvents>(event: K, listener: ((this: EasyVideoEncoder, ev: EasyVideoEncoderEvents[K]) => any) | null, options?: AddEventListenerOptions | boolean): void;
     addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: AddEventListenerOptions | boolean): void;
@@ -282,7 +276,7 @@ export class EasyVideoEncoder extends EventTarget {
         });
         const videoWriter = writeThenSendBoxStream();
         const videoStreamPromise = order.file.stream()
-            .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
+            .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV))
             .pipeThrough(streamCounter.countingTransformStream())
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
             .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, sharedData, DEV))
@@ -309,7 +303,7 @@ export class EasyVideoEncoder extends EventTarget {
 
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()
-                .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
+                .pipeThrough(generateDemuxTransformer(track.id, DEV))
                 .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
                 .pipeTo(audioWriter)
                 .catch(e => {
@@ -393,7 +387,7 @@ export class EasyVideoEncoder extends EventTarget {
 
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()
-                .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
+                .pipeThrough(generateDemuxTransformer(track.id, DEV))
                 .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
                 .pipeTo(audioWriter)
                 .catch(e => {

@@ -206,7 +206,7 @@ export function generateResizeTransformer(
 			}
         },
         flush(controller) {
-            console.log('resize: [terminate] flush');
+            if (DEV) console.log('resize: [terminate] flush');
             controller.terminate();
         },
     });

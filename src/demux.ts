@@ -12,11 +12,23 @@ const KEEP_SAMPLES_NUMBER = 50;
 export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	let seek = 0;
 	let mp4boxfile: MP4File;
+	const ___ = (() => {
+		let allSamplesEnqueuedCallback: () => void;
+		const allSamplesEnqueued = new Promise<void>((resolve) => {
+			allSamplesEnqueuedCallback = resolve;
+		});
+		return {
+			allSamplesEnqueuedPromise: allSamplesEnqueued,
+			allSamplesEnqueuedCallback: allSamplesEnqueuedCallback!,
+		};
+	})();
 	const data = {
 		track: undefined as MP4MediaTrack | MP4Track | undefined,
 		tracks: undefined as Set<number> | undefined,
 
 		processedSample: 0,
+
+		flashCalled: false,
 
 		/**
 		 * controller.desiredSizeを1msおきに監視するsetIntervalのID
@@ -66,13 +78,12 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 					controller.enqueue(sample);
 					data.processedSample = sample.number + 1;
 					if (DEV) console.log('demux: onSamples: sample', sample.track_id, sample.number, data.track!.nb_samples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
-					if (data.processedSample === data.track!.nb_samples) {
+					if (data.flashCalled && data.processedSample >= data.track!.nb_samples) {
 						// data.track!.nb_samplesと.number+1が一致する = 最後のサンプルを処理した
 						// なのでクリーンアップを行う
+						// （なぜかnb_samplesよりprocessedSampleが大きくなることがある）
 						if (DEV) console.log('demux: onSamples: [terminate] last sample', sample.number, data.processedSample, data.track!.nb_samples);
-						controller.terminate();
-						mp4boxfile.flush();
-						clearInterval();
+						___.allSamplesEnqueuedCallback();
 					}
 				}
 			};
@@ -85,7 +96,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 				}
 			}, 1) as unknown as number;
 		},
-		transform(chunk, controller) {
+		async transform(chunk, controller) {
 			try {
 				if (chunk) {
 					const buff = chunk.buffer as MP4ArrayBuffer;
@@ -115,10 +126,10 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 						}
 					}
 				}
-	
+
 				// readyになるまでは問答無用で読み込む
 				if (!data.track?.nb_samples) return;
-	
+
 				return new Promise<void>((resolve) => {
 					if (data.resolve) data.resolve();
 					data.resolve = resolve;
@@ -128,11 +139,21 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 				return Promise.resolve();
 			}
 		},
-		flush(controller) {
-			// 呼ばれたのを見たことがないが一応書いておく
+		async flush(controller) {
 			if (DEV) console.log('demux: [terminate] file flush');
+			data.flashCalled = true;
+			if (data.processedSample >= data.track!.nb_samples) {
+				// すでに全てのサンプルを処理している
+				// （なぜかnb_samplesよりprocessedSampleが大きくなることがある）
+				if (DEV) console.log('demux: [terminate] all samples already processed');
+				___.allSamplesEnqueuedCallback();
+			} else {
+				await ___.allSamplesEnqueuedPromise;
+			}
 			clearInterval();
 			controller.terminate();
+			mp4boxfile.flush();
+			clearInterval();
 		},
 	}, {
 		highWaterMark: 1,
