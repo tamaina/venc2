@@ -12,7 +12,7 @@ export function validateVideoKeyFrameConfig(config?: VideoKeyframeConfig | undef
 
 /**
  * Returns a transform stream that encodes videoframes.
- * **Set preventClose: true** when using the stream with pipeThrough.
+ * **Set preventClose: false** when using the stream with pipeThrough.
  */
 export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, videoKeyframeConfig: VideoKeyframeConfig | undefined, sharedData: { getResultSamples: () => number }, DEV = false) {
     let encoder: VideoEncoder;
@@ -103,15 +103,6 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                 // safety
                 emitResolve();
 
-                if (framecnt === sharedData.getResultSamples()) {
-                    if (DEV) console.log('encode: frame: [terminate] last frame', framecnt, sharedData.getResultSamples());
-                    return encoder.flush()
-                        .then(() => {
-                            if (DEV) console.log('encode: frame: [terminate] done', framecnt, enqueuecnt, sharedData.getResultSamples());
-                            controller.terminate();
-                        });
-                }
-
                 if (allowWriteEval()) {
                     if (DEV) console.log('encode: recieving vchunk: resolve immediate');
                     return Promise.resolve();
@@ -126,9 +117,13 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                 return Promise.resolve();
             }
         },
-        flush(controller) {
+        async flush(controller) {
             if (DEV) console.log('encode: [terminate] flush', framecnt, enqueuecnt);
-            encoder.flush();
+            return encoder.flush()
+                .then(() => {
+                    if (DEV) console.log('encode: [terminate] done', framecnt, enqueuecnt, sharedData.getResultSamples());
+                    controller.terminate();
+                });
             controller.terminate();
         },
     });

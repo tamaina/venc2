@@ -39,7 +39,7 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 
 /**
  * Returns a transform stream that decodes video frames from a mp4 file stream (Blob.stream).
- * **Set preventClose: true** when using the stream with pipeThrough.
+ * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>
@@ -130,19 +130,7 @@ export async function generateVideoDecodeTransformer(
 	
 				// safety
 				emitResolve();
-	
-				if (samplecnt === videoInfo.nb_samples) {
-					if (DEV) console.log('decode: recieving vchunk: last chunk', videoInfo.nb_samples, samplecnt);
-					decoder.flush().then(() => {
-						if (DEV) console.log('decode: recieving vchunk: [terminate] decoder flushed!!!', videoInfo.nb_samples, framecnt);
 
-						// VideoDecoder(特にprefer-software)はフレームを捨てるため記録しておく
-						// https://github.com/tamaina/venc2/issues/10
-						sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
-						controller.terminate();
-					});
-					return Promise.resolve();
-				}
 				if (allowWriteEval()) {
 					if (DEV) console.log('decode: recieving vchunk: resolve immediate');
 					return Promise.resolve();
@@ -156,10 +144,18 @@ export async function generateVideoDecodeTransformer(
 				return Promise.resolve();
 			}
 		},
-		flush(controller) {
+		async flush(controller) {
 			if (DEV) console.log('decode: [terminate] vchunk flush');
+			return decoder.flush()
+				.then(() => {
+					if (DEV) console.log('decode: [terminate] decoder flushed!!!', videoInfo.nb_samples, framecnt);
+
+					// VideoDecoder(特にprefer-software)はフレームを捨てるため記録しておく
+					// https://github.com/tamaina/venc2/issues/10
+					sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
+					controller.terminate();
+				});
 			controller.terminate();
-			return decoder.flush();
 		},
 	}, {
 		highWaterMark: DECODE_HWM,

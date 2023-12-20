@@ -5,7 +5,7 @@ import { VideoFrameAndIsKeyFrame } from "./type";
 const TIMESTAMP_MARGINS = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
- * **Set preventClose: true** when using the stream with pipeThrough.
+ * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
  * 
@@ -113,30 +113,7 @@ export function generateVideoSortTransformer(
 					frame.frame.close();
 					return;
 				}
-	
-				if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
-					// 最後のフレームを受信した場合片付ける
-					cache.set(frame.frame.timestamp, frame);
-					const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
-					if (DEV) console.log('sort: recieving frame: last frame:', frame.frame.timestamp, stamps);
-					for (const timestamp of stamps) {
-						// キャッシュを全てenqueueする
-						if (timestamp < expectedNextTimestamp) {
-							if (DEV) console.error('sort: recieving frame: last framee: drop frame', timestamp, expectedNextTimestamp, enqueuecnt);
-							dropByCache(timestamp);
-						} else {
-							const f = cache.get(timestamp)!;
-							expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
-							if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, enqueuecnt);
-							enqueue(f, controller);
-							cache.delete(timestamp);
-						}
-					}
-					if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData, sharedData.getResultSamples());
-					controller.terminate();
-					return;
-				}
-	
+
 				if (cache.size >= 13) {
 					// cacheが多すぎる場合何らかの不整合が発生していると思われるため、
 					// 最小のtimestampを探してexpectedNextTimestampとする
@@ -161,6 +138,23 @@ export function generateVideoSortTransformer(
 		},
 		flush(controller) {
 			if (DEV) console.log('sort: [terminate] frame flush');
+			// 残ったフレームを全てenqueueする
+			const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
+			if (DEV) console.log('sort: recieving frame: last frame:', stamps);
+			for (const timestamp of stamps) {
+				// キャッシュを全てenqueueする
+				if (timestamp < expectedNextTimestamp) {
+					if (DEV) console.error('sort: recieving frame: last framee: drop frame', timestamp, expectedNextTimestamp, enqueuecnt);
+					dropByCache(timestamp);
+				} else {
+					const f = cache.get(timestamp)!;
+					expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
+					if (DEV) console.log('sort: recieving frame: last frame: enqueue', timestamp, expectedNextTimestamp, enqueuecnt);
+					enqueue(f, controller);
+					cache.delete(timestamp);
+				}
+			}
+			if (DEV) console.log('sort: recieving frame: [terminate]', enqueuecnt, sharedData, sharedData.getResultSamples());
             controller.terminate();
 		},
 	}, {
