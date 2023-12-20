@@ -1,4 +1,4 @@
-import { createFile, Log } from '@webav/mp4box.js';
+import { createFile, Log, MP4Info } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxTransformer } from './demux';
 export * from './demux';
@@ -35,6 +35,66 @@ export interface EasyVideoEncoder extends EventTarget {
     removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
 };
 
+export function createDstFile(
+    brands: string[],
+    info: MP4Info,
+) {
+    const dstFile = createFile();
+    dstFile.init({
+        brands: Array.from(brands).filter(brand => brand && typeof brand === 'string' && brand.length === 4),
+        timescale: info.timescale,
+        duration: 0,
+    });
+    if (dstFile.moov) {
+        const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
+        (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.created.getTime() - _1904) / 1000));
+        (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
+
+        // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/isofile-write.js#L49
+        const mehd = (dstFile.moov as any).mvex?.add('mehd');
+        mehd.set('fragment_duration', info.duration);
+    }
+    return dstFile;
+}
+
+export class BoxSendManager {
+    public nextBox = 0;
+    public fileSize = 0;
+
+    /**
+     * For tfra creating
+     */
+    public startPositionMap = new Map<number, number>();
+    constructor(
+        private dstFile: ReturnType<typeof createDstFile>,
+        private cb: (buffer: ArrayBuffer) => void,
+        private DEV = false,
+    ) { }
+    send() {
+        if (this.DEV) console.log('index: send box called', this.nextBox, this.dstFile.boxes.length)
+        for (let i = this.nextBox; i < this.dstFile.boxes.length; i++) {
+            if (this.DEV) console.log('index: send box', this.nextBox, i, this.dstFile.boxes[i]);
+            const box = this.dstFile.boxes[i] as any;
+            if (box.type === 'moof') {
+                const trackId = box.trafs[0].tfhd.track_id;
+                if (!this.startPositionMap.has(trackId)) {
+                    this.startPositionMap.set(trackId, this.fileSize);
+                    if (this.DEV) console.log('index: send box: set start position', trackId, this.fileSize);
+                }
+            }
+            const buffer = getBoxBuffer(box);
+            this.fileSize += buffer.byteLength;
+            this.cb(buffer);
+            //dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
+            if (box.data) {
+                box.data = undefined;
+            }
+        }
+        if (this.DEV) console.log('index: send box: next', this.dstFile.boxes.length);
+        this.nextBox = this.dstFile.boxes.length;
+    }
+}
+
 export class EasyVideoEncoder extends EventTarget {
     private processes = new Map<any, Promise<void>>();
     constructor() {
@@ -69,103 +129,6 @@ export class EasyVideoEncoder extends EventTarget {
         const identifier = order.identifier;
         if (DEV) console.log('index: start', order);
 
-        const dispatchEvent = this.dispatchEvent.bind(this);
-        const info = await getMP4Info(order.file)
-
-        const fps = info.fps;
-        if (DEV) console.log('index: info', info);
-
-        const samplesNumber = info.videoInfo.nb_samples + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
-        let samplesCount = 0;
-
-        function dispatchProgress() {
-            dispatchEvent(new CustomEvent('progress', { detail: { identifier, samplesNumber, samplesCount } }));   
-        }
-        dispatchProgress();
-
-        const _outputSize = calculateSize(info.videoInfo.video, order.resizeConfig);
-        const outputSize = {
-            width: floorWithSignificance(_outputSize.width, 2),
-            height: floorWithSignificance(_outputSize.height, 2),
-        };
-        const targetVideoCodec = (() => {
-            if (order.videoEncoderConfig.codec) return order.videoEncoderConfig.codec;
-            if (order.videoEncodeCodecRequest) {
-                if (order.videoEncodeCodecRequest.type === 'av01') {
-                    // av01(av1)
-                    return av01PL(
-                        {
-                            width: outputSize.width,
-                            height: outputSize.height,
-                            profile: order.videoEncodeCodecRequest?.profile ?? 'Main',
-                            fps,
-                            prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
-                        },
-                        order.videoEncodeCodecRequest.depth ?? 8,
-                        order.videoEncodeCodecRequest.seqTier ?? 'M',
-                        order.videoEncodeCodecRequest.additional,
-                        DEV,
-                    );
-                }
-            }
-
-            // avc1(h264) and fallback
-            return avc1PLFromVideoInfo({
-                width: outputSize.width,
-                height: outputSize.height,
-                profile: order.videoEncodeCodecRequest?.profile ?? 'constrained_baseline',
-                fps,
-                prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
-            }, DEV);
-        })();
-        const encoderConfig = {
-            ...order.videoEncoderConfig,
-            ...outputSize,
-            codec: targetVideoCodec.startsWith('vp08') ? 'vp8' : targetVideoCodec,
-            framerate: Math.round(fps * 100) / 100,
-            ...(targetVideoCodec.startsWith('avc') ? {
-                avc: {
-                    format: 'avc',
-                },
-            } : {})
-        } as VideoEncoderConfig;
-        if (DEV) console.log('index: start: encoderConfig', encoderConfig);
-
-        try {
-            const encoderSupport = await VideoEncoder.isConfigSupported(encoderConfig);
-            if (DEV) console.log('index: start: isConfigSupported', JSON.parse(JSON.stringify(encoderSupport)));
-            if (!encoderSupport || !encoderSupport.supported) {
-                console.error('Your encoding config is not supported.', encoderSupport);
-                throw new Error(`Your encoding config is not supported. ${JSON.stringify(encoderSupport)}`);
-            }
-        } catch (e) {
-            dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
-            throw e;
-        }
-        const dstFile = createFile();
-        dstFile.init({
-            brands: Array.from(new Set([
-                'isom', 'iso6', 'iso2',
-                encoderConfig.codec.split('.')[0],
-                ...info.info.audioTracks.map(track => track.codec.split('.')[0])
-            ])).filter(brand => brand && typeof brand === 'string' && brand.length === 4),
-            timescale: info.info.timescale,
-            //duration: info.info.duration,
-            // duration must be 0 for fragmented mp4
-            duration: 0,
-        });
-        if (dstFile.moov) {
-            const _1904 = new Date('1904-01-01T00:00:00Z').getTime();
-            (dstFile.moov as any).mvhd?.set('creation_time', Math.floor((info.info.created.getTime() - _1904) / 1000));
-            (dstFile.moov as any).mvhd?.set('modification_time', Math.floor((Date.now() - _1904) / 1000));
-
-            // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/isofile-write.js#L49
-            const mehd = (dstFile.moov as any).mvex?.add('mehd');
-            mehd.set('fragment_duration', info.info.duration);
-        }
-
-        if (DEV) console.log('index: prepare', samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
-
         function upcnt() {
             return new TransformStream({
                 start() { },
@@ -177,6 +140,8 @@ export class EasyVideoEncoder extends EventTarget {
                 flush() { },
             });
         }
+
+        const dispatchEvent = this.dispatchEvent.bind(this);
 
         // callbackを初期化したことにするために即時関数を使う
         const ___ = (() => {
@@ -196,40 +161,90 @@ export class EasyVideoEncoder extends EventTarget {
             };
         })();
 
-        let nextBox = 0;
+        const info = await getMP4Info(order.file)
 
-        /**
-         * File size count for mfra/tfra/mfro
-         */
-        let fileSize = 0;
+        if (DEV) console.log('index: info', info);
+        if (!('videoInfo' in info)) throw new Error('No video track found');
 
-        /**
-         * For tfra
-         */
-        const startPositionMap = new Map<number, number>();
+        const samplesNumber = (info.videoInfo.nb_samples ?? 0) + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
+        let samplesCount = 0;
 
-        function sendBoxes() {
-            if (DEV) console.log('index: send box called', nextBox, dstFile.boxes.length)
-            for (let i = nextBox; i < dstFile.boxes.length; i++) {
-                if (DEV) console.log('index: send box', nextBox, i, dstFile.boxes[i]);
-                const box = dstFile.boxes[i] as any;
-                if (box.type === 'moof') {
-                    const trackId = box.trafs[0].tfhd.track_id;
-                    if (!startPositionMap.has(trackId)) {
-                        startPositionMap.set(trackId, fileSize);
-                        if (DEV) console.log('index: send box: set start position', trackId, fileSize);
-                    }
-                }
-                const buffer = getBoxBuffer(box);
-                fileSize += buffer.byteLength;
-                dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
-                if (box.data) {
-                    box.data = undefined;
+        function dispatchProgress() {
+            dispatchEvent(new CustomEvent('progress', { detail: { identifier, samplesNumber, samplesCount } }));   
+        }
+        dispatchProgress();
+
+        const _outputSize = calculateSize(info.videoInfo.video, order.resizeConfig);
+        const videoOutputSize = {
+            width: floorWithSignificance(_outputSize.width, 2),
+            height: floorWithSignificance(_outputSize.height, 2),
+        };
+        const targetVideoCodec = (() => {
+            if (order.videoEncoderConfig.codec) return order.videoEncoderConfig.codec;
+            if (order.videoEncodeCodecRequest) {
+                if (order.videoEncodeCodecRequest.type === 'av01') {
+                    // av01(av1)
+                    return av01PL(
+                        {
+                            width: videoOutputSize.width,
+                            height: videoOutputSize.height,
+                            profile: order.videoEncodeCodecRequest?.profile ?? 'Main',
+                            fps: info.fps,
+                            prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
+                        },
+                        order.videoEncodeCodecRequest.depth ?? 8,
+                        order.videoEncodeCodecRequest.seqTier ?? 'M',
+                        order.videoEncodeCodecRequest.additional,
+                        DEV,
+                    );
                 }
             }
-            if (DEV) console.log('index: send box: next', dstFile.boxes.length);
-            nextBox = dstFile.boxes.length;
+    
+            // avc1(h264) and fallback
+            return avc1PLFromVideoInfo({
+                width: videoOutputSize.width,
+                height: videoOutputSize.height,
+                profile: order.videoEncodeCodecRequest?.profile ?? 'constrained_baseline',
+                fps: info.fps,
+                prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
+            }, DEV);
+        })();
+        const encoderConfig = {
+            ...order.videoEncoderConfig,
+            ...videoOutputSize,
+            codec: targetVideoCodec.startsWith('vp08') ? 'vp8' : targetVideoCodec,
+            framerate: Math.round(info.fps * 100) / 100,
+            ...(targetVideoCodec.startsWith('avc') ? {
+                avc: {
+                    format: 'avc',
+                },
+            } : {})
+        } as VideoEncoderConfig;
+        if (DEV) console.log('index: start: encoderConfig', encoderConfig);
+    
+        try {
+            const encoderSupport = await VideoEncoder.isConfigSupported(encoderConfig);
+            if (DEV) console.log('index: start: isConfigSupported', JSON.parse(JSON.stringify(encoderSupport)));
+            if (!encoderSupport || !encoderSupport.supported) {
+                console.error('Your encoding config is not supported.', encoderSupport);
+                throw new Error(`Your encoding config is not supported. ${JSON.stringify(encoderSupport)}`);
+            }
+        } catch (e) {
+            dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
+            throw e;
         }
+
+        const dstFile = createDstFile([
+            'isom', 'iso6', 'iso2',
+            encoderConfig.codec.split('.')[0],
+            ...info.info.audioTracks.map(track => track.codec.split('.')[0])
+        ], info.info);
+
+        if (DEV) console.log('index: prepare', samplesNumber, samplesCount, videoOutputSize, encoderConfig, dstFile);
+
+        const boxSendManager = new BoxSendManager(dstFile, (buffer) => {
+            dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
+        }, DEV);
 
         const sharedData = {
             /**
@@ -241,8 +256,8 @@ export class EasyVideoEncoder extends EventTarget {
         };
         const writeThenSendBoxStream = () => new WritableStream({
             start() { },
-            write() { sendBoxes() },
-            close() { sendBoxes() },
+            write() { boxSendManager.send() },
+            close() { boxSendManager.send() },
         });
         const videoWriter = writeThenSendBoxStream();
         const videoStreamPromise = order.file.stream()
@@ -285,7 +300,7 @@ export class EasyVideoEncoder extends EventTarget {
         //#region send the first segment
         //        after all tracks are added
         if (DEV) console.log('index: send first boxes', dstFile);
-        sendBoxes();
+        boxSendManager.send();
         //#endregion
 
         //#region process!
@@ -294,7 +309,7 @@ export class EasyVideoEncoder extends EventTarget {
             const audioStream = audioStreams[i];
 
             await audioStream();
-            sendBoxes();
+            boxSendManager.send();
         }
         // Stop writing video samples until all tracks are added
         if (DEV) console.log('index: start writing video chunks');
@@ -303,8 +318,8 @@ export class EasyVideoEncoder extends EventTarget {
         if (DEV) console.log('index: writing video chunks finished');
         //#endregion
         const mfraStream = getMfraStream({
-            startPositionMap,
-            fileSize,
+            startPositionMap: boxSendManager.startPositionMap,
+            fileSize: boxSendManager.fileSize,
         });
         dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer: mfraStream.buffer } }));
         //#endregion
@@ -319,5 +334,5 @@ export class EasyVideoEncoder extends EventTarget {
         dispatchEvent(new CustomEvent('complete', { detail: { identifier } }));
 
         dstFile.flush();
-    };
+    }
 }

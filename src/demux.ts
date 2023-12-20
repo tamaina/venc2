@@ -143,14 +143,21 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	});
 }
 
-export type VideoInfo = {
+type SimpleVideoInfoWithoutVideoTrack = {
 	info: MP4Info,
+	file: MP4File,
+}
+
+type SimpleVideoInfoWithVideoTrack = {
+	info: MP4Info,
+	file: MP4File,
 	videoInfo: MP4VideoTrack,
 	fps: number,
-	defaultSampleDuration: number,
 	description: Uint8Array,
-	file: MP4File,
-};
+	defaultSampleDuration: number,
+}
+
+export type SimpleVideoInfo = SimpleVideoInfoWithoutVideoTrack | SimpleVideoInfoWithVideoTrack;
 
 const STABLE_FPSs = [
 	9,
@@ -179,10 +186,10 @@ export function getStabilizedFps(srcFps: number) {
  * @param file MP4 File
  * @returns VideoInfo
  */
-export function getMP4Info(file: Blob, DEV = false) {
-	const result = {} as Partial<VideoInfo>;
+export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
+	let result = {} as Partial<SimpleVideoInfoWithVideoTrack>;
 
-    return new Promise<VideoInfo>((resolve, reject) => {
+    return new Promise<SimpleVideoInfo>((resolve, reject) => {
         const mp4boxfile = createFile();
 		result.file = mp4boxfile;
 
@@ -210,41 +217,40 @@ export function getMP4Info(file: Blob, DEV = false) {
         };
 
         mp4boxfile.onReady = (info) => {
+			reader.cancel();
 			if (info.videoTracks.length === 0) {
 				return reject('No video track found');
 			}
 
 			result.info = info;
-            result.videoInfo = info.videoTracks[0];
 
-			if (result.videoInfo.edits && result.videoInfo.edits.length && result.videoInfo.edits[0].media_time) {
-				result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
-				result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
-			} else {
-				// Fragmented MP4などでsamplesが全て読まれない（nb_samplesが確定しない）うちにonReadyが呼ばれることがあるため、こちらの計算は不正確
-				result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples ?? 1;
-				result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
-			}
-			result.fps = getStabilizedFps(result.fps);
+			if (info.videoTracks.length > 0) {
+				result.videoInfo = info.videoTracks[0];
+				if (result.videoInfo.edits && result.videoInfo.edits.length && result.videoInfo.edits[0].media_time) {
+					result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
+					result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
+				} else {
+					// Fragmented MP4などでsamplesが全て読まれない（nb_samplesが確定しない）うちにonReadyが呼ばれることがあるため、こちらの計算は不正確
+					result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples ?? 1;
+					result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
+				}
 
-			const trak = mp4boxfile.getTrackById(result.videoInfo.id);
-			if (!trak) {
-				return reject('No video track found');
-			}
-			for (const entry of getDescriptionBoxEntriesFromTrak(trak)) {
-				try {
-					result.description = getDescriptionBuffer(entry);
-				} catch (e) {
-					if (DEV) console.error('getMP4Info: getDescriptionBuffer error', e);
+				result.fps = getStabilizedFps(result.fps);
+
+				const trak = mp4boxfile.getTrackById(result.videoInfo.id);
+				for (const entry of getDescriptionBoxEntriesFromTrak(trak)) {
+					try {
+						result.description = getDescriptionBuffer(entry);
+					} catch (e) {
+						if (DEV) console.error('getMP4Info: getDescriptionBuffer error', e);
+					}
+				}
+				if (!result.description) {
+					return reject('No video description found');
 				}
 			}
-			if (!result.description) {
-				return reject('No description found');
-			}
-
-			resolve(result as VideoInfo);
+			resolve(result as SimpleVideoInfo);
 			mp4boxfile.flush();
-			reader.cancel();
         };
 
 		push();
