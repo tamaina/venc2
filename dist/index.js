@@ -7411,14 +7411,25 @@ function getDescriptionBoxEntriesFromTrak(trak) {
 }
 
 // src/demux.ts
-var DECODE_HWM = 16;
+var KEEP_SAMPLES_NUMBER = 50;
 var generateDemuxTransformer = (trackId, DEV = false) => {
   let seek = 0;
   let mp4boxfile;
+  const ___ = (() => {
+    let allSamplesEnqueuedCallback;
+    const allSamplesEnqueued = new Promise((resolve) => {
+      allSamplesEnqueuedCallback = resolve;
+    });
+    return {
+      allSamplesEnqueuedPromise: allSamplesEnqueued,
+      allSamplesEnqueuedCallback
+    };
+  })();
   const data = {
     track: void 0,
     tracks: void 0,
     processedSample: 0,
+    flashCalled: false,
     /**
      * controller.desiredSizeを1msおきに監視するsetIntervalのID
      */
@@ -7468,12 +7479,10 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
           data.processedSample = sample.number + 1;
           if (DEV)
             console.log("demux: onSamples: sample", sample.track_id, sample.number, data.track.nb_samples, sample.cts, sample.duration, sample.timescale, sample.is_sync, sample);
-          if (data.processedSample === data.track.nb_samples) {
+          if (data.flashCalled && data.processedSample >= data.track.nb_samples) {
             if (DEV)
               console.log("demux: onSamples: [terminate] last sample", sample.number, data.processedSample, data.track.nb_samples);
-            controller.terminate();
-            mp4boxfile.flush();
-            clearInterval();
+            ___.allSamplesEnqueuedCallback();
           }
         }
       };
@@ -7486,7 +7495,7 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
         }
       }, 1);
     },
-    transform(chunk, controller) {
+    async transform(chunk, controller) {
       try {
         if (chunk) {
           const buff = chunk.buffer;
@@ -7495,12 +7504,11 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
           seek += chunk.byteLength;
           if (DEV)
             console.log("demux: recieving chunk", chunk.byteLength, seek, controller.desiredSize);
-          if (data.processedSample > 100) {
+          if (data.processedSample >= KEEP_SAMPLES_NUMBER) {
             const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
-            const hwmFiveTimes = DECODE_HWM * 5;
-            const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
+            const sampleNumber = Math.max(data.processedSample + desiredNegative - KEEP_SAMPLES_NUMBER, 0);
             if (DEV)
-              console.log("demux: recieving chunk: release used samples", trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
+              console.log("demux: recieving chunk: release used samples", trackId, sampleNumber, data.processedSample, desiredNegative, KEEP_SAMPLES_NUMBER);
             mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
           }
           for (const track of data.tracks ?? []) {
@@ -7522,11 +7530,21 @@ var generateDemuxTransformer = (trackId, DEV = false) => {
         return Promise.resolve();
       }
     },
-    flush(controller) {
+    async flush(controller) {
       if (DEV)
         console.log("demux: [terminate] file flush");
+      data.flashCalled = true;
+      if (data.processedSample >= data.track.nb_samples) {
+        if (DEV)
+          console.log("demux: [terminate] all samples already processed");
+        ___.allSamplesEnqueuedCallback();
+      } else {
+        await ___.allSamplesEnqueuedPromise;
+      }
       clearInterval();
       controller.terminate();
+      mp4boxfile.flush();
+      clearInterval();
     }
   }, {
     highWaterMark: 1
@@ -7554,7 +7572,7 @@ function getStabilizedFps(srcFps) {
   return fps;
 }
 function getMP4Info(file, DEV = false) {
-  const result = {};
+  let result = {};
   return new Promise((resolve, reject) => {
     const mp4boxfile = (0, import_mp4box2.createFile)();
     result.file = mp4boxfile;
@@ -7579,37 +7597,30 @@ function getMP4Info(file, DEV = false) {
       reader.cancel();
     };
     mp4boxfile.onReady = (info) => {
-      if (info.videoTracks.length === 0) {
-        return reject("No video track found");
-      }
+      reader.cancel();
       result.info = info;
-      result.videoInfo = info.videoTracks[0];
-      if (result.videoInfo.edits && result.videoInfo.edits.length && result.videoInfo.edits[0].media_time) {
-        result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
-        result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
-      } else {
-        result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples;
-        result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
-      }
-      result.fps = getStabilizedFps(result.fps);
-      const trak = mp4boxfile.getTrackById(result.videoInfo.id);
-      if (!trak) {
-        return reject("No video track found");
-      }
-      for (const entry of getDescriptionBoxEntriesFromTrak(trak)) {
-        try {
-          result.description = getDescriptionBuffer(entry);
-        } catch (e) {
-          if (DEV)
-            console.error("getMP4Info: getDescriptionBuffer error", e);
+      if (info.videoTracks.length > 0) {
+        result.videoInfo = info.videoTracks[0];
+        if (result.videoInfo.edits && result.videoInfo.edits.length && result.videoInfo.edits[0].media_time) {
+          result.fps = result.videoInfo.timescale / result.videoInfo.edits[0].media_time;
+          result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
+        } else {
+          result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples;
+          result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
         }
-      }
-      if (!result.description) {
-        return reject("No description found");
+        result.fps = getStabilizedFps(result.fps);
+        const trak = mp4boxfile.getTrackById(result.videoInfo.id);
+        for (const entry of getDescriptionBoxEntriesFromTrak(trak)) {
+          try {
+            result.description = getDescriptionBuffer(entry);
+          } catch (e) {
+            if (DEV)
+              console.error("getMP4Info: getDescriptionBuffer error", e);
+          }
+        }
       }
       resolve(result);
       mp4boxfile.flush();
-      reader.cancel();
     };
     push();
   });
@@ -7617,7 +7628,7 @@ function getMP4Info(file, DEV = false) {
 
 // src/decode.ts
 var DECODE_QUEUE_MAX = 32;
-var DECODE_HWM2 = 16;
+var DECODE_HWM = 16;
 var generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
   return new TransformStream({
     start() {
@@ -7715,17 +7726,6 @@ async function generateVideoDecodeTransformer(videoInfo, description, orderConfi
           decoder.decode(vchunk);
         }
         emitResolve();
-        if (samplecnt === videoInfo.nb_samples) {
-          if (DEV)
-            console.log("decode: recieving vchunk: last chunk", videoInfo.nb_samples, samplecnt);
-          decoder.flush().then(() => {
-            if (DEV)
-              console.log("decode: recieving vchunk: [terminate] decoder flushed!!!", videoInfo.nb_samples, framecnt);
-            sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
-            controller.terminate();
-          });
-          return Promise.resolve();
-        }
         if (allowWriteEval()) {
           if (DEV)
             console.log("decode: recieving vchunk: resolve immediate");
@@ -7741,14 +7741,19 @@ async function generateVideoDecodeTransformer(videoInfo, description, orderConfi
         return Promise.resolve();
       }
     },
-    flush(controller) {
+    async flush(controller) {
       if (DEV)
         console.log("decode: [terminate] vchunk flush");
+      return decoder.flush().then(() => {
+        if (DEV)
+          console.log("decode: [terminate] decoder flushed!!!", videoInfo.nb_samples, framecnt);
+        sharedData.dropFramesOnDecoding = videoInfo.nb_samples - framecnt;
+        controller.terminate();
+      });
       controller.terminate();
-      return decoder.flush();
     }
   }, {
-    highWaterMark: DECODE_HWM2
+    highWaterMark: DECODE_HWM
   });
 }
 
@@ -7841,32 +7846,7 @@ function generateVideoSortTransformer(videoInfo, sharedData, DEV = false) {
         }
         if (frame.frame.timestamp < expectedNextTimestamp) {
           console.error("sort: recieving frame: drop frame", frame.frame.timestamp, expectedNextTimestamp);
-          sharedData.dropFrames++;
           frame.frame.close();
-          return;
-        }
-        if (recievedcnt === videoInfo.nb_samples - sharedData.dropFramesOnDecoding) {
-          cache.set(frame.frame.timestamp, frame);
-          const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
-          if (DEV)
-            console.log("sort: recieving frame: last frame:", frame.frame.timestamp, stamps);
-          for (const timestamp of stamps) {
-            if (timestamp < expectedNextTimestamp) {
-              if (DEV)
-                console.error("sort: recieving frame: last framee: drop frame", timestamp, expectedNextTimestamp, enqueuecnt);
-              dropByCache(timestamp);
-            } else {
-              const f = cache.get(timestamp);
-              expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
-              if (DEV)
-                console.log("sort: recieving frame: last frame: enqueue", timestamp, expectedNextTimestamp, enqueuecnt);
-              enqueue(f, controller);
-              cache.delete(timestamp);
-            }
-          }
-          if (DEV)
-            console.log("sort: recieving frame: [terminate]", enqueuecnt, sharedData, sharedData.getResultSamples());
-          controller.terminate();
           return;
         }
         if (cache.size >= 13) {
@@ -7891,6 +7871,25 @@ function generateVideoSortTransformer(videoInfo, sharedData, DEV = false) {
     flush(controller) {
       if (DEV)
         console.log("sort: [terminate] frame flush");
+      const stamps = Array.from(cache.keys()).sort((a, b) => a - b);
+      if (DEV)
+        console.log("sort: recieving frame: last frame:", stamps);
+      for (const timestamp of stamps) {
+        if (timestamp < expectedNextTimestamp) {
+          if (DEV)
+            console.error("sort: recieving frame: last framee: drop frame", timestamp, expectedNextTimestamp, enqueuecnt);
+          dropByCache(timestamp);
+        } else {
+          const f = cache.get(timestamp);
+          expectedNextTimestamp = timestamp + (f.frame.duration ?? 0);
+          if (DEV)
+            console.log("sort: recieving frame: last frame: enqueue", timestamp, expectedNextTimestamp, enqueuecnt);
+          enqueue(f, controller);
+          cache.delete(timestamp);
+        }
+      }
+      if (DEV)
+        console.log("sort: recieving frame: [terminate]", enqueuecnt, sharedData, sharedData.getResultSamples());
       controller.terminate();
     }
   }, {
@@ -7900,7 +7899,7 @@ function generateVideoSortTransformer(videoInfo, sharedData, DEV = false) {
 function floorWithSignificance(value, significance) {
   return Math.floor(value / significance) * significance;
 }
-function generateResizeTransformer(config, sharedData, DEV = false) {
+function generateResizeTransformer(config, DEV = false) {
   let framecnt = 0;
   return new TransformStream({
     start() {
@@ -7931,7 +7930,8 @@ function generateResizeTransformer(config, sharedData, DEV = false) {
       }
     },
     flush(controller) {
-      console.log("resize: [terminate] flush");
+      if (DEV)
+        console.log("resize: [terminate] flush");
       controller.terminate();
     }
   });
@@ -7947,7 +7947,7 @@ function validateVideoKeyFrameConfig(config) {
       throw new Error("videoKeyframeConfig.interval must be positive");
   }
 }
-function generateVideoEncoderTransformStream(config, videoKeyframeConfig, sharedData, DEV = false) {
+function generateVideoEncoderTransformStream(config, videoKeyframeConfig, DEV = false) {
   let encoder;
   let framecnt = 0;
   let enqueuecnt = 0;
@@ -7980,7 +7980,7 @@ function generateVideoEncoderTransformStream(config, videoKeyframeConfig, shared
           }
           controller.enqueue({ type: "encodedVideoChunk", data: chunk });
           if (DEV)
-            console.log("encode: encoded", chunk.timestamp, enqueuecnt - 1, framecnt, sharedData, sharedData.getResultSamples(), chunk, encoder.encodeQueueSize, metadata);
+            console.log("encode: encoded", chunk.timestamp, enqueuecnt - 1, framecnt, chunk, encoder.encodeQueueSize, metadata);
           if (allowWriteEval())
             emitResolve();
         },
@@ -8027,15 +8027,6 @@ function generateVideoEncoderTransformStream(config, videoKeyframeConfig, shared
         });
         frame.frame.close();
         emitResolve();
-        if (framecnt === sharedData.getResultSamples()) {
-          if (DEV)
-            console.log("encode: frame: [terminate] last frame", framecnt, sharedData.getResultSamples());
-          return encoder.flush().then(() => {
-            if (DEV)
-              console.log("encode: frame: [terminate] done", framecnt, enqueuecnt, sharedData.getResultSamples());
-            controller.terminate();
-          });
-        }
         if (allowWriteEval()) {
           if (DEV)
             console.log("encode: recieving vchunk: resolve immediate");
@@ -8051,10 +8042,14 @@ function generateVideoEncoderTransformStream(config, videoKeyframeConfig, shared
         return Promise.resolve();
       }
     },
-    flush(controller) {
+    async flush(controller) {
       if (DEV)
         console.log("encode: [terminate] flush", framecnt, enqueuecnt);
-      encoder.flush();
+      return encoder.flush().then(() => {
+        if (DEV)
+          console.log("encode: [terminate] done", framecnt, enqueuecnt);
+        controller.terminate();
+      });
       controller.terminate();
     }
   });
@@ -8185,13 +8180,8 @@ function writeEncodedVideoChunksToMP4File(file, encoderConfig, videoInfo, shared
             is_sync: chunk.type === "key"
           });
           if (DEV)
-            console.log("write: addSample", samplecnt, sharedData.getResultSamples(), times, sample);
+            console.log("write: addSample", samplecnt, times, sample);
           controller.enqueue(sample);
-          if (samplecnt === sharedData.getResultSamples()) {
-            if (DEV)
-              console.log("write: [terminate] addSample last", sharedData.getResultSamples(), samplecnt, sample, file);
-            return;
-          }
           nextDtsTime += chunk.duration ?? 1;
         }
       } catch (e) {
@@ -8666,10 +8656,80 @@ function getMfraStream({
 }
 
 // src/index.ts
-var preventer = {
-  preventCancel: true,
-  preventClose: true,
-  preventAbort: true
+function createDstFile(brands, info) {
+  const dstFile = (0, import_mp4box6.createFile)();
+  dstFile.init({
+    brands: Array.from(brands).filter((brand) => brand && typeof brand === "string" && brand.length === 4),
+    timescale: info.timescale,
+    duration: 0
+  });
+  if (dstFile.moov) {
+    const _1904 = (/* @__PURE__ */ new Date("1904-01-01T00:00:00Z")).getTime();
+    dstFile.moov.mvhd?.set("creation_time", Math.floor((info.created.getTime() - _1904) / 1e3));
+    dstFile.moov.mvhd?.set("modification_time", Math.floor((Date.now() - _1904) / 1e3));
+    const mehd = dstFile.moov.mvex?.add("mehd");
+    mehd.set("fragment_duration", info.duration);
+  }
+  return dstFile;
+}
+var BoxSendManager = class {
+  constructor(dstFile, cb, DEV = false) {
+    this.dstFile = dstFile;
+    this.cb = cb;
+    this.DEV = DEV;
+  }
+  nextBox = 0;
+  fileSize = 0;
+  /**
+   * For tfra creating
+   */
+  startPositionMap = /* @__PURE__ */ new Map();
+  send() {
+    if (this.DEV)
+      console.log("index: send box called", this.nextBox, this.dstFile.boxes.length);
+    for (let i2 = this.nextBox; i2 < this.dstFile.boxes.length; i2++) {
+      if (this.DEV)
+        console.log("index: send box", this.nextBox, i2, this.dstFile.boxes[i2]);
+      const box2 = this.dstFile.boxes[i2];
+      if (box2.type === "moof") {
+        const trackId = box2.trafs[0].tfhd.track_id;
+        if (!this.startPositionMap.has(trackId)) {
+          this.startPositionMap.set(trackId, this.fileSize);
+          if (this.DEV)
+            console.log("index: send box: set start position", trackId, this.fileSize);
+        }
+      }
+      const buffer = getBoxBuffer(box2);
+      this.fileSize += buffer.byteLength;
+      this.cb(buffer);
+      if (box2.data) {
+        box2.data = void 0;
+      }
+    }
+    if (this.DEV)
+      console.log("index: send box: next", this.dstFile.boxes.length);
+    this.nextBox = this.dstFile.boxes.length;
+  }
+};
+var StreamCounter = class {
+  count = 0;
+  constructor() {
+  }
+  countingTransformStream(cb) {
+    const self = this;
+    return new TransformStream({
+      start() {
+      },
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+        self.count++;
+        if (cb)
+          cb();
+      },
+      flush() {
+      }
+    });
+  }
 };
 var EasyVideoEncoder = class extends EventTarget {
   processes = /* @__PURE__ */ new Map();
@@ -8706,18 +8766,44 @@ var EasyVideoEncoder = class extends EventTarget {
     if (DEV)
       console.log("index: start", order);
     const dispatchEvent = this.dispatchEvent.bind(this);
+    const ___ = (() => {
+      let videoTrackAddedCallback;
+      const videoTrackAddedPromise = new Promise((resolve) => {
+        videoTrackAddedCallback = resolve;
+      });
+      let startToWriteVideoChunksCallback;
+      const startToWriteVideoChunksPromise = new Promise((resolve) => {
+        startToWriteVideoChunksCallback = resolve;
+      });
+      return {
+        videoTrackAddedCallback,
+        videoTrackAddedPromise,
+        startToWriteVideoChunksCallback,
+        startToWriteVideoChunksPromise
+      };
+    })();
     const info = await getMP4Info(order.file);
-    const fps = info.fps;
     if (DEV)
       console.log("index: info", info);
-    const samplesNumber = info.videoInfo.nb_samples + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
-    let samplesCount = 0;
-    function dispatchProgress() {
-      dispatchEvent(new CustomEvent("progress", { detail: { identifier, samplesNumber, samplesCount } }));
+    if (!("videoInfo" in info)) {
+      if (info.info.audioTracks.length > 0) {
+        return this._audioOnly(identifier, order, info, DEV);
+      } else {
+        throw new Error("No video track found");
+      }
+    }
+    const samplesNumber = (info.videoInfo.nb_samples ?? 0) + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
+    const streamCounter = new StreamCounter();
+    function dispatchProgress(forceNumber) {
+      dispatchEvent(new CustomEvent("progress", { detail: {
+        identifier,
+        samplesNumber,
+        samplesCount: typeof forceNumber === "number" ? forceNumber : streamCounter.count
+      } }));
     }
     dispatchProgress();
     const _outputSize = calculateSize(info.videoInfo.video, order.resizeConfig);
-    const outputSize = {
+    const videoOutputSize = {
       width: floorWithSignificance(_outputSize.width, 2),
       height: floorWithSignificance(_outputSize.height, 2)
     };
@@ -8728,10 +8814,10 @@ var EasyVideoEncoder = class extends EventTarget {
         if (order.videoEncodeCodecRequest.type === "av01") {
           return av01PL(
             {
-              width: outputSize.width,
-              height: outputSize.height,
+              width: videoOutputSize.width,
+              height: videoOutputSize.height,
               profile: order.videoEncodeCodecRequest?.profile ?? "Main",
-              fps,
+              fps: info.fps,
               prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? void 0
             },
             order.videoEncodeCodecRequest.depth ?? 8,
@@ -8742,18 +8828,18 @@ var EasyVideoEncoder = class extends EventTarget {
         }
       }
       return avc1PLFromVideoInfo({
-        width: outputSize.width,
-        height: outputSize.height,
+        width: videoOutputSize.width,
+        height: videoOutputSize.height,
         profile: order.videoEncodeCodecRequest?.profile ?? "constrained_baseline",
-        fps,
+        fps: info.fps,
         prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? void 0
       }, DEV);
     })();
     const encoderConfig = {
       ...order.videoEncoderConfig,
-      ...outputSize,
+      ...videoOutputSize,
       codec: targetVideoCodec.startsWith("vp08") ? "vp8" : targetVideoCodec,
-      framerate: Math.round(fps * 100) / 100,
+      framerate: Math.round(info.fps * 100) / 100,
       ...targetVideoCodec.startsWith("avc") ? {
         avc: {
           format: "avc"
@@ -8774,107 +8860,39 @@ var EasyVideoEncoder = class extends EventTarget {
       dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
       throw e;
     }
-    const dstFile = (0, import_mp4box6.createFile)();
-    dstFile.init({
-      brands: Array.from(/* @__PURE__ */ new Set([
-        "isom",
-        "iso6",
-        "iso2",
-        encoderConfig.codec.split(".")[0],
-        ...info.info.audioTracks.map((track) => track.codec.split(".")[0])
-      ])).filter((brand) => brand && typeof brand === "string" && brand.length === 4),
-      timescale: info.info.timescale,
-      //duration: info.info.duration,
-      // duration must be 0 for fragmented mp4
-      duration: 0
-    });
-    if (dstFile.moov) {
-      const _1904 = (/* @__PURE__ */ new Date("1904-01-01T00:00:00Z")).getTime();
-      dstFile.moov.mvhd?.set("creation_time", Math.floor((info.info.created.getTime() - _1904) / 1e3));
-      dstFile.moov.mvhd?.set("modification_time", Math.floor((Date.now() - _1904) / 1e3));
-      const mehd = dstFile.moov.mvex?.add("mehd");
-      mehd.set("fragment_duration", info.info.duration);
-    }
+    const dstFile = createDstFile([
+      "isom",
+      "iso6",
+      "iso2",
+      encoderConfig.codec.split(".")[0],
+      ...info.info.audioTracks.map((track) => track.codec.split(".")[0])
+    ], info.info);
     if (DEV)
-      console.log("index: prepare", samplesNumber, samplesCount, outputSize, encoderConfig, dstFile);
-    function upcnt() {
-      return new TransformStream({
-        start() {
-        },
-        transform(chunk, controller) {
-          controller.enqueue(chunk);
-          samplesCount++;
-          dispatchProgress();
-        },
-        flush() {
-        }
-      });
-    }
-    const ___ = (() => {
-      let videoTrackAddedCallback;
-      const videoTrackAddedPromise = new Promise((resolve) => {
-        videoTrackAddedCallback = resolve;
-      });
-      let startToWriteVideoChunksCallback;
-      const startToWriteVideoChunksPromise = new Promise((resolve) => {
-        startToWriteVideoChunksCallback = resolve;
-      });
-      return {
-        videoTrackAddedCallback,
-        videoTrackAddedPromise,
-        startToWriteVideoChunksCallback,
-        startToWriteVideoChunksPromise
-      };
-    })();
-    let nextBox = 0;
-    let fileSize = 0;
-    const startPositionMap = /* @__PURE__ */ new Map();
-    function sendBoxes() {
-      if (DEV)
-        console.log("index: send box called", nextBox, dstFile.boxes.length);
-      for (let i2 = nextBox; i2 < dstFile.boxes.length; i2++) {
-        if (DEV)
-          console.log("index: send box", nextBox, i2, dstFile.boxes[i2]);
-        const box2 = dstFile.boxes[i2];
-        if (box2.type === "moof") {
-          const trackId = box2.trafs[0].tfhd.track_id;
-          if (!startPositionMap.has(trackId)) {
-            startPositionMap.set(trackId, fileSize);
-            if (DEV)
-              console.log("index: send box: set start position", trackId, fileSize);
-          }
-        }
-        const buffer = getBoxBuffer(box2);
-        fileSize += buffer.byteLength;
-        dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer } }));
-        if (box2.data) {
-          box2.data = void 0;
-        }
-      }
-      if (DEV)
-        console.log("index: send box: next", dstFile.boxes.length);
-      nextBox = dstFile.boxes.length;
-    }
+      console.log("index: prepare", samplesNumber, streamCounter.count, videoOutputSize, encoderConfig, dstFile);
+    const boxSendManager = new BoxSendManager(dstFile, (buffer) => {
+      dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer } }));
+    }, DEV);
+    const sampleCounter = new StreamCounter();
     const sharedData = {
       /**
        * Number of samples/frames video_sort_transformer has dropped
        */
       dropFramesOnDecoding: 0,
       dropFrames: 0,
-      getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames - sharedData.dropFramesOnDecoding
+      getResultSamples: () => Math.max(info.videoInfo.nb_samples, sampleCounter.count) - sharedData.dropFrames - sharedData.dropFramesOnDecoding
     };
     const writeThenSendBoxStream = () => new WritableStream({
       start() {
       },
       write() {
-        sendBoxes();
+        boxSendManager.send();
       },
       close() {
-        sendBoxes();
+        boxSendManager.send();
       }
     });
     const videoWriter = writeThenSendBoxStream();
-    const videoStreamPromise = order.file.stream().pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer).pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV)).pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, sharedData, DEV), preventer).pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV), preventer).pipeThrough(generateResizeTransformer(order.resizeConfig, sharedData, DEV)).pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, sharedData, DEV), preventer).pipeThrough(upcnt()).pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV)).pipeTo(videoWriter).catch((e) => {
+    const videoStreamPromise = order.file.stream().pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV)).pipeThrough(streamCounter.countingTransformStream()).pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV)).pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, sharedData, DEV)).pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV)).pipeThrough(generateResizeTransformer(order.resizeConfig, DEV)).pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, DEV)).pipeThrough(streamCounter.countingTransformStream(dispatchProgress)).pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV)).pipeTo(videoWriter).catch((e) => {
       console.error("video stream error", e);
       dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
     });
@@ -8885,18 +8903,18 @@ var EasyVideoEncoder = class extends EventTarget {
       const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, info.file.getTrackById(track.id), DEV);
       audioTrackIds.push(trackId);
       audioStreams.push(
-        () => order.file.stream().pipeThrough(generateDemuxTransformer(track.id, DEV), preventer).pipeThrough(upcnt()).pipeTo(audioWriter).catch((e) => {
+        () => order.file.stream().pipeThrough(generateDemuxTransformer(track.id, DEV)).pipeThrough(streamCounter.countingTransformStream(dispatchProgress)).pipeTo(audioWriter).catch((e) => {
           dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
         })
       );
     }
     if (DEV)
       console.log("index: send first boxes", dstFile);
-    sendBoxes();
+    boxSendManager.send();
     for (let i2 = 0; i2 < audioStreams.length; i2++) {
       const audioStream = audioStreams[i2];
       await audioStream();
-      sendBoxes();
+      boxSendManager.send();
     }
     if (DEV)
       console.log("index: start writing video chunks");
@@ -8905,22 +8923,80 @@ var EasyVideoEncoder = class extends EventTarget {
     if (DEV)
       console.log("index: writing video chunks finished");
     const mfraStream = getMfraStream({
-      startPositionMap,
-      fileSize
+      startPositionMap: boxSendManager.startPositionMap,
+      fileSize: boxSendManager.fileSize
     });
     dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer: mfraStream.buffer } }));
-    if (samplesCount !== samplesNumber) {
-      samplesCount = samplesNumber;
-      dispatchProgress();
+    if (streamCounter.count !== samplesNumber) {
+      dispatchProgress(samplesNumber);
     }
     if (DEV)
-      console.log("index: mux finish", samplesNumber, samplesCount, dstFile);
+      console.log("index: mux finish", samplesNumber, streamCounter.count, dstFile);
+    dispatchEvent(new CustomEvent("complete", { detail: { identifier } }));
+    dstFile.flush();
+  }
+  async _audioOnly(identifier, order, info, DEV = false) {
+    if (DEV)
+      console.log("index: THIS IS AUDIO FILE");
+    const dispatchEvent = this.dispatchEvent.bind(this);
+    const samplesNumber = info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
+    const streamCounter = new StreamCounter();
+    function dispatchProgress(forceNumber) {
+      dispatchEvent(new CustomEvent("progress", { detail: {
+        identifier,
+        samplesNumber,
+        samplesCount: typeof forceNumber === "number" ? forceNumber : streamCounter.count
+      } }));
+    }
+    dispatchProgress();
+    const dstFile = createDstFile([
+      "isom",
+      "iso6",
+      "iso2",
+      ...info.info.audioTracks.map((track) => track.codec.split(".")[0])
+    ], info.info);
+    if (DEV)
+      console.log("index: prepare", samplesNumber, streamCounter.count, dstFile);
+    const boxSendManager = new BoxSendManager(dstFile, (buffer) => {
+      dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer } }));
+    }, DEV);
+    const audioStreams = [];
+    const audioTrackIds = [];
+    for (const track of info.info.audioTracks) {
+      const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, info.file.getTrackById(track.id), DEV);
+      audioTrackIds.push(trackId);
+      audioStreams.push(
+        () => order.file.stream().pipeThrough(generateDemuxTransformer(track.id, DEV)).pipeThrough(streamCounter.countingTransformStream(dispatchProgress)).pipeTo(audioWriter).catch((e) => {
+          dispatchEvent(new CustomEvent("error", { detail: { identifier, error: e } }));
+        })
+      );
+    }
+    if (DEV)
+      console.log("index: send first boxes", dstFile);
+    boxSendManager.send();
+    for (let i2 = 0; i2 < audioStreams.length; i2++) {
+      const audioStream = audioStreams[i2];
+      await audioStream();
+      boxSendManager.send();
+    }
+    const mfraStream = getMfraStream({
+      startPositionMap: boxSendManager.startPositionMap,
+      fileSize: boxSendManager.fileSize
+    });
+    dispatchEvent(new CustomEvent("segment", { detail: { identifier, buffer: mfraStream.buffer } }));
+    if (streamCounter.count !== samplesNumber) {
+      dispatchProgress(samplesNumber);
+    }
+    if (DEV)
+      console.log("index: mux finish", samplesNumber, streamCounter.count, dstFile);
     dispatchEvent(new CustomEvent("complete", { detail: { identifier } }));
     dstFile.flush();
   }
 };
 export {
+  BoxSendManager,
   EasyVideoEncoder,
+  StreamCounter,
   av01ChromaSubsamplingTable,
   av01ColorPrimariesTable,
   av01CorrectSeqTier,
@@ -8939,6 +9015,7 @@ export {
   avc1PLFromVideoInfo,
   avc1ProfileIdcToFactorTable,
   avc1ProfileToProfileIdTable,
+  createDstFile,
   floorWithSignificance,
   generateDemuxTransformer,
   generateResizeTransformer,

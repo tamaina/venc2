@@ -9,7 +9,7 @@ import { VideoFrameAndIsKeyFrame } from './type';
 export declare const generateSampleToEncodedVideoChunkTransformer: (DEV?: boolean) => TransformStream<Sample, EncodedVideoChunk>;
 /**
  * Returns a transform stream that decodes video frames from a mp4 file stream (Blob.stream).
- * **Set preventClose: true** when using the stream with pipeThrough.
+ * **Set preventClose: false** when using the stream with pipeThrough.
  *
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>

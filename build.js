@@ -32,18 +32,36 @@ const worker = {
 	tsconfig: `${__dirname}/tsconfig.json`,
 };
 
+const opfsWorker = {
+	entryPoints: [ `${__dirname}/src/opfs-worker.ts` ],
+	bundle: true,
+	format: 'esm',
+	treeShaking: true,
+	minify: true,
+	absWorkingDir: __dirname,
+	outbase: `${__dirname}/src`,
+	outdir: `${__dirname}/dist`,
+	loader: {
+		'.ts': 'ts'
+	},
+	tsconfig: `${__dirname}/tsconfig.json`,
+};
+
 (async () => {
 	console.log('building...', { watch });
 
 	if (!watch) {
 		await esbuild.build(lib);
 		await esbuild.build(worker);
+		await esbuild.build(opfsWorker);
 		console.log('done');
 	} else {
 		const libCtx = await esbuild.context(lib);
 		await libCtx.watch();
 		const workerCtx = await esbuild.context(worker);
 		await workerCtx.watch();
+		const opfsWorkerCtx = await esbuild.context(opfsWorker);
+		await opfsWorkerCtx.watch();
 		console.log('watching...');
 	}
 })();

@@ -3,7 +3,7 @@ import { MP4VideoTrack } from "@webav/mp4box.js";
 import { VideoFrameAndIsKeyFrame } from "./type";
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
- * **Set preventClose: true** when using the stream with pipeThrough.
+ * **Set preventClose: false** when using the stream with pipeThrough.
  *
  * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
  *
@@ -24,6 +24,4 @@ export declare function floorWithSignificance(value: number, significance: numbe
  * @returns TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>
  *
  */
-export declare function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, sharedData: {
-    getResultSamples: () => number;
-}, DEV?: boolean): TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>;
+export declare function generateResizeTransformer(config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>, DEV?: boolean): TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>;
