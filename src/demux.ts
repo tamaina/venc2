@@ -5,7 +5,6 @@ const KEEP_SAMPLES_NUMBER = 50;
 
 /**
  * Returns a transform stream that sends samples from a mp4 file stream (Blob.stream).
- * **Set preventClose: true** when using the stream with pipeThrough.
  *
  * (For memory saving, transform is delayed with Promise, but it is not effective unless the mp4 is progressive.)
  */

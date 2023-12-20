@@ -5,7 +5,6 @@ import { VideoFrameAndIsKeyFrame } from "./type";
 const TIMESTAMP_MARGINS = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 /**
  * Returns a transform stream that sorts videoframes by timestamp and duration.
- * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * SafariのVideoDecoderはtimestamp通りにフレームを出力してくれないのでこれが必要
  * 
@@ -167,7 +166,6 @@ export function floorWithSignificance(value: number, significance: number) {
 
 /**
  * Returns a transform stream that resizes videoframes by `@misskey-dev/browser-image-resizer`.
- * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @param config Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>
  * @returns TransformStream<VideoFrameAndIsKeyFrame, VideoFrameAndIsKeyFrame>

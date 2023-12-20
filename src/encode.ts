@@ -12,7 +12,6 @@ export function validateVideoKeyFrameConfig(config?: VideoKeyframeConfig | undef
 
 /**
  * Returns a transform stream that encodes videoframes.
- * **Set preventClose: false** when using the stream with pipeThrough.
  */
 export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, videoKeyframeConfig: VideoKeyframeConfig | undefined, DEV = false) {
     let encoder: VideoEncoder;

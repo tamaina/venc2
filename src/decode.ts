@@ -9,7 +9,6 @@ const DECODE_HWM = 16;
 
 /**
  * Returns a transform stream that transforms Sample to EncodedVideoChunk.
- * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @returns TransformStream<Sample, EncodedVideoChunk>
  */
@@ -39,7 +38,6 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
 
 /**
  * Returns a transform stream that decodes video frames from a mp4 file stream (Blob.stream).
- * **Set preventClose: false** when using the stream with pipeThrough.
  * 
  * @param file Source file (mp4)
  * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>
