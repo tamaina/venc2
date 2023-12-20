@@ -1,4 +1,5 @@
 import { MP4VideoTrack } from '@webav/mp4box.js';
+import { VideoFrameAndIsKeyFrame } from './type';
 /**
  * Returns a transform stream that transforms Sample to EncodedVideoChunk.
  * **Set preventClose: false** when using the stream with pipeThrough.
@@ -11,6 +12,9 @@ export declare const generateSampleToEncodedVideoChunkTransformer: (DEV?: boolea
  * **Set preventClose: true** when using the stream with pipeThrough.
  *
  * @param file Source file (mp4)
- * @returns TransformStream<Sample, VideoFrame>
+ * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>
  */
-export declare function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, DEV?: boolean): Promise<TransformStream<EncodedVideoChunk, VideoFrame>>;
+export declare function generateVideoDecodeTransformer(videoInfo: MP4VideoTrack, description: BufferSource, orderConfig: Partial<VideoDecoderConfig>, sharedData: {
+    dropFramesOnDecoding: number;
+    startTimeShift?: number;
+}, DEV?: boolean): Promise<TransformStream<EncodedVideoChunk, VideoFrameAndIsKeyFrame>>;

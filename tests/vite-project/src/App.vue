@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { getMP4Info } from '../../../src/demux';
-import type { VencWorkerOrder, VencWorkerMessage, CodecRequests } from '../../../src/type';
+import type { VencWorkerOrder, VencWorkerMessage, VideoEncodeCoderRequests } from '../../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import OpfsWorker from '../../../src/opfs-worker?worker';
 import { EasyVideoEncoder } from '../../../src/index';
@@ -42,7 +42,7 @@ const av01MatrixCoefficients = ref<keyof typeof av01MatrixCoefficientsTable>('BT
 const av01FullRange = ref<HTMLInputElement>();
 //#endregion
 
-function getCodecRequest(): CodecRequests {
+function getCodecRequest(): VideoEncodeCoderRequests {
   if (codec.value === 'av01') {
     return {
       type: 'av01',
@@ -141,7 +141,7 @@ async function execWorker() {
     worker.postMessage({
       type: 'encode',
       file,
-      codecRequest: getCodecRequest(),
+      videoEncodeCodecRequest: getCodecRequest(),
       videoEncoderConfig: {
         hardwareAcceleration: hardwareAcceleration.value,
         bitrateMode: bitrateMode.value,
@@ -235,7 +235,7 @@ async function execOpfsWorker() {
       type: 'encode',
       identifier,
       file,
-      codecRequest: getCodecRequest(),
+      videoEncodeCodecRequest: getCodecRequest(),
       videoEncoderConfig: {
         hardwareAcceleration: hardwareAcceleration.value,
         bitrateMode: bitrateMode.value,
@@ -282,7 +282,7 @@ function execMain() {
   for (const file of Array.from(input.value?.files ?? [])) {
     main.start({
       file,
-      codecRequest: getCodecRequest(),
+      videoEncodeCodecRequest: getCodecRequest(),
       videoEncoderConfig: {
         hardwareAcceleration: hardwareAcceleration.value,
         bitrateMode: bitrateMode.value,

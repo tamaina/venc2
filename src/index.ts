@@ -1,4 +1,4 @@
-import { createFile, DataStream, Log } from '@webav/mp4box.js';
+import { createFile, Log } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
 import { getMP4Info, generateDemuxTransformer } from './demux';
 export * from './demux';
@@ -11,10 +11,16 @@ export * from './encode';
 import { writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './mux';
 export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
-import { getBoxBuffer } from './box';
-import { avc1PLFromVideoInfo } from './specs/avc1';
-import { av01PL } from './specs/av01';
 export * from './type';
+import { getBoxBuffer } from './box';
+export * from './box';
+import { avc1PLFromVideoInfo } from './specs/avc1';
+export * from './specs/avc1';
+import { av01PL } from './specs/av01';
+export * from './specs/av01';
+export * from './specs/av1C';
+import { getMfraStream } from './specs/mfra';
+export * from './specs/mfra';
 
 const preventer = {
     preventCancel: true,
@@ -84,20 +90,20 @@ export class EasyVideoEncoder extends EventTarget {
         };
         const targetVideoCodec = (() => {
             if (order.videoEncoderConfig.codec) return order.videoEncoderConfig.codec;
-            if (order.codecRequest) {
-                if (order.codecRequest.type === 'av01') {
+            if (order.videoEncodeCodecRequest) {
+                if (order.videoEncodeCodecRequest.type === 'av01') {
                     // av01(av1)
                     return av01PL(
                         {
                             width: outputSize.width,
                             height: outputSize.height,
-                            profile: order.codecRequest?.profile ?? 'Main',
+                            profile: order.videoEncodeCodecRequest?.profile ?? 'Main',
                             fps,
                             prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
                         },
-                        order.codecRequest.depth ?? 8,
-                        order.codecRequest.seqTier ?? 'M',
-                        order.codecRequest.additional,
+                        order.videoEncodeCodecRequest.depth ?? 8,
+                        order.videoEncodeCodecRequest.seqTier ?? 'M',
+                        order.videoEncodeCodecRequest.additional,
                         DEV,
                     );
                 }
@@ -107,7 +113,7 @@ export class EasyVideoEncoder extends EventTarget {
             return avc1PLFromVideoInfo({
                 width: outputSize.width,
                 height: outputSize.height,
-                profile: order.codecRequest?.profile ?? 'constrained_baseline',
+                profile: order.videoEncodeCodecRequest?.profile ?? 'constrained_baseline',
                 fps,
                 prefferedAllowingMaxBitrate: order.videoEncoderConfig?.bitrate ?? undefined,
             }, DEV);
@@ -296,43 +302,10 @@ export class EasyVideoEncoder extends EventTarget {
         await videoStreamPromise;
         if (DEV) console.log('index: writing video chunks finished');
         //#endregion
-
-        //#region make mfra/tfra/mfro
-        // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/box-write.js
-        const mfraStream = new DataStream();
-        mfraStream.endianness = DataStream.BIG_ENDIAN;
-        //#region write mfra header
-        mfraStream.writeUint32(0); // size placeholder
-        mfraStream.writeString('mfra', null, 4);
-        //#endregion
-        //#region write mfra data: write tfras
-        // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/parsing/tfra.js#L1
-        for (const [trackId, pos] of startPositionMap) {
-            mfraStream.writeUint32(43); // size placeholder
-            mfraStream.writeString('tfra', null, 4);
-            mfraStream.writeUint8(1); // version
-            mfraStream.writeUint24(0); // flags
-            mfraStream.writeUint32(trackId); // track_ID
-            mfraStream.writeUint32(0); // length_size_of_traf_num, length_size_of_trun_num, length_size_of_sample_num
-            mfraStream.writeUint32(1); // number_of_entry
-            mfraStream.writeUint64(0); // time
-            mfraStream.writeUint64(pos); // moof_offset
-            mfraStream.writeUint8(1); // traf_number
-            mfraStream.writeUint8(1); // trun_number
-            mfraStream.writeUint8(1); // sample_number
-        }
-        //#endregion
-        //#region write mfra data: write mfro
-        mfraStream.writeUint32(16); // size placeholder
-        mfraStream.writeString('mfro', null, 4);
-        mfraStream.writeUint8(0); // version
-        mfraStream.writeUint24(0); // flags
-        const mfraSize = mfraStream.getPosition() + 4;
-        mfraStream.writeUint32(mfraSize); // size
-        //#endregion
-        mfraStream.adjustUint32(0, mfraSize); // adjust size
-
-        (mfraStream.buffer as any).fileStart = fileSize;
+        const mfraStream = getMfraStream({
+            startPositionMap,
+            fileSize,
+        });
         dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer: mfraStream.buffer } }));
         //#endregion
 

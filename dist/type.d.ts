@@ -1,28 +1,83 @@
 import type { BrowserImageResizerConfigWithOffscreenCanvasOutput } from '@misskey-dev/browser-image-resizer';
-export type VencWorkerOrder = {
-    file: Blob;
+import { avc1ProfileToProfileIdTable } from './specs/avc1';
+import { Av01VideoAdditionalInfoToBuildCodecsParameterString, av01ProfileToProfileIdTable } from './specs/av01';
+export type VideoKeyframeConfig = {
+    type: 'microseconds';
     /**
-     * [number(max fps), codec][]
-     *
-     * Example: [[32, 'avc1.4d001f'], [64, 'avc1.4d0020'], [Infinity, 'avc1.4d0028']]
-     * If not set, encoding codec will be set to `avc1.4d0034`.
+     * Must be positive.
+     * 0 means "follow source video's keyframe interval"
      */
-    codecEntries?: [number, string][];
-    encoderConfig: Partial<VideoEncoderConfig>;
+    interval: number;
+};
+export type VencWorkerOrder = {
+    type?: 'encode';
+    identifier?: any;
+    file: Blob;
+    videoEncodeCodecRequest?: VideoEncodeCoderRequests;
+    videoDecoderConfig?: Partial<VideoDecoderConfig>;
+    videoEncoderConfig: Partial<VideoEncoderConfig>;
     resizeConfig: Partial<BrowserImageResizerConfigWithOffscreenCanvasOutput>;
+    videoKeyframeConfig?: VideoKeyframeConfig;
     DEV?: boolean;
 };
+export type VideoFrameAndIsKeyFrame = {
+    frame: VideoFrame;
+    isKeyFrame: boolean;
+};
+export type VencWorkerRequest = VencWorkerOrder;
 export type VencWorkerProgress = {
+    identifier?: any;
     type: 'progress';
     samplesNumber: number;
     samplesCount: number;
 };
-export type VencWorkerResult = {
-    type: 'result';
-    buffer: Uint8Array;
+export type VencWorkerSegment = {
+    identifier?: any;
+    type: 'segment';
+    buffer: ArrayBuffer;
 };
-export type VencWorkerMessage = VencWorkerProgress | VencWorkerResult;
+export type VencWorkerComplete = {
+    identifier?: any;
+    type: 'complete';
+};
+export type VencWorkerError = {
+    identifier?: any;
+    type: 'error';
+    error: any;
+};
+export type VencOpfsWorkerFileCreated = {
+    identifier: any;
+    type: 'opfs-file-created';
+};
+export type VencWorkerMessage = VencWorkerProgress | VencWorkerSegment | VencWorkerComplete | VencWorkerError | VencOpfsWorkerFileCreated;
 export type EasyVideoEncoderEvents = {
-    progress: CustomEvent<Omit<VencWorkerProgress, 'type'>>;
-    result: CustomEvent<Omit<VencWorkerResult, 'type'>>;
+    [k in VencWorkerMessage['type']]: CustomEvent<Omit<Extract<VencWorkerMessage, {
+        type: k;
+    }>, 'type'>>;
 };
+type VideoEncoderOutputEncodedVideoChunk = {
+    type: 'encodedVideoChunk';
+    data: EncodedVideoChunk;
+};
+type VideoEncoderOutputMetadata = {
+    type: 'metadata';
+    data: EncodedVideoChunkMetadata;
+};
+export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | VideoEncoderOutputMetadata;
+export type VideoEncodeCoderRequests = {
+    type: 'avc1';
+    profile?: keyof typeof avc1ProfileToProfileIdTable;
+} | {
+    type: 'av01';
+    profile: keyof typeof av01ProfileToProfileIdTable;
+    /**
+     * Color depth, like 8, 10 and 12.
+     */
+    depth?: number | '8' | '10' | '12';
+    /**
+     * Sequence tier: e.g. 'M', maybe related to temporal and spatial scalability.
+     */
+    seqTier?: 'M' | string;
+    additional?: Av01VideoAdditionalInfoToBuildCodecsParameterString;
+};
+export {};

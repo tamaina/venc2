@@ -17,7 +17,7 @@ export type VencWorkerOrder = {
     identifier?: any;
     file: Blob;
 
-    codecRequest?: CodecRequests;
+    videoEncodeCodecRequest?: VideoEncodeCoderRequests;
 
     videoDecoderConfig?: Partial<VideoDecoderConfig>;
     videoEncoderConfig: Partial<VideoEncoderConfig>;
@@ -80,7 +80,7 @@ type VideoEncoderOutputMetadata = {
 }
 export type VideoEncoderOutputChunk = VideoEncoderOutputEncodedVideoChunk | VideoEncoderOutputMetadata;
 
-export type CodecRequests = {
+export type VideoEncodeCoderRequests = {
     type: 'avc1';
     profile?: keyof typeof avc1ProfileToProfileIdTable;
 } | {
