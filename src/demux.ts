@@ -1,8 +1,7 @@
 import { MP4ArrayBuffer, MP4File, MP4Info, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
 import { getDescriptionBoxEntriesFromTrak, getDescriptionBuffer } from './box';
 
-// デコードのTransformStreamのhighWaterMark
-const DECODE_HWM = 16;
+const KEEP_SAMPLES_NUMBER = 50;
 
 /**
  * Returns a transform stream that sends samples from a mp4 file stream (Blob.stream).
@@ -94,20 +93,17 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 					mp4boxfile.appendBuffer(buff);
 					seek += chunk.byteLength;
 					if (DEV) console.log('demux: recieving chunk', chunk.byteLength, seek, controller.desiredSize);
-	
-					if (data.processedSample > 100) {
+
+					if (data.processedSample >= KEEP_SAMPLES_NUMBER) {
 						// チャンクをappendBufferしたら古い内容を順次開放する
 	
 						// desiredSize（負のみ・nullは0）
 						// 負の場合、その絶対値分のサンプルはブラウザが管理している　この分のサンプルは開放してはならない
 						// 正の場合processedSampleに足すと不必要に開放するのもだめ
 						const desiredNegative = Math.min(controller.desiredSize ?? 0, 0);
-	
-						// 一応の安全マージンでHWMの5倍は保持しておく
-						const hwmFiveTimes = DECODE_HWM * 5;
-	
-						const sampleNumber = Math.max(data.processedSample + desiredNegative - hwmFiveTimes, 0);
-						if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, hwmFiveTimes);
+
+						const sampleNumber = Math.max(data.processedSample + desiredNegative - KEEP_SAMPLES_NUMBER, 0);
+						if (DEV) console.log('demux: recieving chunk: release used samples', trackId, sampleNumber, data.processedSample, desiredNegative, KEEP_SAMPLES_NUMBER);
 						mp4boxfile.releaseUsedSamples(trackId, sampleNumber);
 					}
 	
@@ -143,12 +139,12 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	});
 }
 
-type SimpleVideoInfoWithoutVideoTrack = {
+export type SimpleVideoInfoWithoutVideoTrack = {
 	info: MP4Info,
 	file: MP4File,
 }
 
-type SimpleVideoInfoWithVideoTrack = {
+export type SimpleVideoInfoWithVideoTrack = {
 	info: MP4Info,
 	file: MP4File,
 	videoInfo: MP4VideoTrack,
@@ -218,9 +214,6 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 
         mp4boxfile.onReady = (info) => {
 			reader.cancel();
-			if (info.videoTracks.length === 0) {
-				return reject('No video track found');
-			}
 
 			result.info = info;
 
@@ -244,9 +237,6 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 					} catch (e) {
 						if (DEV) console.error('getMP4Info: getDescriptionBuffer error', e);
 					}
-				}
-				if (!result.description) {
-					return reject('No video description found');
 				}
 			}
 			resolve(result as SimpleVideoInfo);

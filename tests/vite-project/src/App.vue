@@ -314,7 +314,7 @@ function execMain() {
     </div>
 
     <div class="panel">
-      <input type="file" ref="input" accept="video/*" />
+      <input type="file" ref="input" accept="video/*,audio/*" />
       <select v-model="decoderHardwareAcceleration">
         <option value="no-preference">decoder no-preference</option>
         <option value="prefer-hardware">decoder prefer-hardware</option>

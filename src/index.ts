@@ -1,6 +1,6 @@
 import { createFile, Log, MP4Info } from '@webav/mp4box.js';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
-import { getMP4Info, generateDemuxTransformer } from './demux';
+import { getMP4Info, generateDemuxTransformer, SimpleVideoInfoWithoutVideoTrack } from './demux';
 export * from './demux';
 import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from './decode';
 export * from './decode';
@@ -95,6 +95,24 @@ export class BoxSendManager {
     }
 }
 
+export class StreamCounter {
+    public count = 0;
+    constructor(
+    ) { }
+    public countingTransformStream(cb: () => void) {
+        const self = this;
+        return new TransformStream({
+            start() { },
+            transform(chunk, controller) {
+                controller.enqueue(chunk);
+                self.count++;
+                cb();
+            },
+            flush() { },
+        });
+    }
+}
+
 export class EasyVideoEncoder extends EventTarget {
     private processes = new Map<any, Promise<void>>();
     constructor() {
@@ -129,18 +147,6 @@ export class EasyVideoEncoder extends EventTarget {
         const identifier = order.identifier;
         if (DEV) console.log('index: start', order);
 
-        function upcnt() {
-            return new TransformStream({
-                start() { },
-                transform(chunk, controller) {
-                    controller.enqueue(chunk);
-                    samplesCount++;
-                    dispatchProgress();
-                },
-                flush() { },
-            });
-        }
-
         const dispatchEvent = this.dispatchEvent.bind(this);
 
         // callbackを初期化したことにするために即時関数を使う
@@ -164,13 +170,27 @@ export class EasyVideoEncoder extends EventTarget {
         const info = await getMP4Info(order.file)
 
         if (DEV) console.log('index: info', info);
-        if (!('videoInfo' in info)) throw new Error('No video track found');
+
+        /**
+         * If the file has no video track, encode audio tracks only.
+         */
+        if (!('videoInfo' in info)) {
+            if (info.info.audioTracks.length > 0) {
+                return this._audioOnly(identifier, order, info, DEV);
+            } else {
+                throw new Error('No video track found')
+            }
+        }
 
         const samplesNumber = (info.videoInfo.nb_samples ?? 0) + info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
-        let samplesCount = 0;
+        const streamCounter = new StreamCounter();
 
-        function dispatchProgress() {
-            dispatchEvent(new CustomEvent('progress', { detail: { identifier, samplesNumber, samplesCount } }));   
+        function dispatchProgress(forceNumber?: number) {
+            dispatchEvent(new CustomEvent('progress', { detail: {
+                identifier,
+                samplesNumber,
+                samplesCount: typeof forceNumber === 'number' ? forceNumber : streamCounter.count,
+            } }));   
         }
         dispatchProgress();
 
@@ -240,7 +260,7 @@ export class EasyVideoEncoder extends EventTarget {
             ...info.info.audioTracks.map(track => track.codec.split('.')[0])
         ], info.info);
 
-        if (DEV) console.log('index: prepare', samplesNumber, samplesCount, videoOutputSize, encoderConfig, dstFile);
+        if (DEV) console.log('index: prepare', samplesNumber, streamCounter.count, videoOutputSize, encoderConfig, dstFile);
 
         const boxSendManager = new BoxSendManager(dstFile, (buffer) => {
             dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
@@ -267,7 +287,7 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV))
             .pipeThrough(generateResizeTransformer(order.resizeConfig, sharedData, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, sharedData, DEV))
-            .pipeThrough(upcnt())
+            .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
             .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
             .pipeTo(videoWriter)
             .catch(e => {
@@ -288,7 +308,7 @@ export class EasyVideoEncoder extends EventTarget {
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()
                 .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
-                .pipeThrough(upcnt())
+                .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
                 .pipeTo(audioWriter)
                 .catch(e => {
                     dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
@@ -324,12 +344,90 @@ export class EasyVideoEncoder extends EventTarget {
         dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer: mfraStream.buffer } }));
         //#endregion
 
-        if (samplesCount !== samplesNumber) {
-            samplesCount = samplesNumber;
-            dispatchProgress();
+        if (streamCounter.count !== samplesNumber) {
+            dispatchProgress(samplesNumber);
         }
 
-        if (DEV) console.log('index: mux finish', samplesNumber, samplesCount, dstFile);
+        if (DEV) console.log('index: mux finish', samplesNumber, streamCounter.count, dstFile);
+
+        dispatchEvent(new CustomEvent('complete', { detail: { identifier } }));
+
+        dstFile.flush();
+    }
+
+    async _audioOnly(identifier: any, order: VencWorkerOrder, info: SimpleVideoInfoWithoutVideoTrack, DEV = false) {
+        if (DEV) console.log('index: THIS IS AUDIO FILE');
+
+        const dispatchEvent = this.dispatchEvent.bind(this);
+
+        const samplesNumber = info.info.audioTracks.reduce((acc, track) => acc + track.nb_samples, 0);
+        const streamCounter = new StreamCounter();
+
+        function dispatchProgress(forceNumber?: number) {
+            dispatchEvent(new CustomEvent('progress', { detail: {
+                identifier,
+                samplesNumber,
+                samplesCount: typeof forceNumber === 'number' ? forceNumber : streamCounter.count,
+            } }));   
+        }
+        dispatchProgress();
+
+        const dstFile = createDstFile([
+            'isom', 'iso6', 'iso2',
+            ...info.info.audioTracks.map(track => track.codec.split('.')[0])
+        ], info.info);
+
+        if (DEV) console.log('index: prepare', samplesNumber, streamCounter.count, dstFile);
+
+        const boxSendManager = new BoxSendManager(dstFile, (buffer) => {
+            dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
+        }, DEV);
+
+        const audioStreams = [] as (() => Promise<void>)[];
+        const audioTrackIds = [] as number[];
+        for (const track of info.info.audioTracks) {
+            // add audio tracks
+            const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, info.file.getTrackById(track.id), DEV);
+
+            audioTrackIds.push(trackId);
+            audioStreams.push(() => order.file.stream()
+                .pipeThrough(generateDemuxTransformer(track.id, DEV), preventer)
+                .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
+                .pipeTo(audioWriter)
+                .catch(e => {
+                    dispatchEvent(new CustomEvent('error', { detail: { identifier, error: e } }));
+                    // ここでthrow eしてもルートに伝わらない
+                })
+            );
+        }
+
+        //#region send the first segment
+        //        after all tracks are added
+        if (DEV) console.log('index: send first boxes', dstFile);
+        boxSendManager.send();
+        //#endregion
+
+        //#region process!
+        // Add audio tracks first because they are usually smaller than video tracks
+        for (let i = 0; i < audioStreams.length; i++) {
+            const audioStream = audioStreams[i];
+
+            await audioStream();
+            boxSendManager.send();
+        }
+
+        const mfraStream = getMfraStream({
+            startPositionMap: boxSendManager.startPositionMap,
+            fileSize: boxSendManager.fileSize,
+        });
+        dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer: mfraStream.buffer } }));
+        //#endregion
+
+        if (streamCounter.count !== samplesNumber) {
+            dispatchProgress(samplesNumber);
+        }
+
+        if (DEV) console.log('index: mux finish', samplesNumber, streamCounter.count, dstFile);
 
         dispatchEvent(new CustomEvent('complete', { detail: { identifier } }));
 
