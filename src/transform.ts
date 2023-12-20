@@ -109,7 +109,6 @@ export function generateVideoSortTransformer(
 	
 				if (frame.frame.timestamp < expectedNextTimestamp) {
 					console.error('sort: recieving frame: drop frame', frame.frame.timestamp, expectedNextTimestamp);
-					sharedData.dropFrames++;
 					frame.frame.close();
 					return;
 				}
@@ -176,7 +175,6 @@ export function floorWithSignificance(value: number, significance: number) {
  */
 export function generateResizeTransformer(
 	config: Partial<Omit<BrowserImageResizerConfigWithOffscreenCanvasOutput, 'quality'>>,
-	sharedData: { getResultSamples: () => number; },
 	DEV = false,
 ) {
     let framecnt = 0;

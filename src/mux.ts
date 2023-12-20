@@ -67,9 +67,9 @@ export function writeEncodedVideoChunksToMP4File(
                         (trak as any).tkhd.set('matrix', (videoInfo as any).matrix)
                     }
                     copyEdits(trak, videoInfo);
-    
+
                     file.setSegmentOptions(trackId, null, { nbSamples: sharedData.getResultSamples() });
-    
+
                     if (DEV) console.log('write: addTrack', trackId, trak, videoInfo.timescale);
                     trackAddedCallback(trackId);
                     await promiseToStartChunks;
@@ -89,13 +89,9 @@ export function writeEncodedVideoChunksToMP4File(
                         ...times,
                         is_sync: chunk.type === 'key',
                     });
-                    if (DEV) console.log('write: addSample', samplecnt, sharedData.getResultSamples(), times, sample);
+                    if (DEV) console.log('write: addSample', samplecnt, times, sample);
                     controller.enqueue(sample);
-    
-                    if (samplecnt === sharedData.getResultSamples()) {
-                        if (DEV) console.log('write: [terminate] addSample last', sharedData.getResultSamples(), samplecnt, sample, file);
-                        return;
-                    }
+
                     nextDtsTime += (chunk.duration ?? 1);
                 }
             } catch (e) {

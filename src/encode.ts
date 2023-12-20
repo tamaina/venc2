@@ -14,7 +14,7 @@ export function validateVideoKeyFrameConfig(config?: VideoKeyframeConfig | undef
  * Returns a transform stream that encodes videoframes.
  * **Set preventClose: false** when using the stream with pipeThrough.
  */
-export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, videoKeyframeConfig: VideoKeyframeConfig | undefined, sharedData: { getResultSamples: () => number }, DEV = false) {
+export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, videoKeyframeConfig: VideoKeyframeConfig | undefined, DEV = false) {
     let encoder: VideoEncoder;
     let framecnt = 0;
     let enqueuecnt = 0;
@@ -54,7 +54,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
                         }
                     }
                     controller.enqueue({ type: 'encodedVideoChunk', data: chunk });
-                    if (DEV) console.log('encode: encoded', chunk.timestamp, enqueuecnt - 1, framecnt, sharedData, sharedData.getResultSamples(), chunk, encoder.encodeQueueSize, metadata);
+                    if (DEV) console.log('encode: encoded', chunk.timestamp, enqueuecnt - 1, framecnt,  chunk, encoder.encodeQueueSize, metadata);
 
 					if (allowWriteEval()) emitResolve();
                 },
@@ -121,7 +121,7 @@ export function generateVideoEncoderTransformStream(config: VideoEncoderConfig, 
             if (DEV) console.log('encode: [terminate] flush', framecnt, enqueuecnt);
             return encoder.flush()
                 .then(() => {
-                    if (DEV) console.log('encode: [terminate] done', framecnt, enqueuecnt, sharedData.getResultSamples());
+                    if (DEV) console.log('encode: [terminate] done', framecnt, enqueuecnt);
                     controller.terminate();
                 });
             controller.terminate();

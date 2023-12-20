@@ -99,14 +99,14 @@ export class StreamCounter {
     public count = 0;
     constructor(
     ) { }
-    public countingTransformStream(cb: () => void) {
+    public countingTransformStream(cb?: () => void) {
         const self = this;
         return new TransformStream({
             start() { },
             transform(chunk, controller) {
                 controller.enqueue(chunk);
                 self.count++;
-                cb();
+                if (cb) cb();
             },
             flush() { },
         });
@@ -266,13 +266,14 @@ export class EasyVideoEncoder extends EventTarget {
             dispatchEvent(new CustomEvent('segment', { detail: { identifier, buffer } }));
         }, DEV);
 
+        const sampleCounter = new StreamCounter();
         const sharedData = {
             /**
              * Number of samples/frames video_sort_transformer has dropped
              */
             dropFramesOnDecoding: 0,
             dropFrames: 0,
-            getResultSamples: () => info.videoInfo.nb_samples - sharedData.dropFrames - sharedData.dropFramesOnDecoding,
+            getResultSamples: () => Math.max(info.videoInfo.nb_samples, sampleCounter.count) - sharedData.dropFrames - sharedData.dropFramesOnDecoding,
         };
         const writeThenSendBoxStream = () => new WritableStream({
             start() { },
@@ -282,11 +283,12 @@ export class EasyVideoEncoder extends EventTarget {
         const videoWriter = writeThenSendBoxStream();
         const videoStreamPromise = order.file.stream()
             .pipeThrough(generateDemuxTransformer(info.videoInfo.id, DEV), preventer)
+            .pipeThrough(streamCounter.countingTransformStream())
             .pipeThrough(generateSampleToEncodedVideoChunkTransformer(DEV))
             .pipeThrough(await generateVideoDecodeTransformer(info.videoInfo, info.description, order.videoDecoderConfig ?? {}, sharedData, DEV))
             .pipeThrough(generateVideoSortTransformer(info.videoInfo, sharedData, DEV))
-            .pipeThrough(generateResizeTransformer(order.resizeConfig, sharedData, DEV))
-            .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, sharedData, DEV))
+            .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
+            .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, DEV))
             .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
             .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
             .pipeTo(videoWriter)
