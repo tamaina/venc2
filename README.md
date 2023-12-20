@@ -11,7 +11,7 @@ Sample: https://venc2.vercel.app/
 
 ## WebCodecs API Implementation Status
 
-||VideoEncoder|avc1|av01|
+|VideoEncoder|avc1|av01|
 |:--|:-:|:-:|
 |Safari 17.2|~high|❌|
 |Safari 17.4 TP 184|~high|Main|
