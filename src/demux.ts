@@ -143,8 +143,16 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 			if (DEV) console.log('demux: [terminate] file flush');
 			data.flashCalled = true;
 			if (data.processedSample >= data.track!.nb_samples) {
-				// すでに全てのサンプルを処理している
-				// （なぜかnb_samplesよりprocessedSampleが大きくなることがある）
+				/**
+				 * すでに全てのサンプルを処理している
+				 * （なぜかnb_samplesよりprocessedSampleが大きくなることがある）
+				 * 
+				 * NOTE:
+				 * 	このようにPromiseを使わなくても、appendBufferからonSamplesまでは
+				 * 	同期で処理されるのだから、この時点で全てのサンプルが処理されているはず？？
+				 * 	だがあくまで非同期的にイベントを発行するAPIとなっているため
+				 * 	念のためPromiseを使う。
+				 */
 				if (DEV) console.log('demux: [terminate] all samples already processed');
 				___.allSamplesEnqueuedCallback();
 			} else {
