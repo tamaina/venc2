@@ -13,10 +13,12 @@ Sample: https://venc2.vercel.app/
 
 |VideoEncoder|avc1|av01|
 |:--|:-:|:-:|
-|Safari 17.2|~high|❌|
-|Safari 17.4 TP 184|~high|Main|
+|Safari 17.2|~high ＊1|❌|
+|Safari 17.4 TP 191|~high ＊1|Main|
 |Chrome|~high_progressive|Main|
 |Firefox|❌|❌|
+
+＊1: A bug exists in Safari 17.4 and older with all frames being keyframes. This has been fixed in `Safari TP Release 191 (Safari 17.4, WebKit 19619.1.6.3)`. See https://github.com/tamaina/venc2/issues/4
 
 ## References
 https://github.com/vjeux/mp4-h264-re-encode
