@@ -46,25 +46,33 @@ export function av1CDescription(
 }
 
 // Info: https://github.com/gpac/mp4box.js/blob/master/src/parsing/av1C.js
-BoxParser.av1CBox.prototype.write = function(stream) {
-	this.size = 4 + (this.configOBUs?.byteLength ?? 0);
+export class av1CBox extends (typeof BoxParser)['box']['av1C'] {
+    constructor() {
+        super();
+    }
 
-	this.writeHeader(stream);
-    stream.writeUint8((1 << 7) + this.version);
-    stream.writeUint8((this.seq_profile << 5) + this.seq_level_idx_0);
-    stream.writeUint8(
-        (this.seq_tier_0 << 7) +
-        (this.high_bitdepth << 6) +
-        (this.twelve_bit << 5) +
-        (this.monochrome << 4) +
-        (this.chroma_subsampling_x << 3) +
-        (this.chroma_subsampling_y << 2) +
-        this.chroma_sample_position
-    );
-    stream.writeUint8(
-        (this.reserved_1 << 5) +
-        (this.initial_presentation_delay_present << 4) +
-        this.initial_presentation_delay_present ? this.initial_presentation_delay_minus_one : this.reserved_2
-    );
-    stream.writeUint8Array(this.configOBUs);
+    write(stream: DataStream) {
+        this.size = 4 + (this.configOBUs?.byteLength ?? 0);
+
+        this.writeHeader(stream);
+        stream.writeUint8((1 << 7) + this.version);
+        stream.writeUint8((this.seq_profile << 5) + this.seq_level_idx_0);
+        stream.writeUint8(
+            (this.seq_tier_0 << 7) +
+            (this.high_bitdepth << 6) +
+            (this.twelve_bit << 5) +
+            (this.monochrome << 4) +
+            (this.chroma_subsampling_x << 3) +
+            (this.chroma_subsampling_y << 2) +
+            this.chroma_sample_position
+        );
+        stream.writeUint8(
+            (this.reserved_1 << 5) +
+            (this.initial_presentation_delay_present << 4) +
+            this.initial_presentation_delay_present ? this.initial_presentation_delay_minus_one : this.reserved_2
+        );
+        stream.writeUint8Array(this.configOBUs);
+    }
+}
+BoxParser.av1CBox.prototype.write = function(stream) {
 }

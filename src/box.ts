@@ -1,4 +1,4 @@
-import { Box, trakBox, BoxRegistry, DataStream, Endianness } from "mp4box";
+import { Box, BoxParser, DataStream, Endianness } from "mp4box";
 
 export function getBoxBuffer(box: Box) {
     const stream = new DataStream(undefined, 0, Endianness.BIG_ENDIAN);
@@ -18,6 +18,6 @@ export function getDescriptionBuffer(entry: any) {
 	throw new Error("avcC, hvcC, vpcC or av1C box not found");
 }
 
-export function getDescriptionBoxEntriesFromTrak(trak: BoxRegistry<'trak'>) {
-    return trak?.mdia?.minf?.stbl?.stsd?.entries as Box[] ?? [];
+export function getDescriptionBoxEntriesFromTrak(trak: (typeof BoxParser)['box']['trak']) {
+    return (trak as any)?.mdia?.minf?.stbl?.stsd?.entries as Box[] ?? [];
 }

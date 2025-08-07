@@ -3,7 +3,7 @@ import type { VideoEncoderOutputChunk } from "./type";
 import { av1CDescription } from "./specs/av1C";
 import { getDescriptionBoxEntriesFromTrak } from './box';
 
-function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: Track) {
+function copyEdits(tragetTrak: (typeof BoxParser)['box']['trak'], srcInfo: Track) {
     // Copy edits
     if ((srcInfo as any).edits) {
         const edts = tragetTrak.add('edts');
