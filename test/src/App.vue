@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { getMP4Info } from '../../../src/demux';
-import type { VencWorkerOrder, VencWorkerMessage, VideoEncodeCoderRequests } from '../../../src/type';
+import { getMovie } from '../../src/demux';
+import type { VencWorkerOrder, VencWorkerMessage, VideoEncodeCoderRequests } from '../../src/type';
 import TheWorker from '../../../src/worker?worker';
 import OpfsWorker from '../../../src/opfs-worker?worker';
-import { EasyVideoEncoder } from '../../../src/index';
-import { avc1ProfileToProfileIdTable } from '../../../src/specs/avc1';
-import { av01ChromaSubsamplingTable, av01ProfileToProfileIdTable, av01ColorPrimariesTable, av01TransferCharacteristicsTable, av01MatrixCoefficientsTable } from '../../../src/specs/av01';
+import { EasyVideoEncoder } from '../../src/index';
+import { avc1ProfileToProfileIdTable } from '../../src/specs/avc1';
+import { av01ChromaSubsamplingTable, av01ProfileToProfileIdTable, av01ColorPrimariesTable, av01TransferCharacteristicsTable, av01MatrixCoefficientsTable } from '../../src/specs/av01';
 
 const sizeInput = ref<HTMLInputElement>();
 const bitrateInput = ref<HTMLInputElement>();
@@ -96,7 +96,7 @@ async function showBuffer() {
     video.value.src = newUrl;
   }
 
-  const info2 = await getMP4Info(file);
+  const info2 = await getMovie(file);
   console.log('info2', info2);
 }
 
@@ -212,7 +212,7 @@ async function execOpfsWorker() {
         video.value.src = newUrl;
       }
 
-      const info2 = await getMP4Info(dstFile);
+      const info2 = await getMovie(dstFile);
       console.log('info2 (opfs)', info2);
     } else if (ev.data.type === 'error') {
       console.error('worker error (via message)', ev.data);
@@ -228,7 +228,7 @@ async function execOpfsWorker() {
   }
 
   for (const file of Array.from(input.value?.files ?? [])) {
-    const info = await getMP4Info(file);
+    const info = await getMovie(file);
     console.log('info (opfs)', info);
 
     opfsWorker.postMessage({

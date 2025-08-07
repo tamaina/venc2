@@ -1,6 +1,6 @@
-import { createFile, Log, MP4Info } from '@webav/mp4box.js';
+import { createFile, Log, Movie } from 'mp4box';
 import { calculateSize } from '@misskey-dev/browser-image-resizer';
-import { getMP4Info, generateDemuxTransformer, SimpleVideoInfoWithoutVideoTrack } from './demux';
+import { getMovie, generateDemuxTransformer, SimpleVideoInfoWithoutVideoTrack } from './demux';
 export * from './demux';
 import { generateVideoDecodeTransformer, generateSampleToEncodedVideoChunkTransformer } from './decode';
 export * from './decode';
@@ -8,7 +8,7 @@ import { floorWithSignificance, generateResizeTransformer, generateVideoSortTran
 export * from './transform';
 import { generateVideoEncoderTransformStream } from './encode';
 export * from './encode';
-import { writeAudioSamplesToMP4File, writeEncodedVideoChunksToMP4File } from './mux';
+import { writeAudioSamplesToISOFile, writeEncodedVideoChunksToISOFile } from './mux';
 export * from './mux';
 import type { VencWorkerOrder, EasyVideoEncoderEvents } from './type';
 export * from './type';
@@ -31,7 +31,7 @@ export interface EasyVideoEncoder extends EventTarget {
 
 export function createDstFile(
     brands: string[],
-    info: MP4Info,
+    info: Movie,
 ) {
     const dstFile = createFile();
     dstFile.init({
@@ -161,7 +161,7 @@ export class EasyVideoEncoder extends EventTarget {
             };
         })();
 
-        const info = await getMP4Info(order.file)
+        const info = await getMovie(order.file)
 
         if (DEV) console.log('index: info', info);
 
@@ -284,7 +284,7 @@ export class EasyVideoEncoder extends EventTarget {
             .pipeThrough(generateResizeTransformer(order.resizeConfig, DEV))
             .pipeThrough(generateVideoEncoderTransformStream(encoderConfig, order.videoKeyframeConfig, DEV))
             .pipeThrough(streamCounter.countingTransformStream(dispatchProgress))
-            .pipeThrough(writeEncodedVideoChunksToMP4File(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
+            .pipeThrough(writeEncodedVideoChunksToISOFile(dstFile, encoderConfig, info.videoInfo, sharedData, ___.videoTrackAddedCallback, Promise.resolve(), DEV))
             .pipeTo(videoWriter)
             .catch(e => {
                 console.error('video stream error', e);
@@ -299,7 +299,7 @@ export class EasyVideoEncoder extends EventTarget {
         const audioTrackIds = [] as number[];
         for (const track of info.info.audioTracks) {
             // add audio tracks
-            const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, info.file.getTrackById(track.id), DEV);
+            const { writable: audioWriter, trackId } = writeAudioSamplesToISOFile(dstFile, track, info.file.getTrackById(track.id), DEV);
 
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()
@@ -383,7 +383,7 @@ export class EasyVideoEncoder extends EventTarget {
         const audioTrackIds = [] as number[];
         for (const track of info.info.audioTracks) {
             // add audio tracks
-            const { writable: audioWriter, trackId } = writeAudioSamplesToMP4File(dstFile, track, info.file.getTrackById(track.id), DEV);
+            const { writable: audioWriter, trackId } = writeAudioSamplesToISOFile(dstFile, track, info.file.getTrackById(track.id), DEV);
 
             audioTrackIds.push(trackId);
             audioStreams.push(() => order.file.stream()

@@ -1,9 +1,9 @@
-import { BoxParser, MP4AudioTrack, MP4BoxStream, MP4File, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, SampleOptions } from "@webav/mp4box.js";
+import { BoxParser, MP4BoxStream, ISOFile, Track, Sample, SampleOptions } from "mp4box";
 import type { VideoEncoderOutputChunk } from "./type";
 import { av1CDescription } from "./specs/av1C";
 import { getDescriptionBoxEntriesFromTrak } from './box';
 
-function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: MP4MediaTrack) {
+function copyEdits(tragetTrak: BoxParser.trakBox, srcInfo: Track) {
     // Copy edits
     if ((srcInfo as any).edits) {
         const edts = tragetTrak.add('edts');
@@ -22,11 +22,11 @@ function getAv1CBox(codec: string, DEV = false) {
     return av1CBox;
 }
 
-export function writeEncodedVideoChunksToMP4File(
-    file: MP4File,
+export function writeEncodedVideoChunksToISOFile(
+    file: ISOFile,
     encoderConfig:
     VideoEncoderConfig,
-    videoInfo: MP4VideoTrack,
+    videoInfo: Track,
     sharedData: { getResultSamples: () => number },
     trackAddedCallback: (result: number) => void,
     promiseToStartChunks: Promise<void>,
@@ -105,7 +105,7 @@ export function writeEncodedVideoChunksToMP4File(
     });
 }
 
-export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo: MP4MediaTrack | MP4Track, sampleOptions: Partial<SampleOptions> = {}, DEV = false) {
+export function samplesToMp4FileWritable(file: ISOFile, trackId: number, srcInfo: Track | Track, sampleOptions: Partial<SampleOptions> = {}, DEV = false) {
     const trak = file.getTrackById(trackId)!;
     copyEdits(trak, srcInfo);
     file.setSegmentOptions(trackId, null, { nbSamples: srcInfo.nb_samples });
@@ -142,12 +142,12 @@ export function samplesToMp4FileWritable(file: MP4File, trackId: number, srcInfo
 /**
  * Simply copy video samples to the dst-file from the src-file
  * 
- * @param file MP4File via mp4box.js
- * @param videoInfo MP4VideoTrack
+ * @param file ISOFile via mp4box.js
+ * @param videoInfo Track
  * @param videoTrak ←SrcFile.getTrackById(videoInfo.track_id)
  * @param DEV enable debug log
  */
-export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTrack, videoTrak: any, DEV = false) {
+export function writeVideoSamplesToISOFile(file: ISOFile, videoInfo: Track, videoTrak: any, DEV = false) {
     //#region copy description
     // audioTrackのesdsコピーと同様にvideoTrackもdescriptionをコピーする
     const entiries = getDescriptionBoxEntriesFromTrak(videoTrak)
@@ -193,11 +193,11 @@ export function writeVideoSamplesToMP4File(file: MP4File, videoInfo: MP4VideoTra
 /**
  * Simply copy video samples to the dst-file from the src-file
  * 
- * @param file MP4File via mp4box.js
+ * @param file ISOFile via mp4box.js
  * @param audioInfo MP4AudioTrack
  * @param DEV enable debug log
  */
-export function writeAudioSamplesToMP4File(file: MP4File, audioInfo: MP4AudioTrack, audioTrak: any, DEV = false) {
+export function writeAudioSamplesToISOFile(file: ISOFile, audioInfo: MP4AudioTrack, audioTrak: any, DEV = false) {
     //#region copy description
     // esdsをコピーしないとFirefoxで音声を再生できない
     const entiries = getDescriptionBoxEntriesFromTrak(audioTrak)

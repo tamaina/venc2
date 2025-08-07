@@ -1,4 +1,4 @@
-import { MP4VideoTrack, Sample } from '@webav/mp4box.js';
+import { Track, Sample } from 'mp4box';
 import { VideoFrameAndIsKeyFrame } from './type';
 
 // VideoDecoderが持つキューの最大数
@@ -43,7 +43,7 @@ export const generateSampleToEncodedVideoChunkTransformer = (DEV = false) => {
  * @returns TransformStream<Sample, VideoFrameAndIsKeyFrame>
  */
 export async function generateVideoDecodeTransformer(
-	videoInfo: MP4VideoTrack,
+	videoInfo: Track,
 	description: BufferSource,
 	orderConfig: Partial<VideoDecoderConfig>,
 	sharedData: { dropFramesOnDecoding: number; startTimeShift?: number; },

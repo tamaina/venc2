@@ -1,4 +1,4 @@
-import { DataStream } from "@webav/mp4box.js";
+import { DataStream, Endianness } from "mp4box";
 
 export function getMfraStream({
     startPositionMap,
@@ -18,16 +18,16 @@ export function getMfraStream({
     //#region make mfra/tfra/mfro
     // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/box-write.js
     const mfraStream = new DataStream();
-    mfraStream.endianness = DataStream.BIG_ENDIAN;
+    mfraStream.endianness = Endianness.BIG_ENDIAN;
     //#region write mfra header
     mfraStream.writeUint32(0); // size placeholder
-    mfraStream.writeString('mfra', null, 4);
+    mfraStream.writeString('mfra', undefined, 4);
     //#endregion
     //#region write mfra data: write tfras
     // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/parsing/tfra.js#L1
     for (const [trackId, pos] of startPositionMap) {
         mfraStream.writeUint32(43); // size placeholder
-        mfraStream.writeString('tfra', null, 4);
+        mfraStream.writeString('tfra', undefined, 4);
         mfraStream.writeUint8(1); // version
         mfraStream.writeUint24(0); // flags
         mfraStream.writeUint32(trackId); // track_ID
@@ -42,7 +42,7 @@ export function getMfraStream({
     //#endregion
     //#region write mfra data: write mfro
     mfraStream.writeUint32(16); // size placeholder
-    mfraStream.writeString('mfro', null, 4);
+    mfraStream.writeString('mfro', undefined, 4);
     mfraStream.writeUint8(0); // version
     mfraStream.writeUint24(0); // flags
     const mfraSize = mfraStream.getPosition() + 4;

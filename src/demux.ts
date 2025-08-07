@@ -1,4 +1,4 @@
-import { MP4ArrayBuffer, MP4File, MP4Info, MP4MediaTrack, MP4Track, MP4VideoTrack, Sample, createFile } from '@webav/mp4box.js';
+import { MP4BoxBuffer, ISOFile, Movie, Track, Sample, createFile } from 'mp4box';
 import { getDescriptionBoxEntriesFromTrak, getDescriptionBuffer } from './box';
 
 const KEEP_SAMPLES_NUMBER = 50;
@@ -10,7 +10,7 @@ const KEEP_SAMPLES_NUMBER = 50;
  */
 export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 	let seek = 0;
-	let mp4boxfile: MP4File;
+	let mp4boxfile: ISOFile;
 	const ___ = (() => {
 		let allSamplesEnqueuedCallback: () => void;
 		const allSamplesEnqueued = new Promise<void>((resolve) => {
@@ -22,7 +22,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 		};
 	})();
 	const data = {
-		track: undefined as MP4MediaTrack | MP4Track | undefined,
+		track: undefined as Track | undefined,
 		tracks: undefined as Set<number> | undefined,
 
 		processedSample: 0,
@@ -98,7 +98,7 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 		async transform(chunk, controller) {
 			try {
 				if (chunk) {
-					const buff = chunk.buffer as MP4ArrayBuffer;
+					const buff = chunk.buffer as MP4BoxBuffer;
 					buff.fileStart = seek;
 					mp4boxfile.appendBuffer(buff);
 					seek += chunk.byteLength;
@@ -168,14 +168,14 @@ export const generateDemuxTransformer = (trackId: number, DEV = false) => {
 }
 
 export type SimpleVideoInfoWithoutVideoTrack = {
-	info: MP4Info,
-	file: MP4File,
+	info: Movie,
+	file: ISOFile,
 }
 
 export type SimpleVideoInfoWithVideoTrack = {
-	info: MP4Info,
-	file: MP4File,
-	videoInfo: MP4VideoTrack,
+	info: Movie,
+	file: ISOFile,
+	videoInfo: Track,
 	fps: number,
 	description: Uint8Array,
 	defaultSampleDuration: number,
@@ -210,7 +210,7 @@ export function getStabilizedFps(srcFps: number) {
  * @param file MP4 File
  * @returns VideoInfo
  */
-export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
+export function getMovie(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 	let result = {} as Partial<SimpleVideoInfoWithVideoTrack>;
 
     return new Promise<SimpleVideoInfo>((resolve, reject) => {
@@ -226,7 +226,7 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 				return;
 			}
 			if (value) {
-				const buff = value.buffer as MP4ArrayBuffer;
+				const buff = value.buffer as MP4BoxBuffer;
 				buff.fileStart = seek;
 				mp4boxfile.appendBuffer(buff);
 				seek += value.byteLength;
@@ -252,7 +252,7 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 					result.defaultSampleDuration = result.videoInfo.edits[0].media_time;
 				} else {
 					// Fragmented MP4などでsamplesが全て読まれない（nb_samplesが確定しない）うちにonReadyが呼ばれることがあるため、こちらの計算は不正確
-					result.defaultSampleDuration = result.videoInfo.duration / result.videoInfo.nb_samples ?? 1;
+					result.defaultSampleDuration = result.videoInfo.nb_samples ? result.videoInfo.duration / result.videoInfo.nb_samples : 1;
 					result.fps = result.videoInfo.duration ? result.videoInfo.timescale / result.defaultSampleDuration : 30;
 				}
 
@@ -263,7 +263,7 @@ export function getMP4Info(file: Blob, DEV = false): Promise<SimpleVideoInfo> {
 					try {
 						result.description = getDescriptionBuffer(entry);
 					} catch (e) {
-						if (DEV) console.error('getMP4Info: getDescriptionBuffer error', e);
+						if (DEV) console.error('getMovie: getDescriptionBuffer error', e);
 					}
 				}
 			}

@@ -11,19 +11,19 @@
     "dist"
   ],
   "devDependencies": {
-    "esbuild": "^0.18.20",
-    "typescript": "^5.1.6"
+    "esbuild": "^0.25.8",
+    "typescript": "^5.9.2"
   },
   "scripts": {
     "build": "NODE_ENV=production node build.js && tsc --project tsconfig.build.json",
     "dev": "node build.js watch",
-    "test": "cd tests/vite-project && pnpm run dev",
-    "preview": "cd tests/vite-project && pnpm run build && pnpm run preview"
+    "test": "pnpm -F test run dev",
+    "test-build": "pnpm -F test run build",
+    "preview": "pnpm -F test run build && pnpm -F test run preview"
   },
   "repository": "https://github.com/misskey-dev/browser-image-resizer.git",
   "dependencies": {
-    "@misskey-dev/browser-image-resizer": "2.2.1-misskey.10",
-    "@webav/mp4box.js": "0.5.3-fenghen",
-    "vite": "5.0.0-beta.0"
+    "@misskey-dev/browser-image-resizer": "2024.1.0",
+    "mp4box": "^1.4.6"
   }
 }

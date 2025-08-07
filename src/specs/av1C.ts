@@ -1,4 +1,4 @@
-import { BoxParser, DataStream } from "@webav/mp4box.js";
+import { BoxParser, DataStream, Endianness } from "mp4box";
 
 /**
  * https://aomediacodec.github.io/av1-isobmff/#av1codecconfigurationbox-syntax
@@ -22,7 +22,7 @@ export function av1CDescription(
     //#region make data
     // https://github.com/gpac/mp4box.js/blob/a7684537c1d8d08eb7c70ebc5963a6be996416cc/src/box-write.js
     const stream = new DataStream();
-    stream.endianness = DataStream.BIG_ENDIAN;
+    stream.endianness = Endianness.BIG_ENDIAN;
 
     //stream.writeUint8(0); // aligned(8)
     stream.writeUint8(129); // marker, version)

@@ -1,5 +1,5 @@
 import { BrowserImageResizerConfigWithOffscreenCanvasOutput, readAndCompressImage } from "@misskey-dev/browser-image-resizer";
-import { MP4VideoTrack } from "@webav/mp4box.js";
+import { Track } from "mp4box";
 import { VideoFrameAndIsKeyFrame } from "./type";
 
 const TIMESTAMP_MARGINS = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -11,7 +11,7 @@ const TIMESTAMP_MARGINS = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5,
  * 壊れたmp4が来た場合、timestampが飛んでいる場合がある。その場合は最後に送信したtimestamp以降のフレームを送信する
  */
 export function generateVideoSortTransformer(
-	videoInfo: MP4VideoTrack,
+	videoInfo: Track,
 	sharedData: { dropFrames: number; dropFramesOnDecoding: number; getResultSamples: () => number; startTimeShift?: number; },
 	DEV = false
 ) {
