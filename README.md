@@ -1,4 +1,11 @@
 # venc
+
+## DEPRECATED
+
+Use Mediabunny https://mediabunny.dev/
+
+## About
+
 Toolset for video resizing and re-encoding
 
 Sample: https://venc2.vercel.app/
